@@ -59,30 +59,46 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
     const [openCreateDialog, setOpenCreateDialog] = useState(false);
     const [newLead, setNewLead] = useState({ fullName: '', email: '', mobileNumber: '' });
 
-    useEffect(() => {
+ useEffect(() => {
         // Get current user from localStorage
         const storedUser = localStorage.getItem('employeeUser');
+        let user;
         if (storedUser) {
             try {
-                setCurrentUser(JSON.parse(storedUser));
+                user = JSON.parse(storedUser);
+                setCurrentUser(user);
             } catch (error) {
                 console.error('Error parsing user data:', error);
             }
         }
+        
+        // Ensure user is loaded before fetching leads
+        if (!user) {
+            setLoading(false);
+            return; 
+        }
 
         const fetchLeads = async () => {
+            // ** 🚀 CRITICAL CHANGE HERE: PASS USER DETAILS AS QUERY PARAMS 🚀 **
             try {
-                // The backend controller handles the user access filtering
-                const response = await axios.get(API_URL);
+                const response = await axios.get(API_URL, {
+                    params: {
+                        userId: user._id,
+                        role: user.role,
+                        zone: user.zone,
+                        region: user.region,
+                    }
+                });
+                
                 setLeads(response.data);
                 setLoading(false);
             } catch (error) {
                 console.error('Failed to fetch leads:', error);
                 setLoading(false);
-                // Optionally set an error state here
             }
         };
         fetchLeads();
+    // Re-run if storedUser or user-related state changes, though once is usually enough.
     }, []);
 
     const handleMenuOpen = (event) => {
@@ -199,7 +215,7 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
                                 <TableRow
                                     key={lead._id}
                                     hover
-                                    onClick={() => onSelectLead(lead._id)}
+                                    onClick={() => onSelectLead(lead)}
                                     sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
                                 >
                                     <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>
@@ -231,7 +247,7 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
                                             size="small"
                                             onClick={(e) => {
                                                 e.stopPropagation(); // Prevents row click event
-                                                onSelectLead(lead._id);
+                                                onSelectLead(lead);
                                             }}
                                         >
                                             View
@@ -304,7 +320,15 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
                                 setOpenCreateDialog(false);
                                 // Refresh leads list
                                 const fetchLeads = async () => {
-                                    const res = await axios.get(API_URL);
+                                    const res = await axios.get(API_URL, {
+                    params: {
+                        userId: currentUser._id,
+                        role: currentUser.role,
+                        zone: currentUser.zone,
+                        region: currentUser.region,
+                    }
+                });
+                ;
                                     setLeads(res.data);
                                 };
                                 fetchLeads();

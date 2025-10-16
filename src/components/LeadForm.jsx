@@ -109,7 +109,7 @@ const API_URL = 'http://localhost:5000/api/leads';
 
 
 // IMPORTANT: LeadForm now accepts leadId and onBack as props
-const LeadForm = ({ leadId, onBack }) => {
+const LeadForm = ({ leadData, onBack }) => {
     // Start with the empty state if no leadId, or wait for fetch
     const [lead, setLead] = useState(EMPTY_LEAD_STATE);
     const [loading, setLoading] = useState(true);
@@ -129,47 +129,21 @@ const LeadForm = ({ leadId, onBack }) => {
 
     // --- EFFECT: Fetch Lead Data ---
     useEffect(() => {
-        if (!leadId || leadId === 'new') {
+        // If leadData is passed, it means we are editing an existing lead.
+        // No need to fetch, just set the state.
+        if (leadData) {
+            // Merge passed data with the empty state to ensure all fields are present
+            setLead({ ...EMPTY_LEAD_STATE, ...leadData });
             setLoading(false);
-            // Get current user for pre-filling
-            const storedUser = localStorage.getItem('employeeUser');
-            let currentUser = null;
-            if (storedUser) {
-                try {
-                    currentUser = JSON.parse(storedUser);
-                } catch (error) {
-                    console.error('Error parsing user data:', error);
-                }
-            }
-
-            // Reset to initial state if used for 'Create New' flow
-            setLead({
-                ...EMPTY_LEAD_STATE,
-                // Pre-fill with user's zone and region
-                zone: currentUser?.zone || '',
-                region: currentUser?.region || '',
-                // Apply mock initial data if creating a new lead
-                mobileNumbers: ["+91- "],
-                panStatus: "Not Interested",
-                referralList: [{ name: "Referral 1", code: "", phoneNumber: "" }],
-            });
-            return;
+        } else {
+            // If no leadData is passed, it implies a 'create new' scenario or an error.
+            // For now, we just stop loading. The 'Create New Lead' dialog in Dashboard
+            // handles creation separately. This form is now primarily for viewing/editing.
+            setLead(EMPTY_LEAD_STATE);
+            setLoading(false);
         }
-
-        const fetchLead = async () => {
-            try {
-                const response = await axios.get(`${API_URL}/${leadId}`);
-                // Merge fetched data onto a full state structure to prevent crashes
-                setLead({ ...EMPTY_LEAD_STATE, ...response.data });
-                setLoading(false);
-            } catch (error) {
-                console.error('Failed to fetch lead data:', error);
-                setLoading(false);
-                alert('Error fetching lead. Check console.');
-            }
-        };
-        fetchLead();
-    }, [leadId]);
+    // This effect now runs whenever the selected lead object changes.
+    }, [leadData]);
 
     // --- Handlers ---
 
@@ -238,8 +212,8 @@ const LeadForm = ({ leadId, onBack }) => {
     };
 
     const handleSaveNote = async () => {
-        // If leadId is 'new', this is a create operation
-        if (leadId === 'new') {
+        // If there's no lead._id, it's a create operation (though this form is now for updates)
+        if (!lead._id) {
             // CREATE logic here (POST /api/leads)
             try {
                 const createPayload = {
@@ -281,7 +255,7 @@ const LeadForm = ({ leadId, onBack }) => {
                 referralList: lead.referralList.filter(r => r.name || r.phoneNumber)
             };
 
-            const response = await axios.put(`${API_URL}/${leadId}`, updatePayload);
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload); // Use lead._id from state
 
             // Update local state with the new, updated lead data (including the new callHistory entry)
             setLead({ ...EMPTY_LEAD_STATE, ...response.data });
@@ -301,7 +275,7 @@ const LeadForm = ({ leadId, onBack }) => {
         handleSaveNote(); 
     };
 
-    if (loading) return <Typography align="center" sx={{ mt: 5 }}>Loading Lead ID: {leadId}...</Typography>;
+    if (loading) return <Typography align="center" sx={{ mt: 5 }}>Loading Lead Details...</Typography>;
 
     // Calculate total expenses (Unchanged)
     const totalExpenses = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);

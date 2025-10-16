@@ -13,24 +13,24 @@ import EmployeeLogin from './components/EmployeeLogin';
 
 const App = () => {
     // State to hold the ID of the currently selected lead (or null if none)
-    const [selectedLeadId, setSelectedLeadId] = useState(null);
+    const [selectedLead, setSelectedLead] = useState(null);
 
     // State for employee authentication
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     // Handler to open the flyout
-    const handleSelectLead = (id) => {
-        setSelectedLeadId(id);
+    const handleSelectLead = (lead) => {
+        setSelectedLead(lead);
     };
 
     // Handler to close the flyout
     const handleCloseFlyout = () => {
-        setSelectedLeadId(null);
+        setSelectedLead(null);
     };
 
-    // Check if the flyout is open
-    const isFlyoutOpen = !!selectedLeadId;
+    // Check if the flyout is open by seeing if an object is selected
+    const isFlyoutOpen = !!selectedLead;
 
     // Check for existing login on app load
     useEffect(() => {
@@ -85,7 +85,7 @@ const App = () => {
                             fullWidth
                         >
                             <DialogTitle>
-                                {selectedLeadId === 'new' ? 'Create New Lead' : `Lead Details: ${selectedLeadId}`}
+                                {selectedLead?.leadID ? `Lead Details: ${selectedLead.leadID}` : 'Lead Details'}
                                 <IconButton
                                     aria-label="close"
                                     onClick={handleCloseFlyout}
@@ -102,7 +102,7 @@ const App = () => {
                             <DialogContent dividers>
                                 {isFlyoutOpen && (
                                     <LeadForm
-                                        leadId={selectedLeadId}
+                                        leadData={selectedLead}
                                         onBack={handleCloseFlyout}
                                     />
                                 )}

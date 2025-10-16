@@ -20,7 +20,6 @@ const RoleForm = ({ formData, handleChange }) => {
   const [selectedRH, setSelectedRH] = useState(formData.reporting_regionalHead || '');
   const [reportingSummary, setReportingSummary] = useState('Select an employee type to see the required hierarchy fields.');
   const [managers, setManagers] = useState({ zonalHeads: [], regionalHeads: [] });
-  const [loading, setLoading] = useState(true);
 
   // Role options for the dropdown
   const roles = [
@@ -39,9 +38,7 @@ const RoleForm = ({ formData, handleChange }) => {
         setManagers(data);
       } catch (error) {
         console.error('Error fetching managers:', error);
-      } finally {
-        setLoading(false);
-      }
+      } 
     };
     fetchManagers();
   }, []);
