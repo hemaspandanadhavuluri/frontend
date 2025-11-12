@@ -34,10 +34,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import moment from 'moment';
-
-// Mock User Role for Display
-const MOCK_USER_ROLE_DISPLAY = 'FO';
-const API_URL = 'http://localhost:5000/api/leads';
+import { API_URL } from '../constants';
 
 // --- Helper Function for Status Color ---
 const getStatusColor = (status) => {
@@ -51,8 +48,7 @@ const getStatusColor = (status) => {
     }
 };
 
-const Dashboard = ({ onSelectLead, onLogout }) => {
-    const [leads, setLeads] = useState([]);
+const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -99,7 +95,7 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
         };
         fetchLeads();
     // Re-run if storedUser or user-related state changes, though once is usually enough.
-    }, []);
+    }, [setLeads]); // Dependency on setLeads to avoid lint warning
 
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -112,6 +108,14 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
     const handleLogout = () => {
         handleMenuClose();
         onLogout();
+    };
+
+    // Handler for creating a new lead
+    const handleCreateNewLead = () => {
+        // Pass the initial data to the LeadForm
+        onSelectLead({ ...newLead }); 
+        setNewLead({ fullName: '', email: '', mobileNumber: '' }); // Reset the small dialog
+        setOpenCreateDialog(false); // Close the simple dialog
     };
 
     if (loading) return (
@@ -294,53 +298,8 @@ const Dashboard = ({ onSelectLead, onLogout }) => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-                    <Button
-                        onClick={async () => {
-                            try {
-                                const createPayload = {
-                                    fullName: newLead.fullName,
-                                    email: newLead.email,
-                                    mobileNumbers: [newLead.mobileNumber],
-                                    // Pre-fill zone and region from current user
-                                    zone: currentUser?.zone || '',
-                                    region: currentUser?.region || '',
-                                    // Required source field
-                                    source: { source: 'Manual' },
-                                    // Assign to logged-in FO
-                                    assignedFOId: currentUser?._id || '',
-                                    assignedFO: currentUser?.fullName || '',
-                                    assignedFOPhone: currentUser?.phoneNumber || '',
-                                    // Other defaults
-                                    panStatus: "Not Interested",
-                                    referralList: [{ name: "Referral 1", code: "", phoneNumber: "" }],
-                                };
-                                const response = await axios.post(API_URL, createPayload);
-                                alert('Lead created successfully!');
-                                setNewLead({ fullName: '', email: '', mobileNumber: '' });
-                                setOpenCreateDialog(false);
-                                // Refresh leads list
-                                const fetchLeads = async () => {
-                                    const res = await axios.get(API_URL, {
-                    params: {
-                        userId: currentUser._id,
-                        role: currentUser.role,
-                        zone: currentUser.zone,
-                        region: currentUser.region,
-                    }
-                });
-                ;
-                                    setLeads(res.data);
-                                };
-                                fetchLeads();
-                            } catch (error) {
-                                console.error('Failed to create lead:', error);
-                                alert('Failed to create lead. Check console for details.');
-                            }
-                        }}
-                        variant="contained"
-                        color="primary"
-                    >
-                        Create Lead
+                    <Button onClick={handleCreateNewLead} variant="contained" color="primary">
+                        Create & Open Form
                     </Button>
                 </DialogActions>
             </Dialog>
