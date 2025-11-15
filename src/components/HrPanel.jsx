@@ -571,7 +571,7 @@ const OrganizationalDetails = ({ formData, handleChange }) => (
     </Box>
 );
 
-// Array to manage steps and their content/titles
+// --- Step Definitions ---
 const steps = [
     { title: 'Personal Info', component: PersonalInfo, requiredFields: ['name', 'personalNumber', 'email', 'dateOfBirth', 'gender'] },
     { title: 'Identity & Address', component: IdentityAddress, requiredFields: ['panNumber', 'aadharNumber', 'currentAddress'] },
@@ -580,8 +580,6 @@ const steps = [
     { title: 'Org. Details', component: OrganizationalDetails, requiredFields: ['zone', 'region', 'role'] },
 ];
 
-
-// --- MAIN APPLICATION COMPONENT ---
 
 const HrPanel = () => {
     const [currentView, setCurrentView] = useState('dashboard'); // Default to dashboard view 

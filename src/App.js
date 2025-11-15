@@ -12,26 +12,9 @@ import HrPanel from './components/HrPanel';
 import EmployeeLogin from './components/EmployeeLogin';
 import BankLogin from './components/BankLogin';
 import BankExecutivePanel from './components/BankExecutivePanel';
-
-const AppContent = () => {
-    const navigate = useNavigate();
-    const [currentUser, setCurrentUser] = useState(null);
-
-    // This effect will run when currentUser state changes, handling redirection.
-    useEffect(() => {
-        if (currentUser) {
-            if (currentUser.role === 'BankExecutive') {
-                navigate('/bank-panel');
-            } else {
-                // Redirect all other logged-in users to the main dashboard
-                navigate('/');
-            }
-        }
-    }, [currentUser, navigate]);
-
-    // ... rest of the App logic will be moved inside here
-    // For now, we just need to wrap the existing App component's return
-};
+import StudentForm from './components/StudentForm';
+import AssignerPanel from './components/AssignerPanel'; // Import the new component
+import AssignerLogin from './components/AssignerLogin'; // Import the Assigner login component
 
 const App = () => {
     // State to hold the ID of the currently selected lead (or null if none)
@@ -97,6 +80,8 @@ const App = () => {
         if (isLoggedIn && currentUser) {
             if (currentUser.role === 'BankExecutive') {
                 navigate('/bank-panel');
+            } else if (currentUser.role.toLowerCase() === 'assigner') {
+                navigate('/assigner');
             } else {
                 // For other roles, they are likely already on '/' or will be.
                 // A specific redirect can be added if needed, e.g., navigate('/');
@@ -108,6 +93,7 @@ const App = () => {
     const handleLoginSuccess = (user) => {
         setCurrentUser(user);
         setIsLoggedIn(true);
+        localStorage.setItem('employeeUser', JSON.stringify(user)); // <-- CRITICAL FIX: Save user to localStorage
     };
 
     // Handler for logout
@@ -123,6 +109,8 @@ const App = () => {
                 {/* Public Login Routes */}
                 <Route path="/login" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/bank-login" element={<BankLogin onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/assigner-login" element={<AssignerLogin onLoginSuccess={handleLoginSuccess} />} />
+                <Route path = '/studentForm' element = {<StudentForm />} />
 
                 {/* Protected Routes */}
                 {isLoggedIn ? (
@@ -130,6 +118,9 @@ const App = () => {
                         {currentUser?.role === 'BankExecutive' ? (
                             // Bank Executive gets a single route
                             <Route path="/bank-panel" element={<BankExecutivePanel onLogout={handleLogout} />} />
+                        ) : currentUser?.role.toLowerCase() === 'assigner' ? (
+                            // Assigner gets their own route
+                            <Route path="/assigner" element={<AssignerPanel onLogout={handleLogout} />} />
                         ) : (
                             // Internal employees get their set of routes
                             <>

@@ -1,49 +1,9 @@
 
 import React, { useState, useEffect } from "react";
-import {
-    Typography,
-    TextField,
-    Checkbox,
-    Button,
-    Divider,
-    Link,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    FormLabel,
-    RadioGroup,
-    Radio,
-    Paper,
-    FormControlLabel,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    IconButton,
-    Autocomplete,
-    Box,
-    Card, 
-    CardContent, 
-    Chip, 
-    Alert,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails
-} from "@mui/material";
-import AddIcon from '@mui/icons-material/Add';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import CloseIcon from '@mui/icons-material/Close';
-import MailOutline from '@mui/icons-material/MailOutline';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // Correct import for the icon
 import axios from 'axios';
 import moment from 'moment'; // Import moment for date/time formatting
 
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-
 // You should ensure this file exists for custom styles like container width
-import './leadForm.css'
 import CallHistorySection from "./CallHistorySection";
 import BasicDetailsSection from "./BasicDetailsSection";
 import RelationCard from "./RelationCard";
@@ -56,6 +16,22 @@ import {
     NLTemplates,
 } from "../constants";
 
+// Custom Accordion component using Tailwind CSS
+const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
+    const [isOpen, setIsOpen] = useState(defaultExpanded);
+
+    return (
+        <div className="border border-gray-200 rounded-lg mb-2">
+            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 focus:outline-none">
+                <h3 className="text-lg font-bold text-gray-700 flex items-center">{icon} {title}</h3>
+                <svg className={`w-6 h-6 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            {isOpen && (
+                <div className="p-4 border-t border-gray-200">{children}</div>
+            )}
+        </div>
+    );
+};
 
 // IMPORTANT: LeadForm now accepts leadId and onBack as props
 const LeadForm = ({ leadData, onBack, onUpdate }) => {
@@ -131,58 +107,56 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     // --- Handlers ---
 
     // Helper for text fields (updated to handle both flat and nested state)
-    const renderTextField = (name, label, value, onChange, widthProps = { xs: '100%', sm: '50%', md: '33.33%' }, placeholder = "") => (
-        <Box sx={{ p: 1.5, width: widthProps, boxSizing: 'border-box' }}>
-          <TextField
-            fullWidth
-            size="small"
-            name={name}
-            label={label}
-            placeholder={placeholder}
-            value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
-            onChange={onChange}
-            margin="dense"
-            variant="outlined"
-          />
-        </Box>
+    const renderTextField = (name, label, value, onChange, widthClass = "w-full md:w-1/3", placeholder = "") => (
+        <div className={`p-2 ${widthClass}`}>
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+                type="text"
+                id={name}
+                name={name}
+                placeholder={placeholder}
+                value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
+                onChange={onChange}
+                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+        </div>
     );
 
     // Helper for select/dropdown fields
-    const renderSelectField = (name, label, value, onChange, options, widthProps = { xs: '100%', sm: '50%', md: '33.33%' }) => (
-        <Box sx={{ p: 1.5, width: widthProps, boxSizing: 'border-box' }}>
-            <FormControl fullWidth size="small" margin="dense" variant="outlined">
-                <InputLabel>{label}</InputLabel>
-                <Select
-                    name={name}
-                    value={value || ''}
-                    onChange={onChange}
-                    label={label}
-                >
-                    {options && options.length > 0 ?
-                        options.map(option => (
-                            <MenuItem key={option} value={option}>{option}</MenuItem>
-                        )) : (
-                        <MenuItem value="" disabled>
-                            No options available
-                        </MenuItem>
-                    )}
-                </Select>
-            </FormControl>
-        </Box>
+    const renderSelectField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => (
+        <div className={`p-2 ${widthClass}`}>
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <select
+                id={name}
+                name={name}
+                value={value || ''}
+                onChange={onChange}
+                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            >
+                {options && options.length > 0 ?
+                    options.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                    )) : (
+                    <option value="" disabled>
+                        No options available
+                    </option>
+                )}
+            </select>
+        </div>
     );
 
     // Simplified handler for flat state
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
-        if (name === 'approachedAnyBank') {
+        if (name === 'approachedAnyBank' || name === 'hasStudentLoans' || name === 'hasCibilIssues' || name === 'documentsAvailable') {
             // Radio group value is a string, convert to boolean
             const boolValue = value === 'true';
             setLead((prev) => ({
                 ...prev,
                 [name]: boolValue,
-                // Also clear previousBankApproached if user selects "No"
-                previousBankApproached: boolValue ? prev.previousBankApproached : ''
+                // Also clear dependent fields if user selects "No"
+                previousBankApproached: name === 'approachedAnyBank' && !boolValue ? '' : prev.previousBankApproached,
             }));
         } else {
             setLead((prev) => ({ 
@@ -190,6 +164,14 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 [name]: type === 'checkbox' ? checked : value 
             }));
         }
+    };
+
+    // Handler for DatePicker changes
+    const handleDateChange = (name, newValue) => {
+        setLead(prev => ({
+            ...prev,
+            [name]: newValue ? new Date(newValue).toISOString() : null
+        }));
     };
 
     // Simplified handler for nested state (like coApplicant/references) - *Kept from your original code*
@@ -332,33 +314,24 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
 
     // Helper for Autocomplete fields
-    const renderAutocompleteField = (name, label, value, onChange, options, widthProps = { xs: '100%', sm: '50%', md: '33.33%' }) => (
-        <Box sx={{ p: 1.5, width: widthProps, boxSizing: 'border-box' }}>
-            <Autocomplete
-                fullWidth
-                size="small"
-                options={options}
-                value={value || null} // Autocomplete prefers null for an empty value
-                onChange={(event, newValue) => {
-                    // Create a synthetic event to work with the existing handleChange function
-                    const syntheticEvent = {
-                        target: {
-                            name: name,
-                            value: newValue || '' // Send back an empty string if cleared
-                        }
-                    };
-                    onChange(syntheticEvent);
-                }}
-                renderInput={(params) => (
-                    <TextField
-                        {...params}
-                        label={label}
-                        margin="dense"
-                        variant="outlined"
-                    />
-                )}
+    const renderAutocompleteField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => (
+        <div className={`p-2 ${widthClass}`}>
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+                type="text"
+                id={name}
+                name={name}
+                value={value || ''}
+                onChange={onChange}
+                list={`${name}-list`}
+                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
-        </Box>
+            <datalist id={`${name}-list`}>
+                {options.map(option => (
+                    <option key={option} value={option} />
+                ))}
+            </datalist>
+        </div>
     );
     // --- New Note Handlers ---
 
@@ -395,7 +368,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             const updatePayload = {
                 ...lead, // Send all current lead data for a full update
                 // The backend controller expects newCallNote for logging
-                newCallNote: {
+                newNote: {
                     notes: newNote.notes,
                     callStatus: newNote.callStatus
                 },
@@ -470,56 +443,42 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         handleSaveNote(); 
     };
 
-    if (loading) return <Typography align="center" sx={{ mt: 5 }}>Loading Lead Details...</Typography>;
+    if (loading) return <p className="text-center mt-5">Loading Lead Details...</p>;
 
     // Calculate total expenses (Unchanged)
     const totalFee = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);
-    
 
     return (
-    <Paper elevation={4} sx={{ p: 4, maxWidth: 1200, margin: '30px auto', borderRadius: 2 }}>
-        {/* Back Button */}
-        {onBack && (
-            <Button
-                variant="outlined"
-                color="primary"
-                onClick={onBack}
-                sx={{ mb: 3 }}
-                startIcon={<ArrowBackIcon />}
-            >
-                Back to Dashboard
-            </Button>
-        )}
-
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: '600', color: 'primary.dark' }}>
+    <div className="p-4 md:p-8 max-w-6xl mx-auto my-8 bg-white rounded-lg shadow-xl">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">
             {lead._id ? `Lead: ${lead.fullName}` : 'Create New Lead'}
-        </Typography>
+        </h1>
         <form onSubmit={handleSubmit}>
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
-            <Card variant="outlined" sx={{ mb: 3, bgcolor: '#f5f5f5', p: 1 }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <Box sx={{ width: { xs: '100%', md: '66.67%' }, p: 1 }}>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                                <Chip label={`Applied: ${lead.studentAppliedDate || 'N/A'} ${lead.studentAppliedTime || ''}`} color="primary" size="small" />
-                                <Chip label={`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`} color="secondary" size="small" />
-                            </Box>
-                            <Typography variant="subtitle2" component="span" sx={{ fontWeight: 'bold' }}>Sources / Referral:</Typography>
-                            <Link href="#" variant="body2" sx={{ ml: 1, mr: 2 }}>Show History</Link>
-                            <Typography variant="body2" color="text.secondary" component="span">
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="p-2">
+                    <div className="flex flex-wrap items-center">
+                        <div className="w-full md:w-2/3 p-1">
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">{`Applied: ${lead.studentAppliedDate || 'N/A'} ${lead.studentAppliedTime || ''}`}</span>
+                                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-purple-600 bg-purple-200">{`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`}</span>
+                            </div>
+                            <span className="text-sm font-bold">Sources / Referral:</span>
+                            <a href="#" className="text-sm text-blue-600 hover:underline ml-2 mr-4">Show History</a>
+                            <span className="text-sm text-gray-600">
                                 **{lead.source.source || 'N/A'}**: {lead.source.name || 'N/A'} | {lead.source.email || 'N/A'} | {lead.source.phoneNumber || 'N/A'}
-                            </Typography>
-                        </Box>
-                        <Box sx={{ width: { xs: '100%', md: '33.33%' }, p: 1 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-                                <Chip label={`Loan ID: ${lead.loanId || 'N/A'}`} variant="outlined" size="small" sx={{ fontFamily: 'monospace' }} />
-                                <Chip label={`User ID: ${lead.leadID || 'N/A'}`} variant="outlined" size="small" sx={{ fontFamily: 'monospace' }} />
-                            </Box>
-                        </Box>
-                    </Box>
-                </CardContent>
-            </Card>
+                            </span>
+                        </div>
+                        <div className="w-full md:w-1/3 p-1">
+                            <div className="flex flex-col gap-1 items-start md:items-end">
+                                <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`Loan ID: ${lead.loanId || 'N/A'}`}</span>
+                                <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`User ID: ${lead.leadID || 'N/A'}`}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* 2. ADD BASIC DETAILS */}
             <BasicDetailsSection 
@@ -532,125 +491,115 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 indianStates={indianStates} // Existing prop for State field
                 indianCities={indianCitiesWithState} // New prop for Permanent Location
             />
-            <Box sx={{ mt: 2 }}>
+            <div className="mt-4">
                 {/* 3. FURTHER EDUCATION DETAILS */}
-                <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🎓 Further Education Details</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                            {renderSelectField("loanType", "Loan Type", lead.loanType, handleChange, ['Balance Transfer', 'New Loan'], { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderSelectField("courseStartMonth", "Course Start Month", lead.courseStartMonth, handleChange, courseStartQuarters, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderSelectField("courseStartYear", "Course Start Year", lead.courseStartYear, handleChange, courseStartYears, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderSelectField("degree", "Degree", lead.degree, handleChange, degrees, { xs: '100%', sm: '50%', md: '25%' })}
+                <Accordion title="Further Education Details" icon="🎓" defaultExpanded>
+                    <div className="flex flex-wrap -mx-2">
+                            {renderSelectField("loanType", "Loan Type", lead.loanType, handleChange, ['Balance Transfer', 'New Loan'], "w-full sm:w-1/2 md:w-1/4")}
+                            {renderSelectField("courseStartMonth", "Course Start Month", lead.courseStartMonth, handleChange, courseStartQuarters, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderSelectField("courseStartYear", "Course Start Year", lead.courseStartYear, handleChange, courseStartYears, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderSelectField("degree", "Degree", lead.degree, handleChange, degrees, "w-full sm:w-1/2 md:w-1/4")}
                             {renderSelectField("fieldOfInterest", "Field of Interest", lead.fieldOfInterest, handleChange, fieldsOfInterest)}
                             {renderAutocompleteField("interestedCountries", "Interested Countries", lead.interestedCountries, handleChange, allCountries)}
                             {renderSelectField("admissionStatus", "Admission Status", lead.admissionStatus, handleChange, admissionStatuses)}
-                            {renderAutocompleteField("admittedUniversities", "Admitted Universities", lead.admittedUniversities, handleChange, universities, { xs: '100%', sm: '100%', md: '50%' })}
-                            <Box sx={{ p: 1.5, width: { xs: '100%', md: '50%' }, boxSizing: 'border-box' }}>
-                                <FormControl component="fieldset">
-                                    <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Has the student already approached any bank? *</FormLabel>
-                                    <RadioGroup
-                                        row
-                                        name="approachedAnyBank"
-                                        value={String(lead.approachedAnyBank)}
-                                        onChange={handleChange}
-                                    >
-                                        <FormControlLabel value="true" control={<Radio size="small" />} label="Yes" />
-                                        <FormControlLabel value="false" control={<Radio size="small" />} label="No" />
-                                    </RadioGroup>
-                                </FormControl>
-                                {lead.approachedAnyBank && <TextField fullWidth size="small" margin="dense" variant="outlined" name="previousBankApproached" label="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} />}
-                            </Box>
-                        </Box>
-                        <Alert severity="info" sx={{ mt: 3, mb: 2 }}>
+                            {renderAutocompleteField("admittedUniversities", "Admitted Universities", lead.admittedUniversities, handleChange, universities, "w-full md:w-1/2")}
+                            <div className="p-2 w-full md:w-1/2">
+                                <fieldset>
+                                    <legend className="text-sm font-medium text-gray-700">Has the student already approached any bank? *</legend>
+                                    <div className="flex items-center space-x-4 mt-2">
+                                        <label className="flex items-center">
+                                            <input type="radio" name="approachedAnyBank" value="true" checked={lead.approachedAnyBank === true} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" />
+                                            <span className="ml-2">Yes</span>
+                                        </label>
+                                        <label className="flex items-center">
+                                            <input type="radio" name="approachedAnyBank" value="false" checked={lead.approachedAnyBank === false} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" />
+                                            <span className="ml-2">No</span>
+                                        </label>
+                                    </div>
+                                </fieldset>
+                                {lead.approachedAnyBank && <input type="text" name="previousBankApproached" placeholder="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
+                            </div>
+                    </div>
+                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700">
                             Enter a university and click the button below to check the prime university list.
-                        </Alert>
-                        <Button variant="contained" color="warning" onClick={handleShowPrimeBanks}>PRIME UNIVERSITY LIST</Button>
+                    </div>
+                    <button type="button" className="mt-2 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600" onClick={handleShowPrimeBanks}>PRIME UNIVERSITY LIST</button>
 
                         {/* Inline Bank List Display */}
                         {primeBankList.length > 0 && (
-                            <Box sx={{ mt: 3 }}>
-                                <Typography variant="h6" gutterBottom>Prime Banks for "{fetchedForUniversity}"</Typography>
-                                <TableContainer component={Paper}>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell sx={{ fontWeight: 'bold' }}>Bank Name</TableCell>
-                                                <TableCell sx={{ fontWeight: 'bold' }} align="right">Max Loan Amount</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>{primeBankList.map((bank, index) => (<TableRow key={index}><TableCell>{bank.bankName}</TableCell><TableCell align="right">{bank.maxLoanAmount}</TableCell></TableRow>))}</TableBody>
-                                    </Table>
-                                </TableContainer>
-                            </Box>
+                            <div className="mt-4">
+                                <h4 className="text-xl font-semibold mb-2">Prime Banks for "{fetchedForUniversity}"</h4>
+                                <div className="overflow-x-auto border rounded-lg">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Name</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Max Loan Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {primeBankList.map((bank, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{bank.bankName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{bank.maxLoanAmount}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         )}
-                    </AccordionDetails>
                 </Accordion>
                 
                 {/* NEW: Test Scores Section */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>📝 Test Scores</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                            {renderTextField("GRE", "GRE (200-990)", lead.testScores.GRE, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("IELTS", "IELTS (0-9)", lead.testScores.IELTS, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("TOEFL", "TOEFL (0-120)", lead.testScores.TOEFL, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("GMAT", "GMAT (200-800)", lead.testScores.GMAT, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("SAT", "SAT (400-1600)", lead.testScores.SAT, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("PTE", "PTE (10-90)", lead.testScores.PTE, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("ACT", "ACT (1-36)", lead.testScores.ACT, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("DUOLINGO", "DuoLingo (10-160)", lead.testScores.DUOLINGO, (e) => handleNestedChange('testScores', e), { xs: '100%', sm: '50%', md: '25%' })}
-                        </Box>
-                    </AccordionDetails>
+                <Accordion title="Test Scores" icon="📝">
+                    <div className="flex flex-wrap -mx-2">
+                            {renderTextField("GRE", "GRE (200-990)", lead.testScores.GRE, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("IELTS", "IELTS (0-9)", lead.testScores.IELTS, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("TOEFL", "TOEFL (0-120)", lead.testScores.TOEFL, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("GMAT", "GMAT (200-800)", lead.testScores.GMAT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("SAT", "SAT (400-1600)", lead.testScores.SAT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("PTE", "PTE (10-90)", lead.testScores.PTE, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("ACT", "ACT (1-36)", lead.testScores.ACT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w1/4")}
+                            {renderTextField("DUOLINGO", "DuoLingo (10-160)", lead.testScores.DUOLINGO, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
+                    </div>
                 </Accordion>
 
                 {/* NEW: Other & Course Details Section */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>📄 Other & Course Details</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5, alignItems: 'center' }}>
-                            {renderTextField("age", "Age", lead.age, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '50%' }, boxSizing: 'border-box' }}>
-                                <FormControl component="fieldset">
-                                    <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Is there any loan on the student?</FormLabel>
-                                    <RadioGroup row name="hasStudentLoans" value={String(lead.hasStudentLoans)} onChange={handleChange}>
-                                        <FormControlLabel value="true" control={<Radio size="small" />} label="Yes" />
-                                        <FormControlLabel value="false" control={<Radio size="small" />} label="No" />
-                                    </RadioGroup>
-                                </FormControl>
-                            </Box>
-                            <Divider sx={{ width: '100%', my: 2 }} />
-                            {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("fee", "Fee (in Lakhs)", lead.fee, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            <Box sx={{ p: 1.5, width: { xs: '100%' }, boxSizing: 'border-box' }}>
-                                <TextField fullWidth size="small" label="Total Fee (in Lakhs)" value={totalFee.toFixed(2)} InputProps={{ readOnly: true }} variant="filled" />
-                            </Box>
-                        </Box>
-                    </AccordionDetails>
+                <Accordion title="Other & Course Details" icon="📄">
+                    <div className="flex flex-wrap -mx-2 items-center">
+                            {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                            <div className="p-2 w-full md:w-1/2">
+                                <fieldset>
+                                    <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
+                                    <div className="flex items-center space-x-4 mt-2">
+                                        <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                        <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <hr className="w-full my-4" />
+                            {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("fee", "Fee (in Lakhs)", lead.fee, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                            {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                            <div className="p-2 w-full">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Total Fee (in Lakhs)</label>
+                                <input type="text" value={totalFee.toFixed(2)} readOnly className="w-full p-2 bg-gray-100 border border-gray-300 rounded-md" />
+                            </div>
+                    </div>
                 </Accordion>
 
                 {/* NEW: Assets Available Section */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🏠 Assets Available</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <FormControl component="fieldset" sx={{ mb: 2 }}>
-                            <FormLabel component="legend">Are assets available?</FormLabel>
-                            <RadioGroup row value={String(hasAssets)} onChange={(e) => setHasAssets(e.target.value === 'true')}>
-                                <FormControlLabel value="true" control={<Radio />} label="Yes" />
-                                <FormControlLabel value="false" control={<Radio />} label="No" />
-                            </RadioGroup>
-                        </FormControl>
+                <Accordion title="Assets Available" icon="🏠">
+                        <fieldset className="mb-4">
+                            <legend className="text-sm font-medium text-gray-700">Are assets available?</legend>
+                            <div className="flex items-center space-x-4 mt-2">
+                                <label className="flex items-center"><input type="radio" value="true" checked={hasAssets === true} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                <label className="flex items-center"><input type="radio" value="false" checked={hasAssets === false} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" /> <span className="ml-2">No</span></label>
+                            </div>
+                        </fieldset>
 
                         {hasAssets && (
                             <>
@@ -665,18 +614,16 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                         renderSelectField={renderSelectField}
                                     />
                                 ))}
-                                <Button variant="outlined" startIcon={<AddIcon />} onClick={addAsset} sx={{ mt: 2 }}>Add Asset</Button>
+                                <button type="button" onClick={addAsset} className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center">
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    Add Asset
+                                </button>
                             </>
                         )}
-                    </AccordionDetails>
                 </Accordion>
 
                 {/* 4. FAMILY/CO-APPLICANT INFO */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>👨‍👩‍👧‍👦 Student Relations (Co-Applicant/Guarantor)</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
+                <Accordion title="Student Relations (Co-Applicant/Guarantor)" icon="👨‍👩‍👧‍👦">
                         {lead.relations.map((relation, index) => (
                             <RelationCard
                                 key={index}
@@ -690,254 +637,224 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             />
                         ))}
 
-                        <Button variant="outlined" startIcon={<AddIcon />} size="small" sx={{ mt: 2, mb: 2 }} onClick={addRelation}>
+                        <button type="button" className="mt-4 mb-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={addRelation}>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Add New Relation
-                        </Button>
+                        </button>
 
-                        <Box sx={{ p: 2, border: '1px dashed #ccc', borderRadius: 1 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>🏠 Own House Guarantor (OHG)</Typography>
-                            <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1, mb: 1 }}>
+                        <div className="p-4 border border-dashed border-gray-400 rounded-md">
+                            <h4 className="font-bold text-gray-800">🏠 Own House Guarantor (OHG)</h4>
+                            <p className="text-xs text-gray-600 mt-1 mb-1">
                                 Note: Own house guarantor should be one of your family members or relatives who owns a house/flat.
-                            </Typography>
-                            <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 2 }}>This property is NOT taken as a collateral.</Typography>
-                            <Link href="#" variant="body2" sx={{ display: 'block' }} onClick={(e) => { e.preventDefault(); if (showOHGFields) { setShowOHGFields(false); setLead(prev => ({...prev, ownHouseGuarantor: EMPTY_LEAD_STATE.ownHouseGuarantor})); } else { setIsSelectingOHG(!isSelectingOHG); } }}>
+                            </p>
+                            <p className="text-xs text-gray-600 mb-2">This property is NOT taken as a collateral.</p>
+                            <a href="#" className="text-sm text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); if (showOHGFields) { setShowOHGFields(false); setLead(prev => ({...prev, ownHouseGuarantor: EMPTY_LEAD_STATE.ownHouseGuarantor})); } else { setIsSelectingOHG(!isSelectingOHG); } }}>
                                 {showOHGFields ? 'Hide Guarantor Fields' : 'Add/Change Own House Guarantor'}
-                            </Link>
+                            </a>
 
                             {/* Inline OHG Selection */}
                             {isSelectingOHG && !showOHGFields && (
-                                <Box sx={{ mt: 2, p: 2, border: '1px solid #eee', borderRadius: 1 }}>
-                                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Select a relation type:</Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                                    <p className="text-sm mb-2">Select a relation type:</p>
+                                    <div className="flex flex-wrap gap-2">
                                         {['Father', 'Mother', 'Spouse', 'Brother', 'Other'].map((type) => (
-                                            <Button
+                                            <button
                                                 key={type}
-                                                size="small"
-                                                variant="outlined"
+                                                type="button"
+                                                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100"
                                                 onClick={() => handleSelectOHG(type)}
                                             >
                                                 {type}
-                                            </Button>
+                                            </button>
                                         ))}
-                                    </Box>
-                                </Box>
+                                    </div>
+                                </div>
                             )}
 
                             {/* Conditionally rendered card for OHG details */}
                             {showOHGFields && (
-                                <Card variant="outlined" sx={{ mt: 2, p: 2, bgcolor: '#f9f9f9' }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'info.main' }}>Own House Guarantor Details</Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                                        {renderTextField("name", "Guarantor Name", lead.ownHouseGuarantor.name, (e) => handleNestedChange('ownHouseGuarantor', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderTextField("phoneNumber", "Guarantor Phone Number", lead.ownHouseGuarantor.phoneNumber, (e) => handleNestedChange('ownHouseGuarantor', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderSelectField("employmentType", "Employment Type", lead.ownHouseGuarantor.employmentType, (e) => handleNestedChange('ownHouseGuarantor', e), employmentTypes, { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderTextField("annualIncome", "Annual Income (lacs)", lead.ownHouseGuarantor.annualIncome, (e) => handleNestedChange('ownHouseGuarantor', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderTextField("currentObligations", "Current Obligations", lead.ownHouseGuarantor.currentObligations, (e) => handleNestedChange('ownHouseGuarantor', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                        {renderTextField("cibilScore", "CIBIL Score", lead.ownHouseGuarantor.cibilScore, (e) => handleNestedChange('ownHouseGuarantor', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                        <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '25%' }, boxSizing: 'border-box' }}>
-                                            <FormControl component="fieldset">
-                                                <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>CIBIL Issues?</FormLabel>
-                                                <RadioGroup row name="hasCibilIssues" value={String(lead.ownHouseGuarantor.hasCibilIssues)} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)}>
-                                                    <FormControlLabel value="true" control={<Radio size="small" />} label="Yes" />
-                                                    <FormControlLabel value="false" control={<Radio size="small" />} label="No" />
-                                                </RadioGroup>
-                                            </FormControl>
-                                            {lead.ownHouseGuarantor.hasCibilIssues && <TextField fullWidth size="small" margin="dense" name="cibilIssues" label="CIBIL Issues" value={lead.ownHouseGuarantor.cibilIssues} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} />}
-                                        </Box>
-                                    </Box>
-                                </Card>
+                                <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
+                                    <h5 className="text-xl font-bold mb-4 text-blue-700">Own House Guarantor Details</h5>
+                                    <div className="flex flex-wrap -mx-2">
+                                        {renderTextField("name", "Guarantor Name", lead.ownHouseGuarantor.name, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderTextField("phoneNumber", "Guarantor Phone Number", lead.ownHouseGuarantor.phoneNumber, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderSelectField("employmentType", "Employment Type", lead.ownHouseGuarantor.employmentType, (e) => handleNestedChange('ownHouseGuarantor', e), employmentTypes, "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderTextField("annualIncome", "Annual Income (lacs)", lead.ownHouseGuarantor.annualIncome, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderTextField("currentObligations", "Current Obligations", lead.ownHouseGuarantor.currentObligations, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderTextField("cibilScore", "CIBIL Score", lead.ownHouseGuarantor.cibilScore, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                            <fieldset>
+                                                <legend className="text-sm font-medium text-gray-700">CIBIL Issues?</legend>
+                                                <div className="flex items-center space-x-4 mt-2">
+                                                    <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="true" checked={lead.ownHouseGuarantor.hasCibilIssues === true} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                                    <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="false" checked={lead.ownHouseGuarantor.hasCibilIssues === false} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" /> <span className="ml-2">No</span></label>
+                                                </div>
+                                            </fieldset>
+                                            {lead.ownHouseGuarantor.hasCibilIssues && <input type="text" name="cibilIssues" placeholder="CIBIL Issues" value={lead.ownHouseGuarantor.cibilIssues} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
-                        </Box>
-                    </AccordionDetails>
+                        </div>
                 </Accordion>
 
                 {/* 5. STUDENT REFERENCES & PAN DETAILS */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🤝 Student References & PAN Details</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                            <Typography variant="body2">
+                <Accordion title="Student References & PAN Details" icon="🤝">
+                        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 mb-4">
+                            <p className="text-sm">
                                 References are people other than your parents and siblings who you know (e.g., friends, neighbours, relatives).
                                 They will NOT be added to the loan; they are for contact purposes only if the student/family are not contactable.
-                            </Typography>
-                        </Alert>
-                        <Typography variant="h6" gutterBottom>Student References</Typography>
+                            </p>
+                        </div>
+                        <h4 className="text-xl font-semibold mb-2">Student References</h4>
                         {lead.references.map((ref, index) => (
-                            <Card variant="outlined" key={index} sx={{ mb: 2, p: 2 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: 'text.secondary' }}>Reference {index + 1}</Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                                    {renderTextField(`references[${index}].name`, "Name*", ref.name, (e) => handleNestedChange('references', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                    {renderSelectField(`references[${index}].relationship`, "Relationship*", ref.relationship, (e) => handleNestedChange('references', e), referenceRelationships, { xs: '100%', sm: '50%', md: '25%' })}
-                                    {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                    {renderTextField(`references[${index}].phoneNumber`, "Phone Number *", ref.phoneNumber, (e) => handleNestedChange('references', e), { xs: '100%', sm: '50%', md: '25%' })}
-                                </Box>
-                            </Card>
+                            <div key={index} className="mb-4 p-4 border rounded-lg bg-gray-50">
+                                <h5 className="font-bold mb-2 text-gray-600">Reference {index + 1}</h5>
+                                <div className="flex flex-wrap -mx-2">
+                                    {renderTextField(`references[${index}].name`, "Name*", ref.name, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
+                                    {renderSelectField(`references[${index}].relationship`, "Relationship*", ref.relationship, (e) => handleNestedChange('references', e), referenceRelationships, "w-full sm:w-1/2 md:w-1/4")}
+                                    {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
+                                    {renderTextField(`references[${index}].phoneNumber`, "Phone Number *", ref.phoneNumber, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
+                                </div>
+                            </div>
                         ))}
-                        <Divider sx={{ my: 2 }} />
-                        <Typography variant="h6" gutterBottom>Student PAN Details</Typography>
-                        <FormControl component="fieldset">
-                            <RadioGroup row name="panStatus" value={lead.panStatus} onChange={handleChange}>
-                                <FormControlLabel value="Not Interested" control={<Radio size="small" />} label="Not Interested" />
-                                <FormControlLabel value="Not Available" control={<Radio size="small" />} label="Not Available" />
-                                <FormControlLabel value="Applied" control={<Radio size="small" />} label="Applied" />
-                            </RadioGroup>
-                            {lead.panStatus === 'Applied' && <TextField size="small" label="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" sx={{ ml: 2, width: 300, mt: 1 }} />}
-                        </FormControl>
-                    </AccordionDetails>
+                        <hr className="my-4" />
+                        <h4 className="text-xl font-semibold mb-2">Student PAN Details</h4>
+                        <fieldset>
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Interested" checked={lead.panStatus === 'Not Interested'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Not Interested</span></label>
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Available" checked={lead.panStatus === 'Not Available'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Not Available</span></label>
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Applied" checked={lead.panStatus === 'Applied'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Applied</span></label>
+                            </div>
+                            {lead.panStatus === 'Applied' && <input type="text" placeholder="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" className="mt-2 p-2 border border-gray-300 rounded-md w-full md:w-1/2" />}
+                        </fieldset>
                 </Accordion>
 
                 {/* 6. REFER APPLICANT'S FRIENDS */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>👥 Refer Applicant's Friends</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
+                <Accordion title="Refer Applicant's Friends" icon="👥">
+                        <div className="flex flex-wrap -mx-2">
                             {lead.referralList.map((ref, index) => (
-                                <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }} key={index}>
-                                    <Card variant="outlined" sx={{ p: 2, height: '100%' }}>
-                                        <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main', fontWeight: 'bold' }}>Referral {index + 1}</Typography>
-                                        <TextField fullWidth size="small" label={`Name`} value={ref.name || ''} name={`referralList[${index}].name`} onChange={(e) => handleNestedChange('referralList', e)} sx={{ mb: 1 }} />
-                                        <TextField fullWidth size="small" label="Phone Number" value={ref.phoneNumber || ''} name={`referralList[${index}].phoneNumber`} onChange={(e) => handleNestedChange('referralList', e)} sx={{ mb: 1 }} />
-                                        <TextField fullWidth size="small" label="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} />
-                                        <Button variant="contained" size="small" color="secondary" sx={{ mt: 2 }} onClick={() => handleCreateReferralLead(ref)} disabled={!ref.name || !ref.phoneNumber}>
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/3" key={index}>
+                                    <div className="p-4 border rounded-lg h-full flex flex-col">
+                                        <h5 className="font-bold mb-2 text-blue-700">Referral {index + 1}</h5>
+                                        <input type="text" placeholder="Name" value={ref.name || ''} name={`referralList[${index}].name`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md mb-2" />
+                                        <input type="text" placeholder="Phone Number" value={ref.phoneNumber || ''} name={`referralList[${index}].phoneNumber`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md mb-2" />
+                                        <input type="text" placeholder="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md" />
+                                        <button type="button" className="mt-4 px-3 py-1.5 bg-purple-600 text-white text-sm font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-400" onClick={() => handleCreateReferralLead(ref)} disabled={!ref.name || !ref.phoneNumber}>
                                             Create Lead
-                                        </Button>
-                                    </Card>
-                                </Box>
+                                        </button>
+                                    </div>
+                                </div>
                             ))}
-                        </Box>
-                        <Button variant="outlined" startIcon={<AddIcon />} size="small" onClick={() => setLead(p => ({...p, referralList: [...p.referralList, { name: "", code: "", phoneNumber: "" }] }))} sx={{ mt: 2 }}>Add Referral</Button>
-                    </AccordionDetails>
+                        </div>
+                        <button type="button" className="mt-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={() => setLead(p => ({...p, referralList: [...p.referralList, { name: "", code: "", phoneNumber: "" }] }))}>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Referral
+                        </button>
                 </Accordion>
 
-                {/* 7. LOAN CALCULATIONS & BRANCH CHECK */}
-                {/* <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🏦 Loan Calculations & Branch Check</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Paper elevation={1} sx={{ p: 3, mb: 3, bgcolor: '#fff4e5' }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: 'orange' }}>Check KVB branch availability (50 kms radius)</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', mx: -1.5 }}>
-                                {renderTextField("collateralLocation", "Select from the dropdown only", lead.collateralLocation, handleChange, { xs: '100%', sm: '66.67%' })}
-                                <Box sx={{ p: 1.5, width: { xs: '100%', sm: '33.33%' } }}><Button variant="contained" size="small" color="primary">CHECK</Button></Box>
-                            </Box>
-                        </Paper>
-                        <Typography variant="h6" gutterBottom>Union Bank Margin Calculation</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', mx: -1.5 }}>
-                            {renderTextField("totalExpenses", `Total Expenses (Fee + Living + Other Expenses) *`, totalFee.toFixed(2), () => {}, { xs: '100%', sm: '50%', md: '33.33%' })}
-                            {renderTextField("maxUnsecuredGivenByUBI", "Maximum Unsecured loan given by UBI *", lead.maxUnsecuredGivenByUBI, handleChange)}
-                            <Box sx={{ p: 1.5, width: { xs: '100%', md: '33.33%' } }}><Button variant="contained" color="success" size="medium" fullWidth>GET LOAN MARGIN</Button></Box>
-                        </Box>
-                    </AccordionDetails>
-                </Accordion> */}
-
                 {/* 8. RECOMMENDED BANKS & ISSUES */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>💳 Recommended Banks</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2 }}>
-                            <Box sx={{ width: { xs: '100%', md: '50%' }, p: 2 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, color: 'primary.dark' }}>Tied-Up Banks</Typography>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Accordion title="Recommended Banks" icon="💳">
+                        <div className="flex flex-wrap -mx-2">
+                            <div className="w-full md:w-1/2 p-2">
+                                <h4 className="font-bold mb-2 text-gray-800">Tied-Up Banks</h4>
+                                <div className="flex flex-col gap-2">
                                     {tiedUpBanks.map((bank) => (
-                                        <Card key={bank._id} variant="outlined" sx={{ p: 1.5 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{bank.name}</Typography>
+                                        <div key={bank._id} className="p-3 border rounded-lg">
+                                            <div className="flex justify-between items-center">
+                                                <p className="font-bold">{bank.name}</p>
                                                 {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
-                                                    <Chip icon={<CheckCircleOutlineIcon />} label="Assigned" color="success" size="small" />
+                                                    <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
+                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
+                                                        Assigned
+                                                    </span>
                                                 )}
-                                            </Box>
+                                            </div>
                                             {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
-                                                <Box sx={{ mt: 1, p: 1, bgcolor: '#e8f5e9', borderRadius: 1 }}>
-                                                    <Typography variant="caption">Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></Typography>
-                                                    <Typography variant="caption" display="block">Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</Typography>
-                                                </Box>
+                                                <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
+                                                    <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
+                                                    <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
+                                                </div>
                                             )}
-                                            <Button variant="contained" size="small" onClick={() => handleAssignToBank(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} sx={{ mt: 1 }}>
+                                            <button type="button" onClick={() => handleAssignToBank(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
                                                 {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign'}
-                                            </Button>
-                                        </Card>
+                                            </button>
+                                        </div>
                                     ))}
-                                </Box>
-                            </Box>
-                        </Box>
-                       
-                    </AccordionDetails>
+                                </div>
+                            </div>
+                        </div>
                 </Accordion>
 
                 {/* 9. Email Templates */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🛠️ Email Templates</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Box sx={{ mb: 3 }}>
-                            <Typography variant="h6" gutterBottom>NL Normal</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{NLTemplates.map((item, index) => (<Button key={index} variant="contained" style={{backgroundColor:'orange'}} size="small" startIcon={<MailOutline />}>{item}</Button>))}</Box>
-                        </Box>
-                        <Box sx={{ mb: 3 }}>
-                            <Typography variant="h6" gutterBottom>Banks Connection - Intro & Docs Upload</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{banksDocs.map((item, index) => (<Button key={index} variant="contained" style={{background:'#AA60C8'}} startIcon={<MailOutline />} size="small">{item}</Button>))}</Box>
-                        </Box>
-                        <Box sx={{ mb: 3 }}>
-                            <Typography variant="h6" gutterBottom>Document Upload</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{documentStatus.map((item, index) => (<Button key={index} variant="contained" style={{backgroundColor:'green'}} size="small" startIcon={<MailOutline />}>{item}</Button>))}</Box>
-                        </Box>
-                        <Box>
-                            <Typography variant="h6" gutterBottom>Loan Calculators</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                <Button variant="contained" color="error" size="small" startIcon={<MailOutline />}>EDUCATION LOAN EMI CALCULATOR</Button>
-                                <Button variant="contained" color="error" size="small" startIcon={<MailOutline />} >$ USD TO INR EDUCATION LOAN CALCULATOR</Button>
-                                 <Button variant="contained" color="error" size="small" startIcon={<MailOutline />}>Saves Lakhs By Educational Loan Transfer</Button>
-                                  <Button variant="contained" color="error" size="small" startIcon={<MailOutline />}>EL TAX Rebate Calculator</Button>
-                            </Box>
-                        </Box>
-                         <Divider sx={{ my: 3 }} />
-                        <Typography variant="h6" gutterBottom>Banks Related - Issues</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>{loanIssues.map((item, index) => (<Button  style={{backgroundColor:'purple'}} ey={index} variant="contained" color="success" startIcon={<MailOutline />} size="small">{item}</Button>))}</Box>
-                        <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Miscellaneous Situations</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>{miscSituations.map((item, index) => (<Button  style={{backgroundColor:'#11224E'}} ey={index} variant="contained" color="success" startIcon={<MailOutline />} size="small">{item}</Button>))}</Box>
-                    </AccordionDetails>
+                <Accordion title="Email Templates" icon="🛠️">
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">NL Normal</h4>
+                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Banks Connection - Intro & Docs Upload</h4>
+                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Document Upload</h4>
+                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2_0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Loan Calculators</h4>
+                            <div className="flex flex-wrap gap-2">
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>$ USD TO INR EDUCATION LOAN CALCULATOR</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>Saves Lakhs By Educational Loan Transfer</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button>
+                            </div>
+                        </div>
+                        <hr/>
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Banks Related - Issues</h4>
+                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold mb-2">Miscellaneous Situations</h4>
+                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                        </div>
+                    </div>
                 </Accordion>
 
                 {/* 10. REMINDERS & FINAL STATUS */}
-                <Accordion>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>🗓️ Reminders & Final Status</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Card elevation={0} sx={{ p: 2, mb: 3, bgcolor: '#e8f5e9', border: '1px solid #c8e6c9' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>Targeted Sanction Date</Typography>
-                            <Typography variant="caption" display="block">Previous selected date: Not selected</Typography>
-                            <FormControlLabel control={<Checkbox />} label="Not possible to sanction in this month or the next month" />
-                        </Card>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                            {renderTextField("lastCallDate", "Last call date", lead.lastCallDate, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            {renderTextField("reminderCallDate", "Next call date", lead.reminderCallDate, handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '25%' }, boxSizing: 'border-box' }}>
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>Final Status</InputLabel>
-                                    <Select name="leadStatus" label="Final Status" value={lead.leadStatus} onChange={handleChange}>
-                                        {['No status', 'Sanctioned', 'Rejected', 'Application Incomplete'].map(status => <MenuItem key={status} value={status}>{status}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                            {renderTextField("preferredNextCallTime", "Preferred Next Call time", lead.preferredNextCallTime || '', handleChange, { xs: '100%', sm: '50%', md: '25%' })}
-                            <Box sx={{ width: '100%', p: 1.5 }}>
-                                <FormControlLabel control={<Checkbox />} label="Clear Preferred Next Call Time" sx={{ mr: 3 }} />
-                                <FormControlLabel control={<Checkbox />} label="Student is not eligible for Connecting to Advisar" />
-                            </Box>
-                        </Box>
-                    </AccordionDetails>
+                <Accordion title="Reminders & Final Status" icon="🗓️">
+                        <div className="p-4 mb-4 bg-green-50 border border-green-200 rounded-lg">
+                            <h5 className="font-bold mb-1">Targeted Sanction Date</h5>
+                            <p className="text-xs">Previous selected date: Not selected</p>
+                            <label className="flex items-center mt-2">
+                                <input type="checkbox" className="form-checkbox" />
+                                <span className="ml-2 text-sm">Not possible to sanction in this month or the next month</span>
+                            </label>
+                        </div>
+                        <div className="flex flex-wrap -mx-2">
+                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Last call date</label>
+                                <input type="date" value={lead.lastCallDate ? moment(lead.lastCallDate).format('YYYY-MM-DD') : ''} onChange={(e) => handleDateChange('lastCallDate', e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Next call date</label>
+                                <input type="date" value={lead.reminderCallDate ? moment(lead.reminderCallDate).format('YYYY-MM-DD') : ''} onChange={(e) => handleDateChange('reminderCallDate', e.target.value)} className="w-full p-2 border rounded-md" />
+                            </div>
+                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Final Status</label>
+                                <select name="leadStatus" value={lead.leadStatus} onChange={handleChange} className="w-full p-2 border rounded-md">
+                                    {['No status', 'Sanctioned', 'Rejected', 'Application Incomplete','On Priority'].map(status => <option key={status} value={status}>{status}</option>)}
+                                </select>
+                            </div>
+                            <div className="w-full p-2 space-y-2">
+                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Clear Preferred Next Call Time</span></label>
+                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Student is not eligible for Connecting to Advisar</span></label>
+                            </div>
+                        </div>
                 </Accordion>
-            </Box>
+            </div>
 
             {/* --- CALL HISTORY & NOTES SECTION (MOVED TO BOTTOM) --- */}
             <CallHistorySection
@@ -950,11 +867,16 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
 
             {/* Main Submit Button */}
-            <Button variant="contained" color="primary" sx={{ mt: 5, p: 1.5 }} type="submit" size="large" fullWidth>
+            <button
+                type="submit"
+                className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                disabled={!lead.reminderCallDate || !newNote.notes.trim()}
+            >
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 ✅ SUBMIT LEAD DATA & SAVE NOTES
-            </Button>
+            </button>
         </form>
-    </Paper>);
+    </div>);
 };
 
 export default LeadForm;
