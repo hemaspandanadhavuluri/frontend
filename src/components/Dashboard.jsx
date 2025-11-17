@@ -39,11 +39,12 @@ import { API_URL } from '../constants';
 // --- Helper Function for Status Color ---
 const getStatusColor = (status) => {
     switch (status) {
-        case 'Connected': return 'success';
-        case 'No Answer': return 'warning';
-        case 'Rejected': return 'error';
         case 'Sanctioned': return 'primary';
+        case 'On Priority': return 'success';
+        case 'In Progress': return 'warning';
+        case 'New': return 'secondary';
         case 'Application Incomplete': return 'info';
+        case 'Rejected': return 'error';
         default: return 'default';
     }
 };
@@ -54,6 +55,35 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [openCreateDialog, setOpenCreateDialog] = useState(false);
     const [newLead, setNewLead] = useState({ fullName: '', email: '', mobileNumber: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTime, setSearchTime] = useState(null);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const [newLeads, setNewLeads] = useState([]);
+    const [activeView, setActiveView] = useState('all'); // 'all', 'reminders', or 'newLeads'
+    const [reminderLeads, setReminderLeads] = useState([]);
+    const fetchAllLeads = React.useCallback(async (user) => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await axios.get(API_URL, {
+                params: {
+                    userId: user._id,
+                    role: user.role,
+                    zone: user.zone,
+                    region: user.region,
+                }
+            });
+            setLeads(response.data);
+        } catch (error) {
+            console.error('Failed to fetch leads:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [setLeads]);
 
  useEffect(() => {
         // Get current user from localStorage
@@ -65,37 +95,35 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error parsing user data:', error);
+                setLoading(false);
+                return;
             }
         }
         
-        // Ensure user is loaded before fetching leads
-        if (!user) {
-            setLoading(false);
-            return; 
-        }
-
-        const fetchLeads = async () => {
-            // ** 🚀 CRITICAL CHANGE HERE: PASS USER DETAILS AS QUERY PARAMS 🚀 **
-            try {
-                const response = await axios.get(API_URL, {
-                    params: {
-                        userId: user._id,
-                        role: user.role,
-                        zone: user.zone,
-                        region: user.region,
-                    }
-                });
-                
-                setLeads(response.data);
-                setLoading(false);
-            } catch (error) {
-                console.error('Failed to fetch leads:', error);
-                setLoading(false);
-            }
-        };
-        fetchLeads();
+        fetchAllLeads(user);
     // Re-run if storedUser or user-related state changes, though once is usually enough.
-    }, [setLeads]); // Dependency on setLeads to avoid lint warning
+    }, [fetchAllLeads]); // Dependency on setLeads to avoid lint warning
+
+    // --- NEW: Effect to filter leads into New and Reminders ---
+    useEffect(() => {
+        const today = moment().startOf('day');
+
+        // Filter for new leads (no call history)
+        const filteredNewLeads = leads.filter(lead => !lead.callHistory || lead.callHistory.length === 0);
+
+        // Filter for reminders (has a reminder date and has been contacted)
+        const filteredReminderLeads = leads
+            .filter(lead => 
+                lead.reminderCallDate && 
+                moment(lead.reminderCallDate).startOf('day').isSameOrBefore(today) &&
+                lead.callHistory && lead.callHistory.length > 0
+            )
+            .sort((a, b) => new Date(a.reminderCallDate) - new Date(b.reminderCallDate)); // Sort by date
+
+        setNewLeads(filteredNewLeads);
+        setReminderLeads(filteredReminderLeads);
+
+    }, [leads]); // This effect runs whenever the main 'leads' array changes
 
     const handleMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -108,6 +136,40 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
     const handleLogout = () => {
         handleMenuClose();
         onLogout();
+    };
+
+    // --- NEW: Handler for search ---
+    const handleSearch = async () => {
+        if (!currentUser) return;
+
+        setIsSearching(true);
+        setSearchTime(null);
+        const startTime = performance.now();
+
+        try {
+            const response = await axios.get(API_URL, {
+                params: {
+                    userId: currentUser._id,
+                    role: currentUser.role,
+                    zone: currentUser.zone,
+                    region: currentUser.region,
+                    searchTerm: searchTerm, // Pass the search term
+                }
+            });
+            setLeads(response.data);
+        } catch (error) {
+            console.error('Failed to search leads:', error);
+        } finally {
+            const endTime = performance.now();
+            setSearchTime((endTime - startTime).toFixed(2));
+            setIsSearching(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        setSearchTime(null);
+        fetchAllLeads(currentUser); // Re-fetch all leads for the current user
     };
 
     // Handler for creating a new lead
@@ -124,14 +186,6 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
             <Typography sx={{ ml: 2 }}>Loading leads...</Typography>
         </Box>
     );
-
-    // Sort leads by reminderCallDate (ascending, showing oldest first)
-    const sortedLeads = [...leads].sort((a, b) => {
-        // Handle null/empty dates by putting them last
-        const dateA = a.reminderCallDate ? new Date(a.reminderCallDate) : new Date(8640000000000000); // Max future date
-        const dateB = b.reminderCallDate ? new Date(b.reminderCallDate) : new Date(8640000000000000); // Max future date
-        return dateA - dateB;
-    });
 
     return (
         <>
@@ -182,16 +236,63 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                 <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
                     {currentUser?.role || 'Employee'} Lead Dashboard
                 </Typography>
-                <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-                    Showing {leads.length} accessible leads. (Sorted by Next Call Date)
-                </Typography>
 
-                {/* Create New Lead Button */}
-                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                {/* --- NEW: Search Bar --- */}
+                <Paper sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                        placeholder="Search by Lead ID, Name, Email, Phone, or Source..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <Button variant="contained" onClick={handleSearch} disabled={isSearching}>
+                        {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Search'}
+                    </Button>
+                    {searchTime && (
+                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                            Found in {searchTime} ms
+                        </Typography>
+                    )}
+                    <Button variant="text" onClick={handleClearSearch} size="small">
+                        Clear
+                    </Button>
+                </Paper>
+
+
+                {/* --- View Toggle and Create Buttons --- */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                    {/* View Toggles on the left */}
+                    <Box>
+                        <Button
+                            onClick={() => setActiveView('all')}
+                            variant={activeView === 'all' ? 'contained' : 'outlined'}
+                            sx={{ mr: 2 }}
+                        >
+                            All Leads ({leads.length})
+                        </Button>
+                        <Button
+                            onClick={() => setActiveView('reminders')}
+                            variant={activeView === 'reminders' ? 'contained' : 'outlined'}
+                            sx={{ mr: 2 }}
+                        >
+                            Reminders ({reminderLeads.length})
+                        </Button>
+                        <Button
+                            onClick={() => setActiveView('newLeads')}
+                            variant={activeView === 'newLeads' ? 'contained' : 'outlined'}
+                            color="secondary"
+                        >
+                            New Leads ({newLeads.length})
+                        </Button>
+                    </Box>
+
+                    {/* Create Button on the right */}
                     <Button
                         variant="contained"
                         color="primary"
-                        size="large"
                         startIcon={<AddIcon />}
                         onClick={() => setOpenCreateDialog(true)}
                         sx={{ fontWeight: 'bold' }}
@@ -200,66 +301,117 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                     </Button>
                 </Box>
 
+                {/* --- Unified Table Container --- */}
                 <TableContainer component={Paper} elevation={5}>
                     <Table sx={{ minWidth: 700 }} aria-label="lead dashboard table">
-                        <TableHead sx={{ bgcolor: 'primary.dark' }}>
-                            <TableRow>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student Name</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Loan Type</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Next Follow-up</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>FO / RH</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location (Z/R)</TableCell>
-                                <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }}>Action</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {sortedLeads.map((lead) => (
-                                <TableRow
-                                    key={lead._id}
-                                    hover
-                                    onClick={() => onSelectLead(lead)}
-                                    sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
-                                >
-                                    <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>
-                                        {lead.leadID}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="subtitle2">{lead.fullName}</Typography>
-                                    </TableCell>
-                                    <TableCell>{lead.loanType || 'N/A'}</TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={lead.leadStatus}
-                                            color={getStatusColor(lead.leadStatus)}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        {lead.reminderCallDate
-                                            ? moment(lead.reminderCallDate).format('DD MMM YYYY')
-                                            : <Chip label="SET DATE" color="error" size="small" variant="filled" />
-                                        }
-                                    </TableCell>
-                                    <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
-                                    <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevents row click event
-                                                onSelectLead(lead);
-                                            }}
-                                        >
-                                            View
-                                        </Button>
-                                    </TableCell>
+                        {activeView !== 'newLeads' ? ( // 'all' and 'reminders' share a similar header
+                            <TableHead sx={{ bgcolor: 'primary.dark' }}>
+                                <TableRow>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Contact</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Next Follow-up</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>FO / RH</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location (Z/R)</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }} align="center">Action</TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
+                            </TableHead>
+                        ) : (
+                            <TableHead sx={{ bgcolor: 'secondary.dark' }}>
+                                <TableRow>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Loan Type</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created On</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>FO / RH</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location (Z/R)</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }} align="center">Action</TableCell>
+                                </TableRow>
+                            </TableHead>
+                        )}
+                        {activeView === 'all' ? (
+                            <TableBody>
+                                {leads.map((lead) => {
+                                    const isMissed = lead.reminderCallDate && moment(lead.reminderCallDate).startOf('day').isBefore(moment().startOf('day'));
+                                    return (
+                                        <TableRow
+                                            key={lead._id}
+                                            hover
+                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}
+                                            onClick={() => onSelectLead(lead)}
+                                        >
+                                            <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
+                                            <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
+                                            <TableCell>
+                                                <Typography variant="caption" display="block">{lead.email || 'No Email'}</Typography>
+                                                <Typography variant="caption" display="block">{lead.mobileNumbers?.[0] || 'No Mobile'}</Typography>
+                                            </TableCell>
+                                            <TableCell><Chip label={lead.leadStatus} color={getStatusColor(lead.leadStatus)} size="small" variant="outlined" /></TableCell>
+                                            <TableCell>{lead.reminderCallDate ? moment(lead.reminderCallDate).format('DD MMM YYYY') : <Chip label="SET DATE" color="error" size="small" />}</TableCell>
+                                            <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
+                                            <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
+                                            <TableCell align="center">
+                                                <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>View</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                                {leads.length === 0 && (
+                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No leads found.</Typography></TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        ) : activeView === 'reminders' ? (
+                            <TableBody>
+                                {reminderLeads.map((lead) => {
+                                    const isMissed = moment(lead.reminderCallDate).startOf('day').isBefore(moment().startOf('day'));
+                                    return (
+                                        <TableRow
+                                            key={lead._id}
+                                            hover
+                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}
+                                            onClick={() => onSelectLead(lead)}
+                                        >
+                                            <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
+                                            <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
+                                            <TableCell><Chip label={lead.leadStatus} color={getStatusColor(lead.leadStatus)} size="small" variant="outlined" /></TableCell>
+                                            <TableCell>{lead.reminderCallDate ? moment(lead.reminderCallDate).format('DD MMM YYYY') : <Chip label="SET DATE" color="error" size="small" />}</TableCell>
+                                            <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
+                                            <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>                                            <TableCell align="center">
+                                                <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>View</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                                {reminderLeads.length === 0 && (
+                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No reminders for today or any missed reminders.</Typography></TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        ) : (
+                            <TableBody>
+                                {newLeads.map((lead) => (
+                                    <TableRow
+                                        key={lead._id}
+                                        hover
+                                        onClick={() => onSelectLead(lead)}
+                                        sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
+                                    >
+                                        <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
+                                        <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
+                                        <TableCell>{lead.loanType || 'N/A'}</TableCell>
+                                        <TableCell>{moment(lead.createdAt).format('DD MMM YYYY')}</TableCell>
+                                        <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
+                                        <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
+                                        <TableCell align="center">
+                                            <Button variant="contained" size="small" color="secondary" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>Open</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {newLeads.length === 0 && (
+                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No new leads to display.</Typography></TableCell></TableRow>
+                                )}
+                            </TableBody>
+                        )}
                     </Table>
                 </TableContainer>
             </Container>

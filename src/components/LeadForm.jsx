@@ -754,38 +754,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         </button>
                 </Accordion>
 
-                {/* 8. RECOMMENDED BANKS & ISSUES */}
-                <Accordion title="Recommended Banks" icon="💳">
-                        <div className="flex flex-wrap -mx-2">
-                            <div className="w-full md:w-1/2 p-2">
-                                <h4 className="font-bold mb-2 text-gray-800">Tied-Up Banks</h4>
-                                <div className="flex flex-col gap-2">
-                                    {tiedUpBanks.map((bank) => (
-                                        <div key={bank._id} className="p-3 border rounded-lg">
-                                            <div className="flex justify-between items-center">
-                                                <p className="font-bold">{bank.name}</p>
-                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
-                                                    <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
-                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-                                                        Assigned
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
-                                                <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
-                                                    <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
-                                                    <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
-                                                </div>
-                                            )}
-                                            <button type="button" onClick={() => handleAssignToBank(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
-                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign'}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                </Accordion>
+               
 
                 {/* 9. Email Templates */}
                 <Accordion title="Email Templates" icon="🛠️">
@@ -821,6 +790,38 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                     </div>
+                </Accordion>
+                 {/* 8. RECOMMENDED BANKS & ISSUES */}
+                <Accordion title="Recommended Banks" icon="💳">
+                        <div className="flex flex-wrap -mx-2">
+                            <div className="w-full md:w-1/2 p-2">
+                                <h4 className="font-bold mb-2 text-gray-800">Tied-Up Banks</h4>
+                                <div className="flex flex-col gap-2">
+                                    {tiedUpBanks.map((bank) => (
+                                        <div key={bank._id} className="p-3 border rounded-lg">
+                                            <div className="flex justify-between items-center">
+                                                <p className="font-bold">{bank.name}</p>
+                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
+                                                    <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
+                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
+                                                        Assigned
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
+                                                <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
+                                                    <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
+                                                    <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
+                                                </div>
+                                            )}
+                                            <button type="button" onClick={() => handleAssignToBank(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
+                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                 </Accordion>
 
                 {/* 10. REMINDERS & FINAL STATUS */}
@@ -873,7 +874,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 disabled={!lead.reminderCallDate || !newNote.notes.trim()}
             >
                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                ✅ SUBMIT LEAD DATA & SAVE NOTES
+                ✅ SUBMIT LEAD DATA 
             </button>
         </form>
     </div>);
