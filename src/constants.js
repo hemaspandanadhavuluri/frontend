@@ -52,6 +52,25 @@ export const EMPTY_LEAD_STATE = {
     callHistory: [],
 };
 
+export const EMAIL_TEMPLATE_CONTENT = {
+    'NL1': {
+        subject: "Regarding Your Education Loan Inquiry",
+        body: `<p>Dear [Student Name],</p><p>Thank you for your interest in an education loan with Justap. This is a follow-up on your application. We would like to discuss the next steps.</p><p>Best regards,<br/>The Justap Team</p>`
+    },
+    'NL2': {
+        subject: "Follow-up: Your Education Loan Application",
+        body: `<p>Dear [Student Name],</p><p>We are writing to follow up on your recent education loan inquiry. Please let us know if you have any questions or if there is anything we can assist you with.</p><p>Best regards,<br/>The Justap Team</p>`
+    },
+    'NL3(Normal)': {
+        subject: "Important Update on Your Loan Application",
+        body: `<p>Dear [Student Name],</p><p>This email contains important information regarding your loan application. Please review the details at your earliest convenience.</p><p>Best regards,<br/>The Justap Team</p>`
+    },
+    'NL3 (NBFC)': {
+        subject: "Information Regarding Your NBFC Loan Option",
+        body: `<p>Dear [Student Name],</p><p>We have an update regarding your education loan options with our NBFC partners. Please contact us to discuss the details.</p><p>Best regards,<br/>The Justap Team</p>`
+    }
+};
+
 export const regions = ['North', 'South', 'East', 'West'];
 
 export const referenceRelationships = ['Uncle', 'Aunt', 'Friend', 'Any other relatives'];

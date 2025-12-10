@@ -1,9 +1,7 @@
 // src/App.js
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'; // 1. Import Router and useNavigate
-import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
 // Import your components
 import Dashboard from './components/Dashboard';
@@ -13,52 +11,20 @@ import EmployeeLogin from './components/EmployeeLogin';
 import BankLogin from './components/BankLogin';
 import BankExecutivePanel from './components/BankExecutivePanel';
 import StudentForm from './components/StudentForm';
+import LeadDetailPage from './components/LeadDetailPage'; // Import the new detail page
+import LeadDocumentPage from './components/LeadDocumentPage'; // Import the new document page
+import './components/leadForm.css'; // Import LeadForm styles globally
 import AssignerPanel from './components/AssignerPanel'; // Import the new component
 import AssignerLogin from './components/AssignerLogin'; // Import the Assigner login component
 
 const App = () => {
     // State to hold the ID of the currently selected lead (or null if none)
-    const [selectedLead, setSelectedLead] = useState(null);
     const [leads, setLeads] = useState([]); // To hold all leads for the dashboard
 
     // State for employee authentication
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const navigate = useNavigate(); // Add useNavigate hook
-
-    // Handler to open the flyout
-    const handleSelectLead = (lead) => {
-        setSelectedLead(lead);
-    };
-
-    // Handler to close the flyout
-    const handleCloseFlyout = () => {
-        setSelectedLead(null);
-    };
-
-    // Handler to update the list of leads after an edit or create
-    const handleUpdateLeadList = (updatedLead) => {
-        const leadIndex = leads.findIndex(lead => lead._id === updatedLead._id);
-        
-        if (leadIndex > -1) {
-            // Update existing lead
-            const newLeads = [...leads];
-            // The dashboard shows a subset of fields, so we need to merge
-            // to preserve the full object for the form while updating the list item.
-            newLeads[leadIndex] = { 
-                ...newLeads[leadIndex], // Keep existing data from dashboard fetch
-                ...updatedLead          // Overwrite with fresh data from the update response
-            };
-            setLeads(newLeads);
-        } else {
-            // Add new lead to the top of the list
-            setLeads([updatedLead, ...leads]);
-        }
-        handleCloseFlyout(); // Close the modal after update/create
-    };
-
-    // Check if the flyout is open by seeing if an object is selected
-    const isFlyoutOpen = !!selectedLead;
 
     // Check for existing login on app load
     useEffect(() => {
@@ -110,6 +76,7 @@ const App = () => {
                 <Route path="/login" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/bank-login" element={<BankLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/assigner-login" element={<AssignerLogin onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/leads/:id/documents" element={<LeadDocumentPage />} />
                 <Route path = '/studentForm' element = {<StudentForm />} />
 
                 {/* Protected Routes */}
@@ -126,12 +93,13 @@ const App = () => {
                             <>
                                 <Route 
                                     path="/" 
-                                    element={<Dashboard 
-                                        onSelectLead={handleSelectLead} 
+                                    element={<Dashboard
                                         onLogout={handleLogout} 
                                         leads={leads} 
                                         setLeads={setLeads} />} 
                                 />
+                                <Route path="/leads/new" element={<LeadDetailPage />} />
+                                <Route path="/leads/:id" element={<LeadDetailPage />} />
                                 <Route path="/hr-panel" element={<HrPanel />} />
                             </>
                         )}
@@ -141,23 +109,6 @@ const App = () => {
                     <Route path="*" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
                 )}
             </Routes>
-
-            {/* Flyout/Dialog for lead details - remains outside main routing to overlay everything */}
-            {isLoggedIn && currentUser?.role !== 'BankExecutive' && (
-                <Dialog open={isFlyoutOpen} onClose={handleCloseFlyout} maxWidth="lg" fullWidth>
-                    <DialogTitle>
-                        {selectedLead?.leadID ? `Lead Details: ${selectedLead.leadID}` : 'Create New Lead'}
-                        <IconButton aria-label="close" onClick={handleCloseFlyout} sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}>
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>
-                    <DialogContent dividers>
-                        {isFlyoutOpen && (
-                            <LeadForm leadData={selectedLead} onBack={handleCloseFlyout} onUpdate={handleUpdateLeadList} />
-                        )}
-                    </DialogContent>
-                </Dialog>
-            )}
         </>
     );
 };

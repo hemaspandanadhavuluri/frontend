@@ -176,7 +176,6 @@ const BasicDetailsSection = ({ lead, setLead, handleChange, renderTextField, ren
                 {renderAutocompleteField("permanentLocation", "Permanent Location in INDIA", lead.permanentLocation, handleChange, indianCities)}
                 {renderSelectField("state", "State", lead.state, handleChange, indianStates)}
                 {renderTextField("regionalHead", "Regional Head", lead.regionalHead, handleChange)}
-                {renderSelectField("region", "Region *", lead.region, handleChange, regions)}
                 {renderSelectField("planningToStudy", "Planning to Study in", lead.planningToStudy, handleChange, ['India', 'Abroad'])}
             </Box>
         </>

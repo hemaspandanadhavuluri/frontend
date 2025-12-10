@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import moment from 'moment'; // Import moment for date/time formatting
+import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material';
+import { ContentCopy as ContentCopyIcon, Close as CloseIcon } from '@mui/icons-material';
+import moment from 'moment'; 
 
 // You should ensure this file exists for custom styles like container width
 import CallHistorySection from "./CallHistorySection";
@@ -10,7 +12,7 @@ import RelationCard from "./RelationCard";
 import AssetCard from "./AssetCard";
 import {
     EMPTY_LEAD_STATE, loanIssues, miscSituations, emailTemplates, banksDocs, documentStatus,
-    indianStates, indianCitiesWithState, courseStartQuarters, courseStartYears, degrees,
+    indianStates, indianCitiesWithState, courseStartQuarters, courseStartYears, degrees, EMAIL_TEMPLATE_CONTENT,
     fieldsOfInterest, admissionStatuses, universities, employmentTypes, courseDurations, referenceRelationships,
     allCountries, API_URL, MOCK_USER_FULLNAME,
     NLTemplates,
@@ -47,6 +49,17 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     const [showOHGFields, setShowOHGFields] = useState(false);
     const [isSelectingOHG, setIsSelectingOHG] = useState(false);
     const [hasAssets, setHasAssets] = useState(false);
+    // --- NEW: State for Task Creation ---
+    const [assignableUsers, setAssignableUsers] = useState([]);
+    const [task, setTask] = useState({ assignedTo: null, subject: '', body: '' });
+    const [taskMessage, setTaskMessage] = useState('');
+    const [combinedHistory, setCombinedHistory] = useState([]);
+    const [showTaskCreator, setShowTaskCreator] = useState(false);
+    const [emailMessage, setEmailMessage] = useState('');
+    // --- NEW: State for Email Modal ---
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [currentEmailTemplate, setCurrentEmailTemplate] = useState({ name: '', subject: '', body: '' });
+    const [emailStatus, setEmailStatus] = useState('');
 
 
     // --- EFFECT: Fetch Lead Data ---
@@ -62,25 +75,67 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         };
         fetchTiedUpBanks();
 
-        if (leadData && leadData._id) { // Editing an existing lead
-            const dataToSet = { ...EMPTY_LEAD_STATE, ...leadData };
-            // Ensure there's always at least one mobile number field
-            if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) {
-                dataToSet.mobileNumbers = ["+91-"];
+        // --- NEW: Fetch assignable users for the task dropdown ---
+        const fetchAssignableUsers = async () => {
+            try {
+                const response = await axios.get(`${API_URL.replace('/leads', '/users')}/assignable`);
+                setAssignableUsers(response.data);
+            } catch (error) {
+                console.error("Failed to fetch assignable users:", error);
             }
-            // Ensure there's at least one relation card
-            if (!dataToSet.relations || dataToSet.relations.length === 0) {
-                dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }];
+        };
+        fetchAssignableUsers();
+
+        const fetchAndCombineHistory = async (leadId) => {
+            try {
+                // Fetch both call history (from lead object) and tasks
+                const [leadResponse, tasksResponse] = await Promise.all([
+                    axios.get(`${API_URL}/${leadId}`),
+                    axios.get(`${API_URL.replace('/leads', '/tasks')}/lead/${leadId}`)
+                ]);
+
+                const leadResult = leadResponse.data;
+                const tasksResult = tasksResponse.data;
+
+                // Combine and sort
+                const callHistory = leadResult.callHistory.map(note => ({ ...note, type: 'note' }));
+                const taskHistory = tasksResult.map(task => ({ ...task, type: 'task' }));
+                const allHistory = [...callHistory, ...taskHistory].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                setCombinedHistory(allHistory);
+                return leadResult; // Return lead data to be processed
+            } catch (error) {
+                console.error("Failed to fetch combined history:", error);
             }
-            // Ensure there are always two reference slots
+        };
+        const processLeadData = (data) => {
+            const dataToSet = { ...EMPTY_LEAD_STATE, ...data };
+            if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
+            if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }]; }
             if (!dataToSet.references || dataToSet.references.length < 2) {
                 const existingRefs = dataToSet.references || [];
                 dataToSet.references = [...existingRefs, ...Array(2 - existingRefs.length).fill({ relationship: '', name: '', address: '', phoneNumber: '' })].slice(0, 2);
             }
-            // Merge passed data with the empty state to ensure all fields are present
             setLead(dataToSet);
             setLoading(false);
-        } else { // Creating a new lead
+        };
+
+        if (leadData && leadData._id) {
+            // If we only have an ID (from task click), fetch the full lead.
+            // The presence of `fullName` is a good indicator we have the full object.
+            if (!leadData.fullName) {
+                const fetchFullLead = async (id) => {
+                    setLoading(true);
+                    const fullLeadData = await fetchAndCombineHistory(id);
+                    if (fullLeadData) processLeadData(fullLeadData);
+                };
+                fetchFullLead(leadData._id);
+            } else {
+                // Full lead object was passed, process it directly.
+                processLeadData(leadData);
+            }
+        } else { 
+            // This is for creating a new lead
             setLoading(false);
             const storedUser = localStorage.getItem('employeeUser');
             let currentUser = null;
@@ -443,6 +498,105 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         handleSaveNote(); 
     };
 
+    // --- NEW: Task Creation Handler ---
+    const handleCreateTask = async () => {
+        if (!lead._id || !task.assignedTo || !task.subject) {
+            setTaskMessage('Please select an employee and enter a subject.');
+            return;
+        }
+
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            setTaskMessage('Could not identify the creator. Please log in again.');
+            return;
+        }
+
+        const payload = {
+            leadId: lead._id,
+            assignedToId: task.assignedTo._id,
+            assignedToName: task.assignedTo.fullName,
+            subject: task.subject,
+            body: task.body,
+            createdById: currentUser._id,
+            createdByName: currentUser.fullName,
+        };
+
+        try {
+            await axios.post(API_URL.replace('/leads', '/tasks'), payload);
+            setTaskMessage('Task created successfully!');
+            // Reset task form
+            setTask({ assignedTo: null, subject: '', body: '' });
+            setTimeout(() => setTaskMessage(''), 3000); // Clear message after 3 seconds
+        } catch (error) {
+            console.error('Failed to create task:', error);
+            setTaskMessage(error.response?.data?.message || 'Failed to create task.');
+        }
+    };
+
+    const handleTaskChange = (e) => {
+        setTask(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    // --- NEW: Email Modal Handlers ---
+    const handleOpenEmailModal = (templateName) => {
+        const template = EMAIL_TEMPLATE_CONTENT[templateName];
+        if (template) {
+            // Replace placeholder with actual student name
+            const bodyWithStudentName = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student');
+            setCurrentEmailTemplate({ name: templateName, subject: template.subject, body: bodyWithStudentName });
+            setIsEmailModalOpen(true);
+            setEmailStatus('');
+        }
+    };
+
+    const handleCloseEmailModal = () => {
+        setIsEmailModalOpen(false);
+    };
+
+    const handleCopyEmailBody = () => {
+        navigator.clipboard.writeText(currentEmailTemplate.body);
+        setEmailStatus('Content copied to clipboard!');
+        setTimeout(() => setEmailStatus(''), 2000);
+    };
+
+    const handleSendTemplateEmail = async () => {
+        if (!lead._id) {
+            setEmailStatus('Please save the lead before sending an email.');
+            return;
+        }
+        setEmailStatus('Sending...');
+        try {
+            const response = await axios.post(`${API_URL}/${lead._id}/send-email`, {
+                subject: currentEmailTemplate.subject,
+                body: currentEmailTemplate.body
+            });
+            setEmailStatus(response.data.message);
+            setTimeout(() => {
+                handleCloseEmailModal();
+            }, 2000);
+        } catch (error) {
+            setEmailStatus(error.response?.data?.message || 'Failed to send email.');
+            console.error('Failed to send template email:', error);
+        }
+    };
+
+    const handleSendDocumentEmail = async () => {
+        if (!lead._id) {
+            setEmailMessage('Please save the lead before sending an email.');
+            return;
+        }
+        setEmailMessage('Sending email...');
+        try {
+            const response = await axios.post(`${API_URL}/${lead._id}/send-document-link`);
+            setEmailMessage(response.data.message);
+        } catch (error) {
+            setEmailMessage(error.response?.data?.message || 'Failed to send email.');
+            console.error('Failed to send email:', error);
+        } finally {
+            setTimeout(() => setEmailMessage(''), 5000); // Clear message after 5 seconds
+        }
+    };
+
     if (loading) return <p className="text-center mt-5">Loading Lead Details...</p>;
 
     // Calculate total expenses (Unchanged)
@@ -450,9 +604,76 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
     return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto my-8 bg-white rounded-lg shadow-xl">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            {lead._id ? `Lead: ${lead.fullName}` : 'Create New Lead'}
-        </h1>
+        {/* --- Header with Create Task Button --- */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <h1 className="text-3xl font-bold text-gray-800">
+                {lead._id ? `Lead: ${lead.fullName}` : 'Create New Lead'}
+            </h1>
+            {lead._id && (
+                <MuiButton variant="contained" color="secondary" onClick={() => setShowTaskCreator(!showTaskCreator)}>
+                    {showTaskCreator ? 'Cancel Task' : 'Create Task'}
+                </MuiButton>
+            )}
+        </Box>
+
+        {/* --- NEW: Inline Task Creator --- */}
+        {showTaskCreator && (
+            <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'grey.50' }}>
+                <Typography variant="h6" gutterBottom>Create New Task for {lead.fullName}</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Autocomplete
+                        options={assignableUsers}
+                        getOptionLabel={(option) => `${option.fullName} (${option.role})`}
+                        value={task.assignedTo}
+                        onChange={(event, newValue) => setTask(prev => ({ ...prev, assignedTo: newValue }))}
+                        renderInput={(params) => <MuiTextField {...params} label="Assign Task To" variant="outlined" size="small" />}
+                    />
+                    <MuiTextField fullWidth label="Task Subject" name="subject" value={task.subject} onChange={handleTaskChange} variant="outlined" size="small" />
+                    <MuiTextField fullWidth label="Task Body (Optional)" name="body" value={task.body} onChange={handleTaskChange} multiline rows={3} variant="outlined" size="small" />
+                    {taskMessage && <p className={`text-sm ${taskMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{taskMessage}</p>}
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
+                        <MuiButton onClick={() => setShowTaskCreator(false)}>Cancel</MuiButton>
+                        <MuiButton variant="contained" onClick={handleCreateTask}>
+                            Create Task
+                        </MuiButton>
+                    </Box>
+                </Box>
+            </Paper>
+        )}
+        
+        {/* --- UNIFIED HISTORY SECTION --- */}
+        {/* <Accordion title="Lead History" icon="📜" defaultExpanded>
+            <div className="space-y-4">
+                {combinedHistory.length > 0 ? (
+                    combinedHistory.map((item) => (
+                        <div key={item._id} className={`p-3 rounded-lg border-l-4 ${item.type === 'note' ? 'bg-blue-50 border-blue-400' : 'bg-yellow-50 border-yellow-400'}`}>
+                            <div className="flex justify-between items-center mb-1">
+                                <p className="font-bold text-sm">
+                                    {item.type === 'note' ? `Note by ${item.loggedByName}` : `Task Created by ${item.createdByName}`}
+                                </p>
+                                <p className="text-xs text-gray-500">{moment(item.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                            </div>
+                            {item.type === 'note' ? (
+                                <p className="text-gray-700 text-sm">{item.notes}</p>
+                            ) : (
+                                <div>
+                                    <p className="text-gray-800 text-sm">
+                                        <span className="font-semibold">Subject:</span> {item.subject}
+                                    </p>
+                                    <p className="text-gray-800 text-sm">
+                                        <span className="font-semibold">Assigned to:</span> {item.assignedToName}
+                                    </p>
+                                    {item.body && <p className="text-gray-600 text-xs mt-1 pl-2 border-l-2 border-gray-300">{item.body}</p>}
+                                </div>
+                            )}
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-center text-gray-500 py-4">No history or tasks for this lead yet.</p>
+                )}
+            </div>
+        </Accordion> */}
+
         <form onSubmit={handleSubmit}>
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
@@ -481,9 +702,9 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             </div>
 
             {/* 2. ADD BASIC DETAILS */}
-            <BasicDetailsSection 
-                lead={lead} 
-                setLead={setLead} 
+            <BasicDetailsSection
+                lead={lead}
+                setLead={setLead}
                 handleChange={handleChange} 
                 renderTextField={renderTextField} 
                 renderSelectField={renderSelectField}
@@ -754,23 +975,24 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         </button>
                 </Accordion>
 
-               
-
                 {/* 9. Email Templates */}
                 <Accordion title="Email Templates" icon="🛠️">
                     <div className="space-y-6">
                         <div>
                             <h4 className="text-lg font-semibold mb-2">NL Normal</h4>
-                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Banks Connection - Intro & Docs Upload</h4>
-                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={handleSendDocumentEmail} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Document Upload</h4>
                             <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2_0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
+                        {emailMessage && (
+                            <div className="mt-4 p-3 text-sm text-center bg-blue-100 text-blue-800 rounded-md">{emailMessage}</div>
+                        )}
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Loan Calculators</h4>
                             <div className="flex flex-wrap gap-2">
@@ -857,15 +1079,6 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 </Accordion>
             </div>
 
-            {/* --- CALL HISTORY & NOTES SECTION (MOVED TO BOTTOM) --- */}
-            <CallHistorySection
-                lead={lead}
-                newNote={newNote}
-                handleNoteChange={handleNoteChange}
-                handleSaveNote={handleSaveNote}
-                MOCK_USER_FULLNAME={MOCK_USER_FULLNAME}
-            />
-
 
             {/* Main Submit Button */}
             <button
@@ -877,6 +1090,38 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 ✅ SUBMIT LEAD DATA 
             </button>
         </form>
+
+        {/* --- NEW: Email Template Modal --- */}
+        <Dialog open={isEmailModalOpen} onClose={handleCloseEmailModal} maxWidth="md" fullWidth>
+            <DialogTitle>
+                Send Email: {currentEmailTemplate.name}
+                <IconButton aria-label="close" onClick={handleCloseEmailModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <Typography variant="h6" gutterBottom>Subject: {currentEmailTemplate.subject}</Typography>
+                <Paper variant="outlined" sx={{ p: 2, mt: 1, maxHeight: '50vh', overflowY: 'auto' }}>
+                    <div dangerouslySetInnerHTML={{ __html: currentEmailTemplate.body }} />
+                </Paper>
+                {emailStatus && (
+                    <Typography sx={{ mt: 2, color: emailStatus.includes('success') ? 'success.main' : 'info.main' }}>
+                        {emailStatus}
+                    </Typography>
+                )}
+            </DialogContent>
+            <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
+                <MuiButton
+                    startIcon={<ContentCopyIcon />}
+                    onClick={handleCopyEmailBody}
+                >
+                    Copy Content
+                </MuiButton>
+                <MuiButton variant="contained" onClick={handleSendTemplateEmail} disabled={emailStatus === 'Sending...'}>
+                    {emailStatus === 'Sending...' ? 'Sending...' : 'Send Email'}
+                </MuiButton>
+            </DialogActions>
+        </Dialog>
     </div>);
 };
 

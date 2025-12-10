@@ -24,7 +24,9 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    TextField
+    TextField,
+    ButtonGroup,
+    Tooltip
 } from '@mui/material';
 import {
     AccountCircle as AccountCircleIcon,
@@ -49,7 +51,7 @@ const getStatusColor = (status) => {
     }
 };
 
-const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
+const Dashboard = ({ onLogout, leads, setLeads }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -62,6 +64,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
     const [newLeads, setNewLeads] = useState([]);
     const [activeView, setActiveView] = useState('all'); // 'all', 'reminders', or 'newLeads'
     const [reminderLeads, setReminderLeads] = useState([]);
+    const [tasks, setTasks] = useState([]);
     const fetchAllLeads = React.useCallback(async (user) => {
         if (!user) {
             setLoading(false);
@@ -104,6 +107,22 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
     // Re-run if storedUser or user-related state changes, though once is usually enough.
     }, [fetchAllLeads]); // Dependency on setLeads to avoid lint warning
 
+    // --- NEW: Fetch tasks assigned to the current user ---
+    useEffect(() => {
+        if (currentUser) {
+            const fetchTasks = async () => {
+                try {
+                    const response = await axios.get(API_URL.replace('/leads', '/tasks'), {
+                        params: { assignedToId: currentUser._id }
+                    });
+                    setTasks(response.data);
+                } catch (error) {
+                    console.error('Failed to fetch tasks:', error);
+                }
+            };
+            fetchTasks();
+        }
+    }, [currentUser]);
     // --- NEW: Effect to filter leads into New and Reminders ---
     useEffect(() => {
         const today = moment().startOf('day');
@@ -172,13 +191,6 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
         fetchAllLeads(currentUser); // Re-fetch all leads for the current user
     };
 
-    // Handler for creating a new lead
-    const handleCreateNewLead = () => {
-        // Pass the initial data to the LeadForm
-        onSelectLead({ ...newLead }); 
-        setNewLead({ fullName: '', email: '', mobileNumber: '' }); // Reset the small dialog
-        setOpenCreateDialog(false); // Close the simple dialog
-    };
 
     if (loading) return (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
@@ -287,6 +299,14 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                         >
                             New Leads ({newLeads.length})
                         </Button>
+                        <Button
+                            onClick={() => setActiveView('tasks')}
+                            variant={activeView === 'tasks' ? 'contained' : 'outlined'}
+                            color="warning"
+                            sx={{ ml: 2 }}
+                        >
+                            My Tasks ({tasks.length})
+                        </Button>
                     </Box>
 
                     {/* Create Button on the right */}
@@ -294,7 +314,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                         variant="contained"
                         color="primary"
                         startIcon={<AddIcon />}
-                        onClick={() => setOpenCreateDialog(true)}
+                        href="/leads/new"
                         sx={{ fontWeight: 'bold' }}
                     >
                         Create New Lead
@@ -304,7 +324,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                 {/* --- Unified Table Container --- */}
                 <TableContainer component={Paper} elevation={5}>
                     <Table sx={{ minWidth: 700 }} aria-label="lead dashboard table">
-                        {activeView !== 'newLeads' ? ( // 'all' and 'reminders' share a similar header
+                        {activeView === 'all' || activeView === 'reminders' ? (
                             <TableHead sx={{ bgcolor: 'primary.dark' }}>
                                 <TableRow>
                                     <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
@@ -317,7 +337,17 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                     <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }} align="center">Action</TableCell>
                                 </TableRow>
                             </TableHead>
-                        ) : (
+                        ) : activeView === 'tasks' ? (
+                            <TableHead sx={{ bgcolor: 'warning.dark' }}>
+                                <TableRow>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Subject</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created By</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created On</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Action</TableCell>
+                                </TableRow>
+                            </TableHead>
+                        ) : ( // newLeads view
                             <TableHead sx={{ bgcolor: 'secondary.dark' }}>
                                 <TableRow>
                                     <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
@@ -337,9 +367,8 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                     return (
                                         <TableRow
                                             key={lead._id}
-                                            hover
                                             sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}
-                                            onClick={() => onSelectLead(lead)}
+                                            hover
                                         >
                                             <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
                                             <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
@@ -352,7 +381,12 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                             <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
                                             <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
                                             <TableCell align="center">
-                                                <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>View</Button>
+                                                <ButtonGroup variant="outlined" size="small" aria-label="lead actions button group">
+                                                    <Button href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>View</Button>
+                                                    <Tooltip title="Manage Documents">
+                                                        <Button href={`/leads/${lead._id}/documents`} target="_blank" onClick={(e) => e.stopPropagation()}>Docs</Button>
+                                                    </Tooltip>
+                                                </ButtonGroup>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -369,8 +403,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                         <TableRow
                                             key={lead._id}
                                             hover
-                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}
-                                            onClick={() => onSelectLead(lead)}
+                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}                                            
                                         >
                                             <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
                                             <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
@@ -378,7 +411,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                             <TableCell>{lead.reminderCallDate ? moment(lead.reminderCallDate).format('DD MMM YYYY') : <Chip label="SET DATE" color="error" size="small" />}</TableCell>
                                             <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
                                             <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>                                            <TableCell align="center">
-                                                <Button variant="contained" size="small" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>View</Button>
+                                                <Button variant="contained" size="small" href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>View</Button>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -387,13 +420,32 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                     <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No reminders for today or any missed reminders.</Typography></TableCell></TableRow>
                                 )}
                             </TableBody>
+                        ) : activeView === 'tasks' ? (
+                            <TableBody>
+                                {tasks.map((task) => (
+                                    <TableRow key={task._id} hover sx={{ cursor: 'pointer' }}>
+                                        <TableCell>
+                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{task.subject}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{task.body}</Typography>
+                                        </TableCell>
+                                        <TableCell>{task.createdByName}</TableCell>
+                                        <TableCell>{moment(task.createdAt).format('DD MMM YYYY, h:mm a')}</TableCell>
+                                        <TableCell><Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" /></TableCell>
+                                        <TableCell align="center">
+                                            <Button variant="contained" size="small" color="warning" href={`/leads/${task.leadId}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open Lead</Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {tasks.length === 0 && (
+                                    <TableRow><TableCell colSpan={5} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>You have no assigned tasks.</Typography></TableCell></TableRow>
+                                )}
+                            </TableBody>
                         ) : (
                             <TableBody>
                                 {newLeads.map((lead) => (
                                     <TableRow
                                         key={lead._id}
                                         hover
-                                        onClick={() => onSelectLead(lead)}
                                         sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
                                     >
                                         <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
@@ -403,7 +455,7 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                                         <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
                                         <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
                                         <TableCell align="center">
-                                            <Button variant="contained" size="small" color="secondary" onClick={(e) => { e.stopPropagation(); onSelectLead(lead); }}>Open</Button>
+                                            <Button variant="contained" size="small" color="secondary" href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open</Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -416,45 +468,6 @@ const Dashboard = ({ onSelectLead, onLogout, leads, setLeads }) => {
                 </TableContainer>
             </Container>
 
-            {/* Create New Lead Dialog */}
-            <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Create New Lead</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Full Name"
-                        fullWidth
-                        variant="outlined"
-                        value={newLead.fullName}
-                        onChange={(e) => setNewLead({ ...newLead, fullName: e.target.value })}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Email"
-                        fullWidth
-                        variant="outlined"
-                        value={newLead.email}
-                        onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                        sx={{ mb: 2 }}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Mobile Number"
-                        fullWidth
-                        variant="outlined"
-                        value={newLead.mobileNumber}
-                        onChange={(e) => setNewLead({ ...newLead, mobileNumber: e.target.value })}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-                    <Button onClick={handleCreateNewLead} variant="contained" color="primary">
-                        Create & Open Form
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </>
     );
 };
