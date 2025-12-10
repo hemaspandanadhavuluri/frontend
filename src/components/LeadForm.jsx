@@ -541,9 +541,17 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     const handleOpenEmailModal = (templateName) => {
         const template = EMAIL_TEMPLATE_CONTENT[templateName];
         if (template) {
-            // Replace placeholder with actual student name
-            const bodyWithStudentName = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student');
-            setCurrentEmailTemplate({ name: templateName, subject: template.subject, body: bodyWithStudentName });
+            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student');
+
+            // If it's a bank connection email, inject the document upload link
+            if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
+                const uploadLink = `http://localhost:3000/leads/${lead._id}/documents`;
+                const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
+                // Replace a placeholder in the template with the actual link
+                finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
+            }
+
+            setCurrentEmailTemplate({ name: templateName, subject: template.subject, body: finalBody });
             setIsEmailModalOpen(true);
             setEmailStatus('');
         }
@@ -554,7 +562,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     };
 
     const handleCopyEmailBody = () => {
-        navigator.clipboard.writeText(currentEmailTemplate.body);
+        // Create a temporary element to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = currentEmailTemplate.body;
+        // Get the text content, which strips HTML tags
+        const textContent = tempDiv.textContent || tempDiv.innerText || "";
+        navigator.clipboard.writeText(textContent);
         setEmailStatus('Content copied to clipboard!');
         setTimeout(() => setEmailStatus(''), 2000);
     };
@@ -984,11 +997,11 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Banks Connection - Intro & Docs Upload</h4>
-                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={handleSendDocumentEmail} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Document Upload</h4>
-                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2_0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         {emailMessage && (
                             <div className="mt-4 p-3 text-sm text-center bg-blue-100 text-blue-800 rounded-md">{emailMessage}</div>
@@ -1005,11 +1018,11 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <hr/>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Banks Related - Issues</h4>
-                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Miscellaneous Situations</h4>
-                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                     </div>
                 </Accordion>
@@ -1093,7 +1106,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
         {/* --- NEW: Email Template Modal --- */}
         <Dialog open={isEmailModalOpen} onClose={handleCloseEmailModal} maxWidth="md" fullWidth>
-            <DialogTitle>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 Send Email: {currentEmailTemplate.name}
                 <IconButton aria-label="close" onClick={handleCloseEmailModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
                     <CloseIcon />
@@ -1110,17 +1123,25 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     </Typography>
                 )}
             </DialogContent>
-            <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
-                <MuiButton
-                    startIcon={<ContentCopyIcon />}
-                    onClick={handleCopyEmailBody}
-                >
-                    Copy Content
-                </MuiButton>
-                <MuiButton variant="contained" onClick={handleSendTemplateEmail} disabled={emailStatus === 'Sending...'}>
-                    {emailStatus === 'Sending...' ? 'Sending...' : 'Send Email'}
-                </MuiButton>
-            </DialogActions>
+            {/* Conditionally render actions only for actual email templates */}
+            {(NLTemplates.includes(currentEmailTemplate.name) ||
+              banksDocs.includes(currentEmailTemplate.name) ||
+              documentStatus.includes(currentEmailTemplate.name) ||
+              loanIssues.includes(currentEmailTemplate.name) ||
+              miscSituations.includes(currentEmailTemplate.name)
+            ) && (
+                <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
+                    <MuiButton
+                        startIcon={<ContentCopyIcon />}
+                        onClick={handleCopyEmailBody}
+                    >
+                        Copy Content
+                    </MuiButton>
+                    <MuiButton variant="contained" onClick={handleSendTemplateEmail} disabled={emailStatus === 'Sending...'}>
+                        {emailStatus === 'Sending...' ? 'Sending...' : 'Send Email'}
+                    </MuiButton>
+                </DialogActions>
+            )}
         </Dialog>
     </div>);
 };

@@ -68,7 +68,183 @@ export const EMAIL_TEMPLATE_CONTENT = {
     'NL3 (NBFC)': {
         subject: "Information Regarding Your NBFC Loan Option",
         body: `<p>Dear [Student Name],</p><p>We have an update regarding your education loan options with our NBFC partners. Please contact us to discuss the details.</p><p>Best regards,<br/>The Justap Team</p>`
-    }
+    },
+
+    // --- Bank Connection & Intro Templates ---
+    'KVB Details -1st Email': {
+        subject: "Education Loan Details from Karur Vysya Bank (KVB) via Justap",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>Thank you for choosing Justap for your education loan needs. We are pleased to connect you with <strong>Karur Vysya Bank (KVB)</strong>, one of our trusted banking partners.</p>
+            <p><strong>Why KVB through Justap?</strong></p>
+            <ul>
+                <li><strong>Streamlined Process:</strong> We simplify the application process, saving you time and effort.</li>
+                <li><strong>Expert Guidance:</strong> Our team will guide you at every step, ensuring all paperwork is correct.</li>
+                <li><strong>Competitive Rates:</strong> KVB offers competitive interest rates for aspiring students like you.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'SBI Details 1st Email': {
+        subject: "Your Education Loan Opportunity with State Bank of India (SBI) through Justap",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>We're excited to guide you on your journey to secure an education loan. Based on your profile, we are connecting you with the <strong>State Bank of India (SBI)</strong>, the country's largest public sector bank, known for its reliable student loan schemes.</p>
+            <p><strong>The Justap Advantage with SBI:</strong></p>
+            <ul>
+                <li><strong>Simplified Application:</strong> Avoid long queues and complex forms. We make the SBI application process smooth and digital.</li>
+                <li><strong>Dedicated Support:</strong> You'll have a dedicated Justap advisor to help you prepare and submit your application to SBI.</li>
+                <li><strong>Transparent Process:</strong> We ensure you understand all terms and conditions, providing full transparency.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'Only Public Banks Connection Mail': {
+        subject: "Connecting You with Leading Public Sector Banks for Your Education Loan",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>As part of our commitment to finding you the best education loan, we are initiating your application with our network of leading <strong>Public Sector Banks (like SBI, BOB, etc.)</strong>.</p>
+            <p>Public banks are known for their trust, wide reach, and government-backed schemes. By partnering with Justap, you get:</p>
+            <ul>
+                <li><strong>Expert Navigation:</strong> We know the ins and outs of public bank procedures and help you navigate them efficiently.</li>
+                <li><strong>End-to-End Assistance:</strong> From document collection to submission, we are with you all the way.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    // NOTE: A generic template for Private Lenders. You can create more specific ones.
+    'Only Priavte Lender Connection Mail': {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    "Public and  Private Lender connection 1st Mail ": {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+
+    // --- Document Upload Templates ---
+    'Documents Partially Uplaoded 2nd followup ': {
+        subject: "Reminder: Action Required for Your Education Loan Application - Partial Documents Uploaded",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>This is a friendly reminder regarding your education loan application with Justap. We noticed that you have partially uploaded your documents.</p>
+            <p>To ensure your application proceeds smoothly and without delay, please complete the document upload process as soon as possible.</p>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Thank you for your prompt attention to this matter.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'Documents Not Upaloded 2nd followup or beyond': {
+        subject: "Urgent: Action Required for Your Education Loan Application - Documents Not Uploaded",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>This is an urgent reminder regarding your education loan application with Justap. We have not yet received your required documents.</p>
+            <p>To avoid any further delays in processing your application, please upload all necessary documents immediately.</p>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Your timely action is crucial. Please contact us if you are facing any difficulties.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+
+    // --- Informational Templates for Issues & Situations ---
+    'UBI Issues': {
+        subject: "Handling Common UBI (Union Bank of India) Issues",
+        body: `
+            <p>When dealing with UBI, students sometimes face issues like processing delays or requests for specific documents not on the standard list. </p>
+            <p><strong>Our Strategy:</strong></p>
+            <ul>
+                <li>We leverage our direct contacts at regional processing hubs to escalate and track the application.</li>
+                <li>We pre-verify all documents to match UBI's specific requirements, reducing back-and-forth.</li>
+            </ul>
+            <p>Advise the student that we are actively managing the process to ensure a smoother experience.</p>`
+    },
+    'JUST TAP Intro': {
+        subject: "Introduction to Justap's Services",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>Welcome to Justap! We are here to simplify your education loan journey from start to finish.</p>
+            <p><strong>How we help:</strong></p>
+            <ul>
+                <li><strong>Bank Matching:</strong> We analyze your profile to connect you with the most suitable public banks, private banks, and NBFCs.</li>
+                <li><strong>Simplified Process:</strong> We digitize the application and guide you on all required documentation, saving you from multiple bank visits.</li>
+                <li><strong>Expert Support:</strong> Our dedicated advisors provide support and follow up with banks on your behalf, ensuring a transparent and efficient process.</li>
+            </ul>
+            <p>We look forward to helping you secure the best possible loan for your future.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'About ScholrShips': {
+        subject: "Information on Scholarships",
+        body: `
+            <p>While Justap primarily focuses on education loans, we encourage students to explore scholarship opportunities to reduce their financial burden.</p>
+            <p><strong>Key Points to Share:</strong></p>
+            <ul>
+                <li>Advise the student to check their university's financial aid website for available scholarships.</li>
+                <li>Mention popular scholarship portals like 'Chevening', 'Fulbright', and others relevant to the student's destination country.</li>
+                <li>Explain that securing a scholarship can also strengthen their loan application profile.</li>
+            </ul>`
+    },
+    'Drawback of Self Funds': {
+        subject: "Smart Financing: Why an Education Loan Can Be Better Than Self-Funding",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>While using personal savings for education is an option, many students find that taking an education loan through Justap offers significant advantages:</p>
+            <ul>
+                <li><strong>Preserve Your Savings:</strong> Keep your family's savings intact for emergencies, investments, or other important life events.</li>
+                <li><strong>Build Credit History:</strong> Repaying a loan responsibly is one of the best ways to build a strong credit score, which is crucial for your future financial life.</li>
+                <li><strong>Tax Benefits:</strong> You can claim tax deductions on the interest paid on an education loan under Section 80E of the Income Tax Act.</li>
+                <li><strong>Financial Independence:</strong> Taking a loan fosters a sense of responsibility and allows you to fund your own education.</li>
+            </ul>
+            <p>We can help you find a loan with competitive terms that aligns with your financial goals. Let's discuss how we can make this work for you.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'Referal Program': {
+        subject: "Refer a Friend to Justap & Earn Rewards!",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>Did you know you can earn rewards by helping your friends achieve their study abroad dreams?</p>
+            <p>Our referral program is simple: Introduce your friends to Justap. If they successfully secure an education loan with our help, you'll receive a referral bonus as a thank you from us!</p>
+            <p>It's a win-win. Your friends get expert guidance for their education loan, and you get rewarded. Feel free to share our contact details or ask us for your unique referral link.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'Non-Indian / Wrong Number': {
+        subject: "Action Required: Please Verify Your Contact Information",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>We are trying to reach you to discuss your education loan application, but it seems the phone number we have on file might be incorrect or is a non-Indian number which we are unable to connect to.</p>
+            <p>To ensure we can provide you with timely updates and support, could you please reply to this email with your current and correct contact number?</p>
+            <p>We apologize for any inconvenience and look forward to connecting with you soon.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    'About DHL': {
+        subject: "Information Regarding Document Submission via DHL",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>For certain international universities or specific loan requirements, physical copies of your documents may need to be couriered. We partner with DHL to make this process secure and reliable.</p>
+            <p><strong>How it works:</strong></p>
+            <ul>
+                <li>Our team will inform you if and when a physical document submission is required.</li>
+                <li>We will provide you with the necessary address details and instructions for the DHL shipment.</li>
+                <li>Justap helps coordinate and track the shipment to ensure your documents reach their destination safely.</li>
+            </ul>
+            <p>Please wait for confirmation from your Justap advisor before sending any documents.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
 };
 
 export const regions = ['North', 'South', 'East', 'West'];
