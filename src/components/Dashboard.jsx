@@ -26,6 +26,7 @@ import {
     DialogActions,
     TextField,
     ButtonGroup,
+    Badge,
     Tooltip
 } from '@mui/material';
 import {
@@ -191,6 +192,8 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
         fetchAllLeads(currentUser); // Re-fetch all leads for the current user
     };
 
+    const openTasksCount = tasks.filter(task => task.status === 'Open').length;
+
 
     if (loading) return (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
@@ -299,14 +302,15 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                         >
                             New Leads ({newLeads.length})
                         </Button>
-                        <Button
-                            onClick={() => setActiveView('tasks')}
-                            variant={activeView === 'tasks' ? 'contained' : 'outlined'}
-                            color="warning"
-                            sx={{ ml: 2 }}
-                        >
-                            My Tasks ({tasks.length})
-                        </Button>
+                        <Badge badgeContent={openTasksCount} color="error" sx={{ ml: 2 }}>
+                            <Button
+                                onClick={() => setActiveView('tasks')}
+                                variant={activeView === 'tasks' ? 'contained' : 'outlined'}
+                                color="warning"
+                            >
+                                My Tasks ({openTasksCount})
+                            </Button>
+                        </Badge>
                     </Box>
 
                     {/* Create Button on the right */}
@@ -419,7 +423,7 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                             </TableBody>
                         ) : activeView === 'tasks' ? (
                             <TableBody>
-                                {tasks.map((task) => (
+                                {tasks.filter(task => task.status === 'Open').map((task) => (
                                     <TableRow key={task._id} hover sx={{ cursor: 'pointer' }}>
                                         <TableCell>
                                             <Typography variant="body2" sx={{ fontWeight: 500 }}>{task.subject}</Typography>
@@ -433,8 +437,8 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {tasks.length === 0 && (
-                                    <TableRow><TableCell colSpan={5} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>You have no assigned tasks.</Typography></TableCell></TableRow>
+                                {openTasksCount === 0 && (
+                                    <TableRow><TableCell colSpan={5} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>You have no open tasks.</Typography></TableCell></TableRow>
                                 )}
                             </TableBody>
                         ) : (

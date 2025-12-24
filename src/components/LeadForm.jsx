@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
+import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem, Chip, Divider } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import { DatePicker, DateTimePicker } from '@mui/x-date-pickers';
@@ -61,6 +61,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     const [task, setTask] = useState({ assignedTo: null, subject: '', body: '' });
     const [taskMessage, setTaskMessage] = useState('');
     const [combinedHistory, setCombinedHistory] = useState([]);
+    const [leadTasks, setLeadTasks] = useState([]);
     const [showTaskCreator, setShowTaskCreator] = useState(false);
     const [emailMessage, setEmailMessage] = useState('');
     // --- NEW: State for Email Modal ---
@@ -124,6 +125,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 const allHistory = [...callHistory, ...taskHistory].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 
                 setCombinedHistory(allHistory);
+                setLeadTasks(tasksResult);
                 return leadResult; // Return lead data to be processed
             } catch (error) {
                 console.error("Failed to fetch combined history:", error);
@@ -712,6 +714,25 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         // Since the lead form is large, the main submit should trigger the full update
         handleSaveNote(); 
     };
+
+    const handleUpdateTaskStatus = async (taskId, newStatus) => {
+        try {
+            // This endpoint needs to be created on the backend: PUT /api/tasks/:id
+            const response = await axios.put(`${API_URL.replace('/leads', '/tasks')}/${taskId}`, { status: newStatus });
+            
+            // Update the task in the local state to reflect the change immediately
+            setLeadTasks(prevTasks => prevTasks.map(task => 
+                task._id === taskId ? response.data : task
+            ));
+            
+            // Also add a log to the notes history for audit trail
+            await logActionAsNote(`Task "${response.data.subject}" marked as ${newStatus}.`);
+        } catch (error) {
+            console.error('Failed to update task status:', error);
+            alert('Failed to update task status. Please ensure the backend is running and the endpoint is configured.');
+        }
+    };
+
 
     // --- NEW: Task Creation Handler ---
     const handleCreateTask = async () => {
@@ -1600,6 +1621,46 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 </button>
             </Accordion>
 
+            {/* --- NEW: Task History Section --- */}
+            <Accordion title="Task History" icon="📝" defaultExpanded>
+                <div className="space-y-4">
+                    {leadTasks.length > 0 ? (
+                        leadTasks.slice().reverse().map((task) => (
+                            <Paper key={task._id} elevation={2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : 'white', borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : '#64b5f6'}` }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
+                                    </div>
+                                    <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
+                                </Box>
+                                <Divider sx={{ my: 1.5 }} />
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                    <Typography variant="caption" color="text.secondary">
+                                        Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
+                                        <br />
+                                        Assigned to: <strong>{task.assignedToName}</strong>
+                                    </Typography>
+                                    {task.status === 'Open' && (
+                                        <MuiButton
+                                            variant="contained"
+                                            color="success"
+                                            size="small"
+                                            onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
+                                        >
+                                            Mark as Done
+                                        </MuiButton>
+                                    )}
+                                </Box>
+                            </Paper>
+                        ))
+                    ) : (
+                        <Typography sx={{ textAlign: 'center', color: 'text.secondary', p: 2 }}>
+                            No tasks have been created for this lead.
+                        </Typography>
+                    )}
+                </div>
+            </Accordion>
 
             {/* Main Submit Button */}
         </form>
