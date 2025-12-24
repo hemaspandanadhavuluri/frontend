@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from '@mui/material';
+import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { DatePicker, DateTimePicker } from '@mui/x-date-pickers';
 import { ContentCopy as ContentCopyIcon, Close as CloseIcon } from '@mui/icons-material';
 import moment from 'moment'; 
 
@@ -13,10 +16,14 @@ import AssetCard from "./AssetCard";
 import {
     EMPTY_LEAD_STATE, loanIssues, miscSituations, emailTemplates, banksDocs, documentStatus,
     indianStates, indianCitiesWithState, courseStartQuarters, courseStartYears, degrees, EMAIL_TEMPLATE_CONTENT,
-    fieldsOfInterest, admissionStatuses, universities, employmentTypes, courseDurations, referenceRelationships,
+    fieldsOfInterest, admissionStatuses, universities, employmentTypes, courseDurations, referenceRelationships, currencies, countryPhoneCodes, leadStatusOptions, priorityReasons, closeReasons,
     allCountries, API_URL, MOCK_USER_FULLNAME,
     NLTemplates,
 } from "../constants";
+
+// --- NEW: API Key for Currency Conversion ---
+const EXCHANGE_RATE_API_KEY = 'ddf59026d05ae4b9a8461fcf'; 
+// IMPORTANT: Get a free key from https://www.exchangerate-api.com and replace this placeholder.
 
 // Custom Accordion component using Tailwind CSS
 const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
@@ -60,6 +67,20 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [currentEmailTemplate, setCurrentEmailTemplate] = useState({ name: '', subject: '', body: '' });
     const [emailStatus, setEmailStatus] = useState('');
+    const [isConversionRateEditable, setIsConversionRateEditable] = useState(false);
+    const [activeConverter, setActiveConverter] = useState(null); // NEW: To manage which converter is active
+    // --- NEW: State for Bank Search ---
+    const [bankSearchPincode, setBankSearchPincode] = useState('');
+    const [bankSearchResults, setBankSearchResults] = useState([]);
+    const [isBankSearching, setIsBankSearching] = useState(false);
+    const [bankSearchMessage, setBankSearchMessage] = useState('');
+
+    // --- NEW: State for Bank Assignment Modal ---
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedBankForAssignment, setSelectedBankForAssignment] = useState(null);
+    const [assignmentRegion, setAssignmentRegion] = useState('');
+    const [assignmentRM, setAssignmentRM] = useState('');
+    const [assignmentError, setAssignmentError] = useState('');
 
 
     // --- EFFECT: Fetch Lead Data ---
@@ -112,6 +133,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             const dataToSet = { ...EMPTY_LEAD_STATE, ...data };
             if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
             if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }]; }
+            if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }]; }
             if (!dataToSet.references || dataToSet.references.length < 2) {
                 const existingRefs = dataToSet.references || [];
                 dataToSet.references = [...existingRefs, ...Array(2 - existingRefs.length).fill({ relationship: '', name: '', address: '', phoneNumber: '' })].slice(0, 2);
@@ -152,12 +174,88 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 zone: currentUser?.zone || '',
                 region: currentUser?.region || '',
                 relations: [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }],
+                relations: [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }],
                 mobileNumbers: leadData?.mobileNumber ? [leadData.mobileNumber] : ["+91- "],
                 referralList: [{ name: "", code: "", phoneNumber: "" }],
             });
         }
     // This effect now runs whenever the selected lead object changes.
     }, [leadData]);
+
+    // --- EFFECT: Pre-populate fields from Sanction Details ---
+    useEffect(() => {
+        // When a sanctioned loan amount is entered, update the main 'fee' field.
+        if (lead.sanctionDetails.loanAmount) {
+            const sanctionedAmount = parseFloat(lead.sanctionDetails.loanAmount);
+            if (!isNaN(sanctionedAmount) && sanctionedAmount !== parseFloat(lead.fee)) {
+                setLead(prev => ({ ...prev, fee: sanctionedAmount.toString() }));
+            }
+        }
+
+        // When a co-applicant name is entered, update the relations array.
+        if (lead.sanctionDetails.coApplicant) {
+            const coApplicantName = lead.sanctionDetails.coApplicant;
+            const existingRelations = lead.relations || [];
+            const coApplicantExists = existingRelations.some(rel => rel.name.toLowerCase() === coApplicantName.toLowerCase());
+
+            if (!coApplicantExists) {
+                // Un-mark any previous co-applicants
+                const updatedRelations = existingRelations.map(rel => ({ ...rel, isCoApplicant: false }));
+                
+                // Add the new co-applicant
+                updatedRelations.push({
+                    ...EMPTY_LEAD_STATE.relations[0], // Start with a blank relation object
+                    name: coApplicantName,
+                    isCoApplicant: true,
+                });
+
+                setLead(prev => ({ ...prev, relations: updatedRelations }));
+            }
+        }
+    }, [lead.sanctionDetails.loanAmount, lead.sanctionDetails.coApplicant]);
+
+    // --- NEW EFFECT: Fetch conversion rate when currency changes ---
+    useEffect(() => {
+        // Only fetch if a converter is active
+        if (!activeConverter || EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
+            if (EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
+                console.warn("Exchange rate API key is not set. Conversion rates will not be fetched automatically. Please get a free key from exchangerate-api.com and add it to LeadForm.jsx");
+            }
+            return;
+        }
+
+        // Set the currency in the lead state
+        setLead(prev => ({ ...prev, originalFeeCurrency: activeConverter }));
+
+
+
+        const fetchConversionRate = async () => {
+            try {
+                const response = await axios.get(`https://v6.exchangerate-api.com/v6/${EXCHANGE_RATE_API_KEY}/latest/${activeConverter}`);
+                const rate = response.data.conversion_rates.INR;
+                if (rate) {
+                    setLead(prev => ({ ...prev, conversionRate: rate.toFixed(2) }));
+                    setIsConversionRateEditable(false); // Make it read-only after fetching
+                }
+            } catch (error) {
+                console.error("Failed to fetch conversion rate:", error);
+            }
+        };
+
+        fetchConversionRate();
+    }, [activeConverter]); // Re-fetch when the active converter changes
+
+    // --- EFFECT: Calculate Fee in INR from original currency ---
+    useEffect(() => {
+        const originalFee = parseFloat(lead.originalFee);
+        const rate = parseFloat(lead.conversionRate);
+
+        if (!isNaN(originalFee) && !isNaN(rate) && rate > 0) {
+            const feeInLakhs = (originalFee * rate) / 100000;
+            // Update the main 'fee' field, keeping it as a string.
+            setLead(prev => ({ ...prev, fee: feeInLakhs.toFixed(2).toString() }));
+        }
+    }, [lead.originalFee, lead.conversionRate]);
 
     // --- Handlers ---
 
@@ -204,7 +302,13 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
-        if (name === 'approachedAnyBank' || name === 'hasStudentLoans' || name === 'hasCibilIssues' || name === 'documentsAvailable') {
+        if (
+            name === 'approachedAnyBank' || 
+            name === 'hasStudentLoans' || 
+            name === 'hasCibilIssues' || 
+            name === 'documentsAvailable' ||
+            name === 'fileLoggedIn' || name === 'loanSanctioned'
+        ) {
             // Radio group value is a string, convert to boolean
             const boolValue = value === 'true';
             setLead((prev) => ({
@@ -212,6 +316,15 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 [name]: boolValue,
                 // Also clear dependent fields if user selects "No"
                 previousBankApproached: name === 'approachedAnyBank' && !boolValue ? '' : prev.previousBankApproached,
+                fileLoggedIn: name === 'approachedAnyBank' && !boolValue ? null : (name === 'fileLoggedIn' ? boolValue : prev.fileLoggedIn),
+                loanSanctioned: name === 'approachedAnyBank' && !boolValue ? null : (name === 'loanSanctioned' ? boolValue : prev.loanSanctioned),
+                sanctionDetails: name === 'approachedAnyBank' && !boolValue ? EMPTY_LEAD_STATE.sanctionDetails : prev.sanctionDetails, // Clear sanction details
+            }));
+        } else if (name === 'admissionStatus' && value === 'Received Admission') {
+            setLead(prev => ({
+                ...prev,
+                leadStatus: 'On Priority',
+                [name]: value
             }));
         } else {
             setLead((prev) => ({ 
@@ -250,6 +363,16 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         }
     };
     
+    const handleSanctionDetailsChange = (e) => { // Renamed and corrected
+        const { name, value, type, checked } = e.target;
+        // For radio buttons, the value is a string 'true' or 'false', or 'Secure'/'Unsecure'
+        const finalValue = (value === 'true') ? true : (value === 'false' ? false : value);
+        
+        setLead(prev => ({
+            ...prev, sanctionDetails: { ...prev.sanctionDetails, [name]: finalValue }
+        }));
+    };
+    
     const updateRelation = (index, e) => {
         const { name, value, type, checked } = e.target;
         const newRelations = [...lead.relations];
@@ -269,7 +392,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     };
 
     const addRelation = () => {
-        const newRelation = { relationshipType: '', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false };
+        const newRelation = { relationshipType: '', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] };
         setLead(prev => ({ ...prev, relations: [...prev.relations, newRelation] }));
     };
 
@@ -293,7 +416,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     };
 
     const addAsset = () => {
-        const newAsset = { assetType: '', ownerName: '', assetValue: '' };
+        const newAsset = { assetType: 'Physical Property', ownerName: '', ownerRelationship: '', assetValue: '' };
         setLead(prev => ({ ...prev, assets: [...prev.assets, newAsset] }));
     };
 
@@ -473,22 +596,78 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             alert(`Failed to create lead for ${referralData.name}. Check console for details.`);
         }
     };
+    const handleBankSearch = async () => {
+    if (!bankSearchPincode.trim()) {
+        setBankSearchMessage('Please enter a pincode to search.');
+        return;
+    }
 
-    const handleAssignToBank = async (bank) => {
+    setIsBankSearching(true);
+    setBankSearchResults([]);
+    setBankSearchMessage('');
+
+    try {
+        const response = await axios.get(
+            `${API_URL.replace('/leads', '/banks')}/search-by-pincode`,
+            {
+                params: { pincode: bankSearchPincode }
+            }
+        );
+
+        if (response.data.length === 0) {
+            setBankSearchMessage(
+                `No tied-up banks found for pincode ${bankSearchPincode}.`
+            );
+        }
+
+        setBankSearchResults(response.data);
+    } catch (error) {
+        console.error('Failed to search for banks:', error);
+        setBankSearchMessage('Failed to search for banks. Please try again.');
+    } finally {
+        setIsBankSearching(false);
+    }
+};
+
+
+    const handleOpenAssignModal = (bank) => {
+        setSelectedBankForAssignment(bank);
+        setAssignmentRegion('');
+        setAssignmentRM('');
+        setAssignmentError('');
+        setIsAssignModalOpen(true);
+    };
+
+    const handleCloseAssignModal = () => {
+        setIsAssignModalOpen(false);
+        setSelectedBankForAssignment(null);
+    };
+
+    const handleAssignToBank = async () => {
         if (!lead._id) {
             alert('Please save the lead before assigning it to a bank.');
             return;
         }
+        if (!assignmentRM) {
+            setAssignmentError('Please select a Relationship Manager.');
+            return;
+        }
+
+        const rmDetails = JSON.parse(assignmentRM);
+
         try {
             const response = await axios.post(`${API_URL}/${lead._id}/assign-bank`, {
-                bankId: bank._id,
-                bankName: bank.name
+                bankId: selectedBankForAssignment._id,
+                bankName: selectedBankForAssignment.name,
+                assignedRMName: rmDetails.name,
+                assignedRMEmail: rmDetails.email
             });
             onUpdate(response.data.lead); // Pass the updated lead object to the parent
             alert(response.data.message); // Show the specific success message from the backend
+            handleCloseAssignModal();
         } catch (error) {
             console.error('Failed to assign lead to bank:', error);
-            alert(error.response?.data?.message || 'An error occurred during assignment.');
+            setAssignmentError(error.response?.data?.message || 'An error occurred during assignment.');
         }
     };
 
@@ -691,25 +870,27 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
             <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="p-2">
-                    <div className="flex flex-wrap items-center">
-                        <div className="w-full md:w-2/3 p-1">
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">{`Applied: ${lead.studentAppliedDate || 'N/A'} ${lead.studentAppliedTime || ''}`}</span>
-                                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-purple-600 bg-purple-200">{`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`}</span>
-                            </div>
-                            <span className="text-sm font-bold">Sources / Referral:</span>
-                            <a href="#" className="text-sm text-blue-600 hover:underline ml-2 mr-4">Show History</a>
-                            <span className="text-sm text-gray-600">
-                                **{lead.source.source || 'N/A'}**: {lead.source.name || 'N/A'} | {lead.source.email || 'N/A'} | {lead.source.phoneNumber || 'N/A'}
+                <div className="p-2 space-y-2">
+                    {/* First line: Applied Date and FO */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {lead.studentAppliedDate ? (
+                            <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                                {`Applied On: Date: ${moment(lead.studentAppliedDate).format('DD MMM YYYY')} | Time: ${moment(lead.studentAppliedDate).format('h:mm A')}`}
                             </span>
-                        </div>
-                        <div className="w-full md:w-1/3 p-1">
-                            <div className="flex flex-col gap-1 items-start md:items-end">
-                                <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`Loan ID: ${lead.loanId || 'N/A'}`}</span>
-                                <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`User ID: ${lead.leadID || 'N/A'}`}</span>
-                            </div>
-                        </div>
+                        ) : null}
+                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-purple-600 bg-purple-200">{`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`}</span>
+                        <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`Loan ID: ${lead.loanId || 'N/A'}`}</span>
+                        <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`User ID: ${lead.leadID || 'N/A'}`}</span>
+                    </div>
+                    {/* Second line: IDs and Source */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                        <span className="text-gray-600">
+                            <strong className="font-bold text-gray-800">Source/Referal:</strong> {lead.source.source || 'N/A'}
+                            {lead.source.source === 'Referral' ? 
+                                ` - ${lead.source.name || 'N/A'} (${lead.source.email || 'N/A'}, ${lead.source.phoneNumber || 'N/A'})` :
+                                ` - ${lead.source.name || 'N/A'}`
+                            }
+                        </span>
                     </div>
                 </div>
             </div>
@@ -736,6 +917,27 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             {renderSelectField("fieldOfInterest", "Field of Interest", lead.fieldOfInterest, handleChange, fieldsOfInterest)}
                             {renderAutocompleteField("interestedCountries", "Interested Countries", lead.interestedCountries, handleChange, allCountries)}
                             {renderSelectField("admissionStatus", "Admission Status", lead.admissionStatus, handleChange, admissionStatuses)}
+                            {/* --- NEW: Conditional Date Pickers --- */}
+                            <LocalizationProvider dateAdapter={AdapterMoment}>
+                                {lead.admissionStatus === 'Applied - No Admit Yet' && (
+                                    <div className="p-2 w-full md:w-1/3">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expected Admit Date</label>
+                                        <DatePicker
+                                            value={lead.expectedAdmitDate ? moment(lead.expectedAdmitDate) : null}
+                                            onChange={(newValue) => handleDateChange('expectedAdmitDate', newValue)}
+                                        />
+                                    </div>
+                                )}
+                                {lead.admissionStatus === 'Not Yet Applied' && (
+                                    <div className="p-2 w-full md:w-1/3">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expected Application Date</label>
+                                        <DatePicker
+                                            value={lead.expectedApplicationDate ? moment(lead.expectedApplicationDate) : null}
+                                            onChange={(newValue) => handleDateChange('expectedApplicationDate', newValue)}
+                                        />
+                                    </div>
+                                )}
+                            </LocalizationProvider>
                             {renderAutocompleteField("admittedUniversities", "Admitted Universities", lead.admittedUniversities, handleChange, universities, "w-full md:w-1/2")}
                             <div className="p-2 w-full md:w-1/2">
                                 <fieldset>
@@ -753,6 +955,76 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 </fieldset>
                                 {lead.approachedAnyBank && <input type="text" name="previousBankApproached" placeholder="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
                             </div>
+                            {/* --- NEW: Dynamic Section for Bank Approach --- */}
+                            {lead.approachedAnyBank && (
+                                <div className="w-full p-2 mt-4 border-t pt-4">
+                                    <fieldset className="mb-4">
+                                        <legend className="text-sm font-medium text-gray-700">Has the file been logged in at {lead.previousBankApproached || 'the bank'}?</legend>
+                                        <div className="flex items-center space-x-4 mt-2">
+                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="true" checked={lead.fileLoggedIn === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="false" checked={lead.fileLoggedIn === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                        </div>
+                                    </fieldset>
+
+                                    {lead.fileLoggedIn === false && (
+                                        <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800">
+                                            <h4 className="font-bold">Advantages of going with Justap:</h4>
+                                            <ul className="list-disc list-inside text-sm mt-2">
+                                                <li>We have direct tie-ups which can speed up your application.</li>
+                                                <li>Our expert team ensures your file is complete and correct, reducing rejection chances.</li>
+                                                <li>You get a dedicated advisor to guide you through the entire process.</li>
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {lead.fileLoggedIn === true && (
+                                        <fieldset className="mb-4">
+                                            <legend className="text-sm font-medium text-gray-700">Has the loan been sanctioned?</legend>
+                                            <div className="flex items-center space-x-4 mt-2">
+                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="true" checked={lead.loanSanctioned === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="false" checked={lead.loanSanctioned === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                            </div>
+                                        </fieldset>
+                                    )}
+
+                                    {lead.loanSanctioned === true && (
+                                        <div className="p-4 border rounded-md bg-gray-50 space-y-4">
+                                            <h4 className="font-bold text-gray-800">Sanction Details</h4>
+                                            <div className="flex flex-wrap -mx-2">
+                                                {renderTextField("rateOfInterest", "Rate of Interest (%)", lead.sanctionDetails.rateOfInterest, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
+                                                {renderTextField("loanAmount", "Loan Amount (Lakhs)", lead.sanctionDetails.loanAmount, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
+                                                {renderTextField("coApplicant", "Co-Applicant", lead.sanctionDetails.coApplicant, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Processing Fee Paid?</legend><label><input type="radio" name="processingFeePaid" value="true" checked={lead.sanctionDetails.processingFeePaid === true} onChange={handleSanctionDetailsChange} /> Yes</label><label className="ml-4"><input type="radio" name="processingFeePaid" value="false" checked={lead.sanctionDetails.processingFeePaid === false} onChange={handleSanctionDetailsChange} /> No</label></fieldset></div>
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Disbursement Done?</legend><label><input type="radio" name="disbursementDone" value="true" checked={lead.sanctionDetails.disbursementDone === true} onChange={handleSanctionDetailsChange} /> Yes</label><label className="ml-4"><input type="radio" name="disbursementDone" value="false" checked={lead.sanctionDetails.disbursementDone === false} onChange={handleSanctionDetailsChange} /> No</label></fieldset></div>
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Loan Security</legend><label><input type="radio" name="loanSecurity" value="Secure" checked={lead.sanctionDetails?.loanSecurity === 'Secure'} onChange={handleSanctionDetailsChange} /> Secure</label><label className="ml-4"><input type="radio" name="loanSecurity" value="Unsecure" checked={lead.sanctionDetails.loanSecurity === 'Unsecure'} onChange={handleSanctionDetailsChange} /> Unsecure</label></fieldset></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {lead.fileLoggedIn && lead.loanSanctioned !== null && (
+                                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-800">
+                                                <h4 className="font-bold">Disadvantages of Current Choice:</h4>
+                                                <ul className="list-disc list-inside text-sm mt-2">
+                                                    <li>You might be missing out on better interest rates from other lenders.</li>
+                                                    <li>The process could be slower without a dedicated follow-up team.</li>
+                                                    <li>Hidden charges or complex terms might not be immediately obvious.</li>
+                                                    <li>Lack of a single point of contact for all your queries.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800">
+                                                <h4 className="font-bold">Advantages if you go with Justap:</h4>
+                                                <ul className="list-disc list-inside text-sm mt-2">
+                                                    <li>We compare offers from multiple banks to find you the best deal.</li>
+                                                    <li>Our team actively follows up to ensure the fastest possible sanction.</li>
+                                                    <li>Complete transparency on all fees and charges.</li>
+                                                    <li>A dedicated Justap advisor as your single point of contact.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                     </div>
                     <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700">
                             Enter a university and click the button below to check the prime university list.
@@ -799,29 +1071,75 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     </div>
                 </Accordion>
 
-                {/* NEW: Other & Course Details Section */}
-                <Accordion title="Other & Course Details" icon="📄">
-                    <div className="flex flex-wrap -mx-2 items-center">
-                            {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                            <div className="p-2 w-full md:w-1/2">
-                                <fieldset>
-                                    <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
-                                    <div className="flex items-center space-x-4 mt-2">
-                                        <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                        <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                {/* --- REFACTORED: Course Details Section --- */}
+                <Accordion title="Course Details" icon="📄">
+                    <div className="flex flex-wrap -mx-2 items-start">
+                        {/* --- MOVED: Currency Converter --- */}
+                        <div className="w-full p-2 mb-4 border-b pb-4">
+                            <h4 className="font-bold text-gray-800 mb-2">Tuition Fee Options</h4>
+                            <div className="flex flex-wrap gap-2">
+                                <button type="button" onClick={() => setActiveConverter(null)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${!activeConverter ? 'bg-green-600 text-white font-bold ring-2 ring-offset-1 ring-green-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                                    <span className="font-bold text-lg mr-2">₹</span>
+                                    Enter in INR
+                                </button>
+                                {currencies.map(c => (
+                                    <button type="button" key={c.code} onClick={() => setActiveConverter(c.code)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${activeConverter === c.code ? 'bg-blue-600 text-white font-bold ring-2 ring-offset-1 ring-blue-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                                        <span className="font-bold text-lg mr-2">{c.symbol}</span>
+                                        {c.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {activeConverter && (
+                                <div className="flex flex-wrap -mx-2 items-end bg-gray-50 p-4 rounded-lg mt-4">
+                                    {renderTextField("originalFee", `Tuition Fee (in ${activeConverter})`, lead.originalFee, handleChange, "w-full sm:w-1/2 md:w-1/3")}
+                                    <div className="p-2 w-full sm:w-1/2 md:w-1/3">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Conversion Rate</label>
+                                        <div className="flex items-center">
+                                            <input type="text" name="conversionRate" value={lead.conversionRate} onChange={handleChange} readOnly={!isConversionRateEditable} className={`w-full p-2 border rounded-md ${!isConversionRateEditable ? 'bg-gray-100' : 'bg-white'}`} />
+                                            <button type="button" onClick={() => setIsConversionRateEditable(!isConversionRateEditable)} className="ml-2 p-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">
+                                                {isConversionRateEditable ? 'Lock' : 'Edit'}
+                                            </button>
+                                        </div>
                                     </div>
-                                </fieldset>
+                                </div>
+                            )}
+                        </div>
+
+                        {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, "w-full sm:w-1/2 md:w-1/4")}
+                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tuition Fee (in Lakhs)</label>
+                            <input type="text" name="fee" value={lead.fee} onChange={handleChange} readOnly={!!activeConverter} className={`w-full p-2 border rounded-md ${!!activeConverter ? 'bg-gray-100' : 'bg-white'}`} />
+                        </div>
+                        {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                        {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+
+                        <div className="p-2 w-full md:w-1/4 mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Loan Amount (in Lakhs)</label>
+                            <input type="text" value={totalFee.toFixed(2)} readOnly className="w-full p-2 bg-gray-200 border border-gray-300 rounded-md font-bold text-lg" />
+                            {/* --- NEW: Progress Bar for Total Amount --- */}
+                            <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${Math.min((totalFee / 200) * 100, 100)}%` }}></div>
                             </div>
-                            <hr className="w-full my-4" />
-                            {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("fee", "Fee (in Lakhs)", lead.fee, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                            <div className="p-2 w-full">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Total Fee (in Lakhs)</label>
-                                <input type="text" value={totalFee.toFixed(2)} readOnly className="w-full p-2 bg-gray-100 border border-gray-300 rounded-md" />
-                            </div>
+                        </div>
+                    </div>
+                </Accordion>
+
+                {/* --- REFACTORED: Other Details Section --- */}
+                <Accordion title="Other Details" icon="📋">
+                    <div className="flex flex-wrap -mx-2 items-start">
+                        {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/3")}
+                        {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/3")}
+                        <div className="p-2 w-full md:w-1/3">
+                            <fieldset>
+                                <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
+                                <div className="flex items-center space-x-4 mt-2">
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                </div>
+                            </fieldset>
+                            {lead.hasStudentLoans && renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan, 2 Lakhs outstanding")}
+                        </div>
                     </div>
                 </Accordion>
 
@@ -854,6 +1172,43 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 </button>
                             </>
                         )}
+                </Accordion>
+
+                {/* --- NEW: Bank Search by Pincode --- */}
+                <Accordion title="Bank Search by Pincode" icon="🏦">
+                    <div className="flex items-center gap-2 mb-4">
+                        <input
+                            type="text"
+                            placeholder="Enter Pincode"
+                            value={bankSearchPincode}
+                            onChange={(e) => setBankSearchPincode(e.target.value)}
+                            className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button type="button" onClick={handleBankSearch} disabled={isBankSearching} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-gray-400">
+                            {isBankSearching ? 'Searching...' : 'Search Banks'}
+                        </button>
+                    </div>
+                    {bankSearchMessage && <p className="text-sm text-gray-600">{bankSearchMessage}</p>}
+                    {bankSearchResults.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                            <h4 className="text-lg font-semibold">Search Results for Pincode: {bankSearchPincode}</h4>
+                            {bankSearchResults.map(bank => (
+                                <div key={bank._id} className="p-4 border rounded-lg bg-gray-50">
+                                    <p className="font-bold text-blue-800">{bank.name}</p>
+                                    <div className="mt-2 pl-4 border-l-2 border-gray-300">
+                                        {bank.branches.filter(branch => branch.pincode === bankSearchPincode).map((branch, idx) => (
+                                            <div key={idx} className="text-sm text-gray-700 mb-3 pb-2 border-b last:border-b-0">
+                                                <p><strong>Branch:</strong> {branch.branchName}</p>
+                                                <p><strong>IFSC:</strong> {branch.ifsc}</p>
+                                                <p><strong>Address:</strong> {branch.address}</p>
+                                                <p><strong>Location:</strong> {branch.city}, {branch.district}, {branch.state} - {branch.pincode}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Accordion>
 
                 {/* 4. FAMILY/CO-APPLICANT INFO */}
@@ -912,7 +1267,24 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <div className="flex flex-wrap -mx-2">
                                         {renderTextField("name", "Guarantor Name", lead.ownHouseGuarantor.name, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
                                         {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderTextField("phoneNumber", "Guarantor Phone Number", lead.ownHouseGuarantor.phoneNumber, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
+                                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Guarantor Phone Number</label>
+                                            <div className="flex">
+                                                <select
+                                                    value={(lead.ownHouseGuarantor.phoneNumber || '+91-').split('-')[0]}
+                                                    onChange={(e) => handleNestedChange('ownHouseGuarantor', { target: { name: 'phoneNumber', value: `${e.target.value}-${(lead.ownHouseGuarantor.phoneNumber || '').split('-')[1] || ''}` } })}
+                                                    className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
+                                                >
+                                                    {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+                                                </select>
+                                                <input
+                                                    type="text"
+                                                    value={(lead.ownHouseGuarantor.phoneNumber || '').split('-')[1] || ''}
+                                                    onChange={(e) => handleNestedChange('ownHouseGuarantor', { target: { name: 'phoneNumber', value: `${(lead.ownHouseGuarantor.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
+                                                    className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
+                                                />
+                                            </div>
+                                        </div>
                                         {renderSelectField("employmentType", "Employment Type", lead.ownHouseGuarantor.employmentType, (e) => handleNestedChange('ownHouseGuarantor', e), employmentTypes, "w-full sm:w-1/2 md:w-1/4")}
                                         {renderTextField("annualIncome", "Annual Income (lacs)", lead.ownHouseGuarantor.annualIncome, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
                                         {renderTextField("currentObligations", "Current Obligations", lead.ownHouseGuarantor.currentObligations, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
@@ -948,8 +1320,25 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <div className="flex flex-wrap -mx-2">
                                     {renderTextField(`references[${index}].name`, "Name*", ref.name, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
                                     {renderSelectField(`references[${index}].relationship`, "Relationship*", ref.relationship, (e) => handleNestedChange('references', e), referenceRelationships, "w-full sm:w-1/2 md:w-1/4")}
-                                    {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
-                                    {renderTextField(`references[${index}].phoneNumber`, "Phone Number *", ref.phoneNumber, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
+                                    {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/2")}
+                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                                        <div className="flex">
+                                            <select
+                                                value={(ref.phoneNumber || '+91-').split('-')[0]}
+                                                onChange={(e) => handleNestedChange('references', { target: { name: `references[${index}].phoneNumber`, value: `${e.target.value}-${(ref.phoneNumber || '').split('-')[1] || ''}` } })}
+                                                className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
+                                            >
+                                                {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+                                            </select>
+                                            <input
+                                                type="text"
+                                                value={(ref.phoneNumber || '').split('-')[1] || ''}
+                                                onChange={(e) => handleNestedChange('references', { target: { name: `references[${index}].phoneNumber`, value: `${(ref.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
+                                                className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -973,7 +1362,22 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <div className="p-4 border rounded-lg h-full flex flex-col">
                                         <h5 className="font-bold mb-2 text-blue-700">Referral {index + 1}</h5>
                                         <input type="text" placeholder="Name" value={ref.name || ''} name={`referralList[${index}].name`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md mb-2" />
-                                        <input type="text" placeholder="Phone Number" value={ref.phoneNumber || ''} name={`referralList[${index}].phoneNumber`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md mb-2" />
+                                        <div className="flex mb-2">
+                                            <select
+                                                value={(ref.phoneNumber || '+91-').split('-')[0]}
+                                                onChange={(e) => handleNestedChange('referralList', { target: { name: `referralList[${index}].phoneNumber`, value: `${e.target.value}-${(ref.phoneNumber || '').split('-')[1] || ''}` } })}
+                                                className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
+                                            >
+                                                {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+                                            </select>
+                                            <input
+                                                type="text"
+                                                placeholder="Phone Number"
+                                                value={(ref.phoneNumber || '').split('-')[1] || ''}
+                                                onChange={(e) => handleNestedChange('referralList', { target: { name: `referralList[${index}].phoneNumber`, value: `${(ref.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
+                                                className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
+                                            />
+                                        </div>
                                         <input type="text" placeholder="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md" />
                                         <button type="button" className="mt-4 px-3 py-1.5 bg-purple-600 text-white text-sm font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-400" onClick={() => handleCreateReferralLead(ref)} disabled={!ref.name || !ref.phoneNumber}>
                                             Create Lead
@@ -1028,62 +1432,99 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 </Accordion>
                  {/* 8. RECOMMENDED BANKS & ISSUES */}
                 <Accordion title="Recommended Banks" icon="💳">
-                        <div className="flex flex-wrap -mx-2">
-                            <div className="w-full md:w-1/2 p-2">
-                                <h4 className="font-bold mb-2 text-gray-800">Tied-Up Banks</h4>
-                                <div className="flex flex-col gap-2">
-                                    {tiedUpBanks.map((bank) => (
-                                        <div key={bank._id} className="p-3 border rounded-lg">
-                                            <div className="flex justify-between items-center">
-                                                <p className="font-bold">{bank.name}</p>
-                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
-                                                    <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
-                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-                                                        Assigned
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
-                                                <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
-                                                    <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
-                                                    <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
-                                                </div>
+                    <div>
+                        <h4 className="font-bold mb-4 text-gray-800">Tied-Up Banks</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {tiedUpBanks.map((bank) => (
+                                <div key={bank._id} className="p-4 border rounded-lg shadow-sm bg-white flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <p className="font-bold text-base text-gray-900">{bank.name}</p>
+                                            {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
+                                                <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
+                                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
+                                                    Assigned
+                                                </span>
                                             )}
-                                            <button type="button" onClick={() => handleAssignToBank(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
-                                                {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign'}
-                                            </button>
                                         </div>
-                                    ))}
+                                        {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
+                                            <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
+                                                <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
+                                                <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button type="button" onClick={() => handleOpenAssignModal(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
+                                        {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign to this Bank'}
+                                    </button>
                                 </div>
-                            </div>
+                            ))}
                         </div>
+                    </div>
                 </Accordion>
 
                 {/* 10. REMINDERS & FINAL STATUS */}
                 <Accordion title="Reminders & Final Status" icon="🗓️">
-                        <div className="p-4 mb-4 bg-green-50 border border-green-200 rounded-lg">
-                            <h5 className="font-bold mb-1">Targeted Sanction Date</h5>
-                            <p className="text-xs">Previous selected date: Not selected</p>
-                            <label className="flex items-center mt-2">
-                                <input type="checkbox" className="form-checkbox" />
-                                <span className="ml-2 text-sm">Not possible to sanction in this month or the next month</span>
-                            </label>
-                        </div>
                         <div className="flex flex-wrap -mx-2">
-                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Last call date</label>
-                                <input type="date" value={lead.lastCallDate ? moment(lead.lastCallDate).format('YYYY-MM-DD') : ''} onChange={(e) => handleDateChange('lastCallDate', e.target.value)} className="w-full p-2 border rounded-md" />
-                            </div>
-                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Next call date</label>
-                                <input type="date" value={lead.reminderCallDate ? moment(lead.reminderCallDate).format('YYYY-MM-DD') : ''} onChange={(e) => handleDateChange('reminderCallDate', e.target.value)} className="w-full p-2 border rounded-md" />
-                            </div>
+                            <LocalizationProvider dateAdapter={AdapterMoment}>
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Sanction Date</label>
+                                    <DatePicker
+                                        value={lead.targetSanctionDate ? moment(lead.targetSanctionDate) : null}
+                                        onChange={(newValue) => handleDateChange('targetSanctionDate', newValue)}
+                                    />
+                                </div>
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Call Date</label>
+                                    <DatePicker
+                                        value={lead.lastCallDate ? moment(lead.lastCallDate) : null}
+                                        onChange={(newValue) => handleDateChange('lastCallDate', newValue)}
+                                    />
+                                </div>
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Next Call Date & Time</label>
+                                    <DateTimePicker
+                                        value={lead.reminderCallDate ? moment(lead.reminderCallDate) : null}
+                                        onChange={(newValue) => handleDateChange('reminderCallDate', newValue)}
+                                    />
+                                </div>
+                            </LocalizationProvider>
                             <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Final Status</label>
                                 <select name="leadStatus" value={lead.leadStatus} onChange={handleChange} className="w-full p-2 border rounded-md">
-                                    {['No status', 'Sanctioned', 'Rejected', 'Application Incomplete','On Priority'].map(status => <option key={status} value={status}>{status}</option>)}
+                                    {leadStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
                                 </select>
                             </div>
+                            {/* --- NEW: Conditional Dropdown for Priority Status --- */}
+                            {lead.leadStatus === 'On Priority' && (
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Priority</label>
+                                    <select name="priorityReason" value={lead.priorityReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-yellow-50">
+                                        <option value="" disabled>Select a reason...</option>
+                                        {priorityReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            {/* --- NEW: Conditional Dropdown for Close Status --- */}
+                            {lead.leadStatus === 'Close' && (
+                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Closing</label>
+                                    <select name="closeReason" value={lead.closeReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-red-50">
+                                        <option value="" disabled>Select a reason...</option>
+                                        {closeReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            {lead.leadStatus === 'Sanctioned' && (
+                                <LocalizationProvider dateAdapter={AdapterMoment}>
+                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Sanction</label>
+                                        <DatePicker value={lead.sanctionDetails.sanctionDate ? moment(lead.sanctionDetails.sanctionDate) : null} onChange={(newValue) => handleSanctionDetailsChange({ target: { name: 'sanctionDate', value: newValue ? new Date(newValue).toISOString() : null } })} />
+                                    </div>
+                                </LocalizationProvider>
+                            )}
+                            {lead.leadStatus === 'On Priority' && <div className="w-full p-2 text-xs text-gray-500"><strong>Why mark as Priority?</strong> A lead is a priority if they have an admit, have shortlisted universities, or their intake is very soon. This helps focus on leads closest to conversion.</div>}
+                            {lead.leadStatus === 'Close' && <div className="w-full p-2 text-xs text-gray-500"><strong>When to Close a Lead?</strong> Close a lead if the student is definitively not interested, cannot be reached after multiple attempts, or is clearly not eligible for any loan product.</div>}
                             <div className="w-full p-2 space-y-2">
                                 <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Clear Preferred Next Call Time</span></label>
                                 <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Student is not eligible for Connecting to Advisar</span></label>
@@ -1097,7 +1538,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             <button
                 type="submit"
                 className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                disabled={!lead.reminderCallDate || !newNote.notes.trim()}
+                // disabled={!lead.reminderCallDate || !newNote.notes.trim()}
             >
                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 ✅ SUBMIT LEAD DATA 
@@ -1142,6 +1583,56 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     </MuiButton>
                 </DialogActions>
             )}
+        </Dialog>
+
+        {/* --- NEW: Bank Assignment Modal --- */}
+        <Dialog open={isAssignModalOpen} onClose={handleCloseAssignModal} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                Assign Lead to {selectedBankForAssignment?.name}
+                <IconButton aria-label="close" onClick={handleCloseAssignModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+                    <FormControl fullWidth>
+                        <InputLabel id="region-select-label">1. Select Region</InputLabel>
+                        <Select
+                            labelId="region-select-label"
+                            value={assignmentRegion}
+                            label="1. Select Region"
+                            onChange={(e) => {
+                                setAssignmentRegion(e.target.value);
+                                setAssignmentRM(''); // Reset RM selection when region changes
+                            }}
+                        >
+                            {/* Get unique regions from the bank's RMs */}
+                            {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.region))].map(region => (
+                                <MenuItem key={region} value={region}>{region}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth disabled={!assignmentRegion}>
+                        <InputLabel id="rm-select-label">2. Select Relationship Manager</InputLabel>
+                        <Select
+                            labelId="rm-select-label"
+                            value={assignmentRM}
+                            label="2. Select Relationship Manager"
+                            onChange={(e) => setAssignmentRM(e.target.value)}
+                        >
+                            {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.region === assignmentRegion).map(rm => (
+                                <MenuItem key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.email})</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    {assignmentError && <Typography color="error.main" variant="body2">{assignmentError}</Typography>}
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <MuiButton onClick={handleCloseAssignModal}>Cancel</MuiButton>
+                <MuiButton variant="contained" onClick={handleAssignToBank} disabled={!assignmentRM}>Assign Lead</MuiButton>
+            </DialogActions>
         </Dialog>
     </div>);
 };

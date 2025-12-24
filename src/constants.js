@@ -9,12 +9,25 @@ export const EMPTY_LEAD_STATE = {
     // 2. Education / Loan Info
     loanId: '', loanType: "", courseStartMonth: "", courseStartYear: "", degree: "",
     fieldOfInterest: "", interestedCountries: "", admitReceived: false, admittedUniversities: "",
-    admissionStatus: "Not Yet Applied", approachedAnyBank: false, previousBankApproached: "",    
+    admissionStatus: "Not Yet Applied", approachedAnyBank: false, previousBankApproached: "",
+    expectedAdmitDate: null, expectedApplicationDate: null,
+    fileLoggedIn: null,
+    loanSanctioned: null,
+    sanctionDetails: {
+        rateOfInterest: '',
+        processingFeePaid: null,
+        disbursementDone: null,
+        coApplicant: '',
+        loanSecurity: '',
+        loanAmount: ''
+    },
     courseDuration: "",
     
     // 4. Financial Info
     age: "", workExperience: "", hasStudentLoans: false,
-    fee: "", living: "", otherExpenses: "", maxUnsecuredGivenByUBI: "",
+    studentLoanDetails: "",
+    fee: "", originalFee: "", originalFeeCurrency: "USD", conversionRate: "",
+    living: "", otherExpenses: "", maxUnsecuredGivenByUBI: "",
     hasAssets: false, assets: [], listOfFOsServed: [], currentFO: "",
     studentAppliedDate: "", studentAppliedTime: "", assignedFO: "", assignedFOPhone: '',
 
@@ -249,7 +262,103 @@ export const EMAIL_TEMPLATE_CONTENT = {
 
 export const regions = ['North', 'South', 'East', 'West'];
 
-export const referenceRelationships = ['Uncle', 'Aunt', 'Friend', 'Any other relatives'];
+export const referenceRelationships = ['Uncle', 'Aunt', 'Friend', 'Any other relatives']; // This is used for references
+
+export const assetOwnerRelationships = ['Father', 'Mother', 'Uncle', 'Aunt', 'Cousin', 'Friend', 'Self'];
+
+export const countryPhoneCodes = [
+    { code: '+91', name: 'India' },
+    { code: '+1', name: 'USA/Canada' },
+    { code: '+44', name: 'UK' },
+    { code: '+61', name: 'Australia' },
+    { code: '+49', name: 'Germany' },
+    { code: '+33', name: 'France' },
+    { code: '+81', name: 'Japan' },
+    { code: '+86', name: 'China' },
+    { code: '+971', name: 'UAE' },
+    { code: '+7', name: 'Russia' },
+    { code: '+39', name: 'Italy' },
+    { code: '+34', name: 'Spain' },
+    { code: '+52', name: 'Mexico' },
+    { code: '+55', name: 'Brazil' },
+    { code: '+27', name: 'South Africa' },
+    { code: '+31', name: 'Netherlands' },
+    { code: '+32', name: 'Belgium' },
+    { code: '+36', name: 'Hungary' },
+    { code: '+41', name: 'Switzerland' },
+    { code: '+43', name: 'Austria' },
+    { code: '+45', name: 'Denmark' },
+    { code: '+46', name: 'Sweden' },
+    { code: '+47', name: 'Norway' },
+    { code: '+48', name: 'Poland' },
+    { code: '+54', name: 'Argentina' },
+    { code: '+56', name: 'Chile' },
+    { code: '+57', name: 'Colombia' },
+    { code: '+58', name: 'Venezuela' },
+    { code: '+60', name: 'Malaysia' },
+    { code: '+62', name: 'Indonesia' },
+    { code: '+63', name: 'Philippines' },
+    { code: '+64', name: 'New Zealand' },
+    { code: '+65', name: 'Singapore' },
+    { code: '+66', name: 'Thailand' },
+    { code: '+82', name: 'South Korea' },
+    { code: '+84', name: 'Vietnam' },
+    { code: '+90', name: 'Turkey' },
+    { code: '+92', name: 'Pakistan' },
+    { code: '+94', name: 'Sri Lanka' },
+    { code: '+95', name: 'Myanmar' },
+    { code: '+98', name: 'Iran' },
+    { code: '+212', name: 'Morocco' },
+    { code: '+213', name: 'Algeria' },
+    { code: '+216', name: 'Tunisia' },
+    { code: '+218', name: 'Libya' },
+    { code: '+220', name: 'Gambia' },
+    { code: '+221', name: 'Senegal' },
+    { code: '+222', name: 'Mauritania' },
+    { code: '+223', name: 'Mali' },
+    { code: '+224', name: 'Guinea' },
+    { code: '+225', name: 'Ivory Coast' },
+    { code: '+226', name: 'Burkina Faso' },
+    { code: '+227', name: 'Niger' },
+    { code: '+228', name: 'Togo' },
+    { code: '+229', name: 'Benin' },
+    { code: '+230', name: 'Mauritius' },
+    { code: '+231', name: 'Liberia' },
+    { code: '+232', name: 'Sierra Leone' },
+    { code: '+233', name: 'Ghana' },
+    { code: '+234', name: 'Nigeria' },
+    { code: '+235', name: 'Chad' },
+    { code: '+236', name: 'Central African Republic' },
+    { code: '+237', name: 'Cameroon' },
+    { code: '+238', name: 'Cape Verde' },
+    { code: '+239', name: 'Sao Tome and Principe' },
+    { code: '+240', name: 'Equatorial Guinea' },
+    { code: '+241', name: 'Gabon' },
+    { code: '+242', name: 'Congo' },
+    { code: '+243', name: 'DR Congo' },
+    { code: '+244', name: 'Angola' },
+    { code: '+245', name: 'Guinea-Bissau' },
+    { code: '+248', name: 'Seychelles' },
+    { code: '+249', name: 'Sudan' },
+    { code: '+250', name: 'Rwanda' },
+    { code: '+251', name: 'Ethiopia' },
+    { code: '+252', name: 'Somalia' },
+    { code: '+253', name: 'Djibouti' },
+    { code: '+254', name: 'Kenya' },
+    { code: '+255', name: 'Tanzania' },
+    { code: '+256', name: 'Uganda' },
+    { code: '+257', name: 'Burundi' },
+    { code: '+258', name: 'Mozambique' },
+    { code: '+260', name: 'Zambia' },
+    { code: '+261', name: 'Madagascar' },
+    { code: '+263', name: 'Zimbabwe' },
+    { code: '+264', name: 'Namibia' },
+    { code: '+265', name: 'Malawi' },
+    { code: '+266', name: 'Lesotho' },
+    { code: '+267', name: 'Botswana' },
+    { code: '+268', name: 'Swaziland' },
+    { code: '+269', name: 'Comoros' },
+];
 
 export const loanIssues = [
     "UBI Issues", "BOB Issues", "Overall Lender Issues - When Going Directly" , "HDFC Credilla Issues" ,"CANARA Bank Issues","PNB Issues",
@@ -434,6 +543,16 @@ export const indianCitiesWithState = [
     "Siuri, West Bengal", "Tamluk, West Bengal", "Titagarh, West Bengal"
 ];
 
+export const currencies = [
+    { code: 'USD', label: 'USD to INR', symbol: '$' },
+    { code: 'GBP', label: 'GBP to INR', symbol: '£' },
+    { code: 'CAD', label: 'CAD to INR', symbol: 'C$' },
+    { code: 'EUR', label: 'EURO to INR', symbol: '€' },
+    { code: 'AUD', label: 'AUD to INR', symbol: 'A$' },
+    { code: 'NZD', label: 'NZD to INR', symbol: 'NZ$' },
+    { code: 'AED', label: 'AED to INR', symbol: 'د.إ' },
+];
+
 export const courseStartQuarters = ['Jan-March', 'April-June', 'July-Sept', 'Oct-Dec'];
 
 const currentYear = new Date().getFullYear();
@@ -454,7 +573,7 @@ export const universities = [
     'University of Toronto', 'Technical University of Munich'
 ];
 
-export const employmentTypes = ['Salaried', 'Self-employed', 'Retired', 'Not Employed'];
+export const employmentTypes = ['Salaried', 'Self-employed', 'Retired', 'Not Employed', 'Agriculture'];
 
 export const courseDurations = ['1 Year', '2 Years', '3 Years', '4 Years', '5+ Years'];
 
@@ -480,7 +599,7 @@ export const allCountries = [
 ];
 
 export const API_URL = 'http://localhost:5000/api/leads';
-
+ 
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
 
 // New constants for the Assets section
@@ -488,3 +607,10 @@ export const assetTypes = ['Physical Property', 'Fixed Deposit', 'LIC Policy', '
 export const physicalPropertyTypes = ['House', 'Flat', 'Non-agricultural Land', 'Commercial Property'];
 export const propertyAuthorities = ['Gram Panchayat', 'Municipality'];
 export const licPolicyTypes = ['Term', 'Life'];
+
+// --- NEW: Reasons for Lead Statuses ---
+export const leadStatusOptions = ['No status', 'On Priority', 'Sanctioned', 'Application Incomplete', 'Close'];
+
+export const priorityReasons = ['Admit received', 'University Shortlisted', 'Nearest Intake'];
+
+export const closeReasons = ['Not Interested', 'Not lifting', 'Not eligible for loan'];

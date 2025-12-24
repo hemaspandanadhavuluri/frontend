@@ -46,7 +46,7 @@ const getStatusColor = (status) => {
         case 'In Progress': return 'warning';
         case 'New': return 'secondary';
         case 'Application Incomplete': return 'info';
-        case 'Rejected': return 'error';
+        case 'Close': return 'error';
         default: return 'default';
     }
 };
@@ -383,9 +383,6 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                                             <TableCell align="center">
                                                 <ButtonGroup variant="outlined" size="small" aria-label="lead actions button group">
                                                     <Button href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>View</Button>
-                                                    <Tooltip title="Manage Documents">
-                                                        <Button href={`/leads/${lead._id}/documents`} target="_blank" onClick={(e) => e.stopPropagation()}>Docs</Button>
-                                                    </Tooltip>
                                                 </ButtonGroup>
                                             </TableCell>
                                         </TableRow>

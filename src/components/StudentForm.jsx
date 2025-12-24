@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_URL } from '../constants';
+import { API_URL, countryPhoneCodes } from '../constants';
 
 // --- Dropdown Options ---
 const CITIES = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad", "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Other"];
@@ -10,7 +10,6 @@ const STUDY_PLAN_OPTIONS = ["Planning to study in abroad", "Planning to study in
 const ADMISSION_STATUS_OPTIONS = ["Received admission", "Applied - no admit yet", "Not yet applied"];
 const COURSE_START_MONTH_OPTIONS = ["Jan - March", "April - June", "July - Sept", "Oct - Dec"];
 const LOAN_OPTIONS = ["Yes", "No"];
-const COUNTRY_CODES = ["+91 (India)", "+1 (USA/Canada)", "+44 (UK)", "+61 (Australia)"];
 
 // --- Reusable Input Components ---
 const SelectInput = ({ label, name, options, value, onChange, required = true }) => (
@@ -24,7 +23,12 @@ const SelectInput = ({ label, name, options, value, onChange, required = true })
             required={required}
             className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
         >
-            {options.map(option => <option key={option} value={option}>{option}</option>)}
+            {options.map(option => {
+                // Handle both simple arrays and object arrays for options
+                const optionValue = typeof option === 'object' ? option.value : option;
+                const optionLabel = typeof option === 'object' ? option.label : option;
+                return <option key={optionValue} value={optionValue}>{optionLabel}</option>
+            })}
         </select>
     </div>
 );
@@ -51,7 +55,7 @@ const StudentForm = () => {
         fullName: '',
         email: '',
         nationality: NATIONALITIES[0],
-        countryCode: COUNTRY_CODES[0],
+        countryCode: countryPhoneCodes[0].code,
         contactNumber: '',
         permanentCity: CITIES[0],
         studyPlan: STUDY_PLAN_OPTIONS[0],
@@ -92,7 +96,7 @@ const StudentForm = () => {
             const leadPayload = {
                 fullName: formData.fullName,
                 email: formData.email,
-                mobileNumbers: [formData.countryCode.split(' ')[0] + formData.contactNumber],
+                mobileNumbers: [`${formData.countryCode}-${formData.contactNumber}`],
                 permanentLocation: formData.permanentCity,
                 nationality: formData.nationality,
                 planningToStudy: formData.studyPlan,
@@ -107,8 +111,8 @@ const StudentForm = () => {
             if (response.status === 201) {
                 setMessage('Thank you! Your information has been submitted successfully. Our team will contact you shortly.');
                 // Reset form to initial state and go back to the first step
-                setFormData({
-                    fullName: '', email: '', nationality: NATIONALITIES[0], countryCode: COUNTRY_CODES[0],
+                setFormData({ // Reset form
+                    fullName: '', email: '', nationality: NATIONALITIES[0], countryCode: countryPhoneCodes[0].code,
                     contactNumber: '', permanentCity: CITIES[0], studyPlan: STUDY_PLAN_OPTIONS[0],
                     admissionStatus: ADMISSION_STATUS_OPTIONS[0], courseStartMonth: COURSE_START_MONTH_OPTIONS[0],
                     approachedBankForLoan: LOAN_OPTIONS[0],
@@ -136,7 +140,13 @@ const StudentForm = () => {
                         </div>
                         <SelectInput label="Nationality" name="nationality" options={NATIONALITIES} value={formData.nationality} onChange={handleChange} />
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="md:col-span-1"><SelectInput label="Country Code" name="countryCode" options={COUNTRY_CODES} value={formData.countryCode} onChange={handleChange} /></div>
+                            <div className="md:col-span-1">
+                                <SelectInput 
+                                    label="Country Code" 
+                                    name="countryCode" 
+                                    options={countryPhoneCodes.map(c => ({ value: c.code, label: `${c.name} (${c.code})` }))}
+                                    value={formData.countryCode} onChange={handleChange} />
+                            </div>
                             <div className="md:col-span-2"><TextInput label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} type="tel" placeholder="9876543210" /></div>
                         </div>
                         <SelectInput label="Permanent Location (City)" name="permanentCity" options={CITIES} value={formData.permanentCity} onChange={handleChange} />

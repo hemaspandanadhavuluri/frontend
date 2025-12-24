@@ -12,7 +12,7 @@ import {
     IconButton
 } from "@mui/material";
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { assetTypes, physicalPropertyTypes, propertyAuthorities, licPolicyTypes } from '../constants';
+import { assetTypes, physicalPropertyTypes, propertyAuthorities, licPolicyTypes, assetOwnerRelationships } from '../constants';
 
 const AssetCard = ({
     asset,
@@ -49,6 +49,7 @@ const AssetCard = ({
                 {asset.assetType && (
                     <>
                         {renderTextField(`ownerName`, "Owner Name", asset.ownerName, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+                        {renderSelectField(`ownerRelationship`, "Owner's Relation to Student", asset.ownerRelationship, handleAssetChange, assetOwnerRelationships, { xs: '100%', sm: '50%', md: '33.33%' })}
                         {renderTextField(`assetValue`, "Asset Value (in Lakhs)", asset.assetValue, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
                     </>
                 )}
@@ -58,7 +59,7 @@ const AssetCard = ({
                     <>
                         {renderSelectField(`propertyType`, "Property Type", asset.propertyType, handleAssetChange, physicalPropertyTypes, { xs: '100%', sm: '50%', md: '33.33%' })}
                         {renderTextField(`pendingLoan`, "Pending Loan (if any)", asset.pendingLoan, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
-                        {renderTextField(`locationPincode`, "Location Pincode", asset.locationPincode, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+                       
                         <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
                             <FormControl component="fieldset">
                                 <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Documents Available?</FormLabel>
@@ -69,6 +70,7 @@ const AssetCard = ({
                             </FormControl>
                         </Box>
                         {renderSelectField(`authority`, "Property Authority", asset.authority, handleAssetChange, propertyAuthorities, { xs: '100%', sm: '50%', md: '33.33%' })}
+                         {renderTextField(`locationPincode`, "Location Pincode", asset.locationPincode, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
                     </>
                 )}
 
