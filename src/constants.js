@@ -26,7 +26,7 @@ export const EMPTY_LEAD_STATE = {
     // 4. Financial Info
     age: "", workExperience: "", hasStudentLoans: false,
     studentLoanDetails: "",
-    fee: "", originalFee: "", originalFeeCurrency: "USD", conversionRate: "",
+    fee: "", originalFee: "", originalFeeCurrency: "USD", conversionRate: "", loanAmountRequired: "",
     living: "", otherExpenses: "", maxUnsecuredGivenByUBI: "",
     hasAssets: false, assets: [], listOfFOsServed: [], currentFO: "",
     studentAppliedDate: "", studentAppliedTime: "", assignedFO: "", assignedFOPhone: '',

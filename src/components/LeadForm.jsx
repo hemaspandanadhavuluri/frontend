@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
-import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem, Chip } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import { DatePicker, DateTimePicker } from '@mui/x-date-pickers';
@@ -435,16 +435,18 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             setLead(prev => ({
                 ...prev,
                 ownHouseGuarantor: {
-                    ...existingRelation, // Copy all fields
+                    ...existingRelation,
+                relationshipType: existingRelation.relationshipType // Explicitly set the relationship type
                 }
             }));
         } else {
-            // If not found, just set the relationship type and clear other fields
+            // If not found, set the relationshipType for manual entry.
+            // If 'Other' is clicked, clear the type to allow selection from the dropdown.
             setLead(prev => ({
                 ...prev,
                 ownHouseGuarantor: {
                     ...EMPTY_LEAD_STATE.ownHouseGuarantor, // Reset to blank slate
-                    relationshipType: relationshipType, // Set the selected type
+                    relationshipType: relationshipType === 'Other' ? '' : relationshipType,
                 }
             }));
         }
@@ -518,6 +520,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
     };
 
     const handleSaveNote = async () => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser && lead._id) { // only check if updating
+            alert('You must be logged in to save notes.');
+            return;
+        }
+
         // If there's no lead._id, this is a create operation
         if (!lead._id) {
             // CREATE logic here (POST /api/leads)
@@ -548,7 +556,9 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 // The backend controller expects newCallNote for logging
                 newNote: {
                     notes: newNote.notes,
-                    callStatus: newNote.callStatus
+                    callStatus: newNote.callStatus,
+                    loggedById: currentUser._id,
+                    loggedByName: currentUser.fullName
                 },
                 // The referralList needs to be an array of objects for the backend to process
                 // (Assuming the backend handles the referralList creation logic)
@@ -596,6 +606,32 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             alert(`Failed to create lead for ${referralData.name}. Check console for details.`);
         }
     };
+     const logActionAsNote = async (noteText) => {
+        if (!lead._id) return;
+
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            console.error("Cannot log action, user not found.");
+            return;
+        }
+
+        const payload = {
+            newNote: {
+                notes: noteText,
+                callStatus: 'Log', // A new status for automated logs
+                loggedById: currentUser._id,
+                loggedByName: currentUser.fullName
+            }
+        };
+
+        try {
+            const response = await axios.put(`${API_URL}/${lead._id}`, payload);
+            setLead(response.data); // Update the lead state with the new history
+        } catch (error) {
+            console.error('Failed to log action as note:', error);
+        }
+    };
+
     const handleBankSearch = async () => {
     if (!bankSearchPincode.trim()) {
         setBankSearchMessage('Please enter a pincode to search.');
@@ -763,6 +799,10 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 body: currentEmailTemplate.body
             });
             setEmailStatus(response.data.message);
+            
+            // NEW: Log this action as a note
+            await logActionAsNote(`Email Sent: "${currentEmailTemplate.subject}"`);
+
             setTimeout(() => {
                 handleCloseEmailModal();
             }, 2000);
@@ -833,39 +873,6 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             </Paper>
         )}
         
-        {/* --- UNIFIED HISTORY SECTION --- */}
-        {/* <Accordion title="Lead History" icon="📜" defaultExpanded>
-            <div className="space-y-4">
-                {combinedHistory.length > 0 ? (
-                    combinedHistory.map((item) => (
-                        <div key={item._id} className={`p-3 rounded-lg border-l-4 ${item.type === 'note' ? 'bg-blue-50 border-blue-400' : 'bg-yellow-50 border-yellow-400'}`}>
-                            <div className="flex justify-between items-center mb-1">
-                                <p className="font-bold text-sm">
-                                    {item.type === 'note' ? `Note by ${item.loggedByName}` : `Task Created by ${item.createdByName}`}
-                                </p>
-                                <p className="text-xs text-gray-500">{moment(item.createdAt).format('DD MMM YYYY, h:mm a')}</p>
-                            </div>
-                            {item.type === 'note' ? (
-                                <p className="text-gray-700 text-sm">{item.notes}</p>
-                            ) : (
-                                <div>
-                                    <p className="text-gray-800 text-sm">
-                                        <span className="font-semibold">Subject:</span> {item.subject}
-                                    </p>
-                                    <p className="text-gray-800 text-sm">
-                                        <span className="font-semibold">Assigned to:</span> {item.assignedToName}
-                                    </p>
-                                    {item.body && <p className="text-gray-600 text-xs mt-1 pl-2 border-l-2 border-gray-300">{item.body}</p>}
-                                </div>
-                            )}
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-center text-gray-500 py-4">No history or tasks for this lead yet.</p>
-                )}
-            </div>
-        </Accordion> */}
-
         <form onSubmit={handleSubmit}>
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
@@ -1070,6 +1077,24 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             {renderTextField("DUOLINGO", "DuoLingo (10-160)", lead.testScores.DUOLINGO, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
                     </div>
                 </Accordion>
+                
+                {/* --- REFACTORED: Other Details Section --- */}
+                <Accordion title="Other Details" icon="📋">
+                    <div className="flex flex-wrap -mx-2 items-start">
+                        {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/3")}
+                        {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/3")}
+                        <div className="p-2 w-full md:w-1/3">
+                            <fieldset>
+                                <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
+                                <div className="flex items-center space-x-4 mt-2">
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                </div>
+                            </fieldset>
+                            {lead.hasStudentLoans && renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan, 2 Lakhs outstanding")}
+                        </div>
+                    </div>
+                </Accordion>
 
                 {/* --- REFACTORED: Course Details Section --- */}
                 <Accordion title="Course Details" icon="📄">
@@ -1113,8 +1138,9 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         </div>
                         {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
                         {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
+                        {renderTextField("loanAmountRequired", "Loan Amount Required (Lakhs)", lead.loanAmountRequired, handleChange, "w-full sm:w-1/2 md:w-1/3")}
 
-                        <div className="p-2 w-full md:w-1/4 mt-4">
+                        <div className="p-2 w-full sm:w-1/2 md:w-1/3 mt-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Total Loan Amount (in Lakhs)</label>
                             <input type="text" value={totalFee.toFixed(2)} readOnly className="w-full p-2 bg-gray-200 border border-gray-300 rounded-md font-bold text-lg" />
                             {/* --- NEW: Progress Bar for Total Amount --- */}
@@ -1125,23 +1151,6 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     </div>
                 </Accordion>
 
-                {/* --- REFACTORED: Other Details Section --- */}
-                <Accordion title="Other Details" icon="📋">
-                    <div className="flex flex-wrap -mx-2 items-start">
-                        {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-                        {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-                        <div className="p-2 w-full md:w-1/3">
-                            <fieldset>
-                                <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
-                                <div className="flex items-center space-x-4 mt-2">
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
-                                </div>
-                            </fieldset>
-                            {lead.hasStudentLoans && renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan, 2 Lakhs outstanding")}
-                        </div>
-                    </div>
-                </Accordion>
 
                 {/* NEW: Assets Available Section */}
                 <Accordion title="Assets Available" icon="🏠">
@@ -1266,7 +1275,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <h5 className="text-xl font-bold mb-4 text-blue-700">Own House Guarantor Details</h5>
                                     <div className="flex flex-wrap -mx-2">
                                         {renderTextField("name", "Guarantor Name", lead.ownHouseGuarantor.name, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], "w-full sm:w-1/2 md:w-1/4")}
+                                        {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Father', 'Mother', 'Spouse', 'Brother', 'Other', 'Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], "w-full sm:w-1/2 md:w-1/4")}
                                         <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Guarantor Phone Number</label>
                                             <div className="flex">
@@ -1465,15 +1474,19 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
 
                 {/* 10. REMINDERS & FINAL STATUS */}
                 <Accordion title="Reminders & Final Status" icon="🗓️">
-                        <div className="flex flex-wrap -mx-2">
-                            <LocalizationProvider dateAdapter={AdapterMoment}>
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                    <LocalizationProvider dateAdapter={AdapterMoment}>
+                                <div  style={{width:'50%'}}>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Target Sanction Date</label>
                                     <DatePicker
                                         value={lead.targetSanctionDate ? moment(lead.targetSanctionDate) : null}
                                         onChange={(newValue) => handleDateChange('targetSanctionDate', newValue)}
                                     />
                                 </div>
+                             </LocalizationProvider>
+                        <div className="flex flex-wrap -mx-2">
+                             
+                            <LocalizationProvider dateAdapter={AdapterMoment}>
+                                
                                 <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Last Call Date</label>
                                     <DatePicker
@@ -1532,17 +1545,63 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         </div>
                 </Accordion>
             </div>
+            
+            {/* --- NEW: Call Notes & History Section --- */}
+            <Accordion title="Call Notes & History" icon="📞" defaultExpanded>
+                {/* History View */}
+                <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
+                    <h4 className="text-lg font-semibold text-gray-700 sticky top-0 bg-gray-50 py-2 -mt-4">History</h4>
+                    {lead.callHistory && lead.callHistory.length > 0 ? (
+                        lead.callHistory.slice().reverse().map((log, index) => (
+                            <div key={index} className={`p-3 rounded-lg border-l-4 ${log.callStatus === 'Log' ? 'bg-purple-50 border-purple-400' : 'bg-blue-50 border-blue-400'}`}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <p className="font-bold text-sm text-gray-800">
+                                        Note by {log.loggedByName}
+                                    </p>
+                                    <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                                </div>
+                                <p className="text-gray-700 text-sm">{log.notes}</p>
+                                {log.callStatus && <Chip label={log.callStatus} size="small" sx={{ mt: 1 }} color={log.callStatus === 'Log' ? 'secondary' : 'primary'} variant="outlined" />}
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 py-4">No notes for this lead yet.</p>
+                    )}
+                </div>
+
+                {/* Add New Note Form */}
+                <div className="mt-6">
+                    <h4 className="text-lg font-semibold text-gray-700 mb-2">Add New Note</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <textarea
+                                name="notes"
+                                rows="4"
+                                className="w-full p-2 border rounded-md"
+                                placeholder="Enter detailed notes from the conversation..."
+                                value={newNote.notes}
+                                onChange={handleNoteChange}
+                            ></textarea>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Call Status *</label>
+                            <select name="callStatus" value={newNote.callStatus} onChange={handleNoteChange} className="w-full p-2 border rounded-md">
+                                <option>Connected</option>
+                                <option>Not Reached</option>
+                                <option>Busy</option>
+                                <option>Scheduled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={!newNote.notes.trim() || !lead.reminderCallDate || !lead.lastCallDate}>
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                    ✅ SUBMIT LEAD DATA 
+                </button>
+            </Accordion>
 
 
             {/* Main Submit Button */}
-            <button
-                type="submit"
-                className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                // disabled={!lead.reminderCallDate || !newNote.notes.trim()}
-            >
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                ✅ SUBMIT LEAD DATA 
-            </button>
         </form>
 
         {/* --- NEW: Email Template Modal --- */}
