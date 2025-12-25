@@ -758,11 +758,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         };
 
         try {
-            await axios.post(API_URL.replace('/leads', '/tasks'), payload);
+            const response = await axios.post(API_URL.replace('/leads', '/tasks'), payload);
+            setLeadTasks(prev => [...prev, response.data]); // Refresh task list
             setTaskMessage('Task created successfully!');
             // Reset task form
             setTask({ assignedTo: null, subject: '', body: '' });
-            setTimeout(() => setTaskMessage(''), 3000); // Clear message after 3 seconds
+            setShowTaskCreator(false); // Close the task creator on success
         } catch (error) {
             console.error('Failed to create task:', error);
             setTaskMessage(error.response?.data?.message || 'Failed to create task.');
@@ -1625,35 +1626,40 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             <Accordion title="Task History" icon="📝" defaultExpanded>
                 <div className="space-y-4">
                     {leadTasks.length > 0 ? (
-                        leadTasks.slice().reverse().map((task) => (
-                            <Paper key={task._id} elevation={2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : 'white', borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : '#64b5f6'}` }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
-                                    </div>
-                                    <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
-                                </Box>
-                                <Divider sx={{ my: 1.5 }} />
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
-                                        <br />
-                                        Assigned to: <strong>{task.assignedToName}</strong>
-                                    </Typography>
-                                    {task.status === 'Open' && (
-                                        <MuiButton
-                                            variant="contained"
-                                            color="success"
-                                            size="small"
-                                            onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
-                                        >
-                                            Mark as Done
-                                        </MuiButton>
-                                    )}
-                                </Box>
-                            </Paper>
-                        ))
+                        leadTasks.slice().reverse().map((task) => {
+                            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+                            const canCompleteTask = currentUser && currentUser._id === task.assignedToId;
+
+                            return (
+                                <Paper key={task._id} elevation={2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : 'white', borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : '#64b5f6'}` }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div>
+                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
+                                        </div>
+                                        <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
+                                    </Box>
+                                    <Divider sx={{ my: 1.5 }} />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
+                                            <br />
+                                            Assigned to: <strong>{task.assignedToName}</strong>
+                                        </Typography>
+                                        {task.status === 'Open' && canCompleteTask && (
+                                            <MuiButton
+                                                variant="contained"
+                                                color="success"
+                                                size="small"
+                                                onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
+                                            >
+                                                Mark as Done
+                                            </MuiButton>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            );
+                        })
                     ) : (
                         <Typography sx={{ textAlign: 'center', color: 'text.secondary', p: 2 }}>
                             No tasks have been created for this lead.
