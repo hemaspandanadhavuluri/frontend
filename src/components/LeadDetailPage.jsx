@@ -1,12 +1,20 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, AppBar, Toolbar, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LeadForm from './LeadForm';
+import BankLeadForm from './BankLeadForm';
 
 const LeadDetailPage = () => {
     const { id } = useParams();
+    const location = useLocation();
     const navigate = useNavigate();
+    const [userRole, setUserRole] = React.useState('');
+
+    React.useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (storedUser) setUserRole(storedUser.role);
+    }, []);
 
     // The onUpdate handler can now simply close the tab or navigate back
     const handleUpdate = () => {
@@ -14,6 +22,9 @@ const LeadDetailPage = () => {
         // For now, let's navigate back to the dashboard
         navigate('/');
     };
+
+    // Determine if the form should be in read-only mode
+    const isReadOnly = location.pathname.endsWith('/view');
 
     return (
         <>
@@ -23,16 +34,25 @@ const LeadDetailPage = () => {
                         <ArrowBackIcon />
                     </IconButton>
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        {id ? 'Lead Details' : 'Create New Lead'}
+                        {id ? (isReadOnly ? 'View Lead Details' : 'Edit Lead') : 'Create New Lead'}
                     </Typography>
                 </Toolbar>
             </AppBar>
-            <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
-                <LeadForm 
-                    leadData={{ _id: id }} // Pass the ID to the form
-                    onUpdate={handleUpdate} 
-                    onBack={() => navigate(-1)} // Go back to the previous page
-                />
+            <Container maxWidth={false} sx={{ mt: 2, mb: 4 }}>
+                {userRole === 'BankExecutive' ? (
+                    <BankLeadForm 
+                        leadData={{ _id: id }} 
+                        onUpdate={handleUpdate}
+                        onBack={() => navigate(-1)}
+                    />
+                ) : (
+                    <LeadForm 
+                        leadData={{ _id: id }} // Pass the ID to the form
+                        isReadOnly={isReadOnly} // Pass the read-only flag
+                        onUpdate={handleUpdate} 
+                        onBack={() => navigate(-1)} // Go back to the previous page
+                    />
+                )}
             </Container>
         </>
     );

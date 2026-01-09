@@ -423,20 +423,26 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                             </TableBody>
                         ) : activeView === 'tasks' ? (
                             <TableBody>
-                                {tasks.filter(task => task.status === 'Open').map((task) => (
-                                    <TableRow key={task._id} hover sx={{ cursor: 'pointer' }}>
-                                        <TableCell>
-                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>{task.subject}</Typography>
-                                            <Typography variant="caption" color="text.secondary">{task.body}</Typography>
-                                        </TableCell>
-                                        <TableCell>{task.createdByName}</TableCell>
-                                        <TableCell>{moment(task.createdAt).format('DD MMM YYYY, h:mm a')}</TableCell>
-                                        <TableCell><Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" /></TableCell>
-                                        <TableCell align="center">
-                                            <Button variant="contained" size="small" color="warning" href={`/leads/${task.leadId}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open Lead</Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {tasks.filter(task => task.status === 'Open').map((task) => {
+                                    const isBankTask = task.creatorRole === 'BankExecutive';
+                                    return (
+                                        <TableRow key={task._id} hover sx={{ cursor: 'pointer', backgroundColor: isBankTask ? '#fff3e0' : 'inherit' }}>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    {isBankTask && <Chip label="Bank Request" size="small" sx={{ bgcolor: '#ff9800', color: 'white', fontSize: '0.65rem', height: 20 }} />}
+                                                    <Typography variant="body2" sx={{ fontWeight: isBankTask ? 600 : 500 }}>{task.subject}</Typography>
+                                                </Box>
+                                                <Typography variant="caption" color="text.secondary">{task.body}</Typography>
+                                            </TableCell>
+                                            <TableCell>{task.createdByName}</TableCell>
+                                            <TableCell>{moment(task.createdAt).format('DD MMM YYYY, h:mm a')}</TableCell>
+                                            <TableCell><Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" /></TableCell>
+                                            <TableCell align="center">
+                                                <Button variant="contained" size="small" color="warning" href={`/leads/${task.leadId}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open Lead</Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                                 {openTasksCount === 0 && (
                                     <TableRow><TableCell colSpan={5} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>You have no open tasks.</Typography></TableCell></TableRow>
                                 )}

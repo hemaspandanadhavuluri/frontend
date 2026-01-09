@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 // Import your components
 import Dashboard from './components/Dashboard';
@@ -24,7 +24,8 @@ const App = () => {
     // State for employee authentication
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const navigate = useNavigate(); // Add useNavigate hook
+    const navigate = useNavigate();
+    const location = useLocation();
 
     // Check for existing login on app load
     useEffect(() => {
@@ -44,16 +45,23 @@ const App = () => {
     // This effect will run when isLoggedIn state changes, handling redirection.
     useEffect(() => {
         if (isLoggedIn && currentUser) {
+            const currentPath = location.pathname;
             if (currentUser.role === 'BankExecutive') {
-                navigate('/bank-panel');
+                // Allowed paths for BankExecutive. Prevents redirect loop when opening lead details.
+                const isAllowedPath = currentPath === '/bank-panel' || 
+                                      /^\/leads\/[a-f0-9]+\/view$/.test(currentPath) ||
+                                      /^\/leads\/[a-f0-9]+\/documents$/.test(currentPath);
+
+                if (!isAllowedPath) {
+                    navigate('/bank-panel');
+                }
             } else if (currentUser.role.toLowerCase() === 'assigner') {
-                navigate('/assigner');
-            } else {
-                // For other roles, they are likely already on '/' or will be.
-                // A specific redirect can be added if needed, e.g., navigate('/');
+                if (currentPath !== '/assigner') {
+                    navigate('/assigner');
+                }
             }
         }
-    }, [isLoggedIn, currentUser, navigate]);
+    }, [isLoggedIn, currentUser, navigate, location.pathname]);
 
     // Handler for successful login
     const handleLoginSuccess = (user) => {
@@ -83,8 +91,11 @@ const App = () => {
                 {isLoggedIn ? (
                     <>
                         {currentUser?.role === 'BankExecutive' ? (
-                            // Bank Executive gets a single route
-                            <Route path="/bank-panel" element={<BankExecutivePanel onLogout={handleLogout} />} />
+                            <>
+                                <Route path="/bank-panel" element={<BankExecutivePanel onLogout={handleLogout} />} />
+                                {/* Add route for bank executives to view lead details */}
+                                <Route path="/leads/:id/view" element={<LeadDetailPage />} />
+                            </>
                         ) : currentUser?.role.toLowerCase() === 'assigner' ? (
                             // Assigner gets their own route
                             <Route path="/assigner" element={<AssignerPanel onLogout={handleLogout} />} />
@@ -100,6 +111,7 @@ const App = () => {
                                 />
                                 <Route path="/leads/new" element={<LeadDetailPage />} />
                                 <Route path="/leads/:id" element={<LeadDetailPage />} />
+                                <Route path="/leads/:id/view" element={<LeadDetailPage />} />
                                 <Route path="/hr-panel" element={<HrPanel />} />
                             </>
                         )}

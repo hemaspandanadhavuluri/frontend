@@ -26,7 +26,7 @@ const EXCHANGE_RATE_API_KEY = 'ddf59026d05ae4b9a8461fcf';
 // IMPORTANT: Get a free key from https://www.exchangerate-api.com and replace this placeholder.
 
 // Custom Accordion component using Tailwind CSS
-const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
+const Accordion = ({ title, icon, children, defaultExpanded = true }) => {
     const [isOpen, setIsOpen] = useState(defaultExpanded);
 
     return (
@@ -43,7 +43,7 @@ const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
 };
 
 // IMPORTANT: LeadForm now accepts leadId and onBack as props
-const LeadForm = ({ leadData, onBack, onUpdate }) => {
+const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     // Start with the empty state if no leadId, or wait for fetch
     const [lead, setLead] = useState(EMPTY_LEAD_STATE);
 
@@ -141,6 +141,14 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 dataToSet.references = [...existingRefs, ...Array(2 - existingRefs.length).fill({ relationship: '', name: '', address: '', phoneNumber: '' })].slice(0, 2);
             }
             setLead(dataToSet);
+
+            // Initialize local UI states based on loaded data
+            if (dataToSet.ownHouseGuarantor && dataToSet.ownHouseGuarantor.name) {
+                setShowOHGFields(true);
+            }
+            if (dataToSet.hasAssets || (dataToSet.assets && dataToSet.assets.length > 0)) {
+                setHasAssets(true);
+            }
             setLoading(false);
         };
 
@@ -270,6 +278,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 id={name}
                 name={name}
                 placeholder={placeholder}
+                disabled={isReadOnly}
                 value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
                 onChange={onChange}
                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -285,9 +294,11 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 id={name}
                 name={name}
                 value={value || ''}
+                disabled={isReadOnly}
                 onChange={onChange}
                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             >
+                <option value="">Select {label}</option>
                 {options && options.length > 0 ?
                     options.map(option => (
                         <option key={option} value={option}>{option}</option>
@@ -321,6 +332,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                 fileLoggedIn: name === 'approachedAnyBank' && !boolValue ? null : (name === 'fileLoggedIn' ? boolValue : prev.fileLoggedIn),
                 loanSanctioned: name === 'approachedAnyBank' && !boolValue ? null : (name === 'loanSanctioned' ? boolValue : prev.loanSanctioned),
                 sanctionDetails: name === 'approachedAnyBank' && !boolValue ? EMPTY_LEAD_STATE.sanctionDetails : prev.sanctionDetails, // Clear sanction details
+                studentLoanDetails: name === 'hasStudentLoans' && !boolValue ? '' : prev.studentLoanDetails,
+                studentLoanAmount: name === 'hasStudentLoans' && !boolValue ? '' : prev.studentLoanAmount,
             }));
         } else if (name === 'admissionStatus' && value === 'Received Admission') {
             setLead(prev => ({
@@ -741,6 +754,13 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             return;
         }
 
+        // If read-only, auto-assign to the lead's FO
+        if (isReadOnly && lead.assignedFOId) {
+            const assignedFO = assignableUsers.find(u => u._id === lead.assignedFOId);
+            if (assignedFO) {
+                task.assignedTo = assignedFO;
+            }
+        }
         const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
         if (!currentUser) {
             setTaskMessage('Could not identify the creator. Please log in again.');
@@ -755,6 +775,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
             body: task.body,
             createdById: currentUser._id,
             createdByName: currentUser.fullName,
+            creatorRole: currentUser.role
         };
 
         try {
@@ -851,51 +872,37 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
         }
     };
 
+    // --- NEW: Combine Internal and External Notes for Display ---
+    const allNotes = React.useMemo(() => {
+        const internal = (lead.callHistory || []).map(n => ({ ...n, isExternal: false }));
+        const external = (lead.externalCallHistory || []).map(n => ({ ...n, isExternal: true }));
+        return [...internal, ...external].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }, [lead.callHistory, lead.externalCallHistory]);
+
     if (loading) return <p className="text-center mt-5">Loading Lead Details...</p>;
 
     // Calculate total expenses (Unchanged)
     const totalFee = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);
 
     return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto my-8 bg-white rounded-lg shadow-xl">
+    <div className="p-4 md:p-8 w-full mx-auto my-8 bg-white rounded-lg shadow-xl">
         {/* --- Header with Create Task Button --- */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-            <h1 className="text-3xl font-bold text-gray-800">
+            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
                 {lead._id ? `Lead: ${lead.fullName}` : 'Create New Lead'}
+                {isReadOnly && <Chip label="View Only" color="warning" sx={{ ml: 2 }} />}
             </h1>
             {lead._id && (
-                <MuiButton variant="contained" color="secondary" onClick={() => setShowTaskCreator(!showTaskCreator)}>
+                <MuiButton variant="contained" color="secondary" onClick={() => setShowTaskCreator(!showTaskCreator)} disabled={isReadOnly && !lead.assignedFOId}>
                     {showTaskCreator ? 'Cancel Task' : 'Create Task'}
                 </MuiButton>
             )}
         </Box>
 
-        {/* --- NEW: Inline Task Creator --- */}
-        {showTaskCreator && (
-            <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'grey.50' }}>
-                <Typography variant="h6" gutterBottom>Create New Task for {lead.fullName}</Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Autocomplete
-                        options={assignableUsers}
-                        getOptionLabel={(option) => `${option.fullName} (${option.role})`}
-                        value={task.assignedTo}
-                        onChange={(event, newValue) => setTask(prev => ({ ...prev, assignedTo: newValue }))}
-                        renderInput={(params) => <MuiTextField {...params} label="Assign Task To" variant="outlined" size="small" />}
-                    />
-                    <MuiTextField fullWidth label="Task Subject" name="subject" value={task.subject} onChange={handleTaskChange} variant="outlined" size="small" />
-                    <MuiTextField fullWidth label="Task Body (Optional)" name="body" value={task.body} onChange={handleTaskChange} multiline rows={3} variant="outlined" size="small" />
-                    {taskMessage && <p className={`text-sm ${taskMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{taskMessage}</p>}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
-                        <MuiButton onClick={() => setShowTaskCreator(false)}>Cancel</MuiButton>
-                        <MuiButton variant="contained" onClick={handleCreateTask}>
-                            Create Task
-                        </MuiButton>
-                    </Box>
-                </Box>
-            </Paper>
-        )}
-        
         <form onSubmit={handleSubmit}>
+            <div className="flex flex-col lg:flex-row gap-6">
+                {/* Left Column: Lead Details */}
+                <div className="flex-1 min-w-0 space-y-4">
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
             <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -952,6 +959,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <div className="p-2 w-full md:w-1/3">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Expected Admit Date</label>
                                         <DatePicker
+                                            readOnly={isReadOnly}
                                             value={lead.expectedAdmitDate ? moment(lead.expectedAdmitDate) : null}
                                             onChange={(newValue) => handleDateChange('expectedAdmitDate', newValue)}
                                         />
@@ -961,6 +969,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <div className="p-2 w-full md:w-1/3">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Expected Application Date</label>
                                         <DatePicker
+                                            readOnly={isReadOnly}
                                             value={lead.expectedApplicationDate ? moment(lead.expectedApplicationDate) : null}
                                             onChange={(newValue) => handleDateChange('expectedApplicationDate', newValue)}
                                         />
@@ -972,17 +981,17 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <fieldset>
                                     <legend className="text-sm font-medium text-gray-700">Has the student already approached any bank? *</legend>
                                     <div className="flex items-center space-x-4 mt-2">
-                                        <label className="flex items-center">
-                                            <input type="radio" name="approachedAnyBank" value="true" checked={lead.approachedAnyBank === true} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" />
+                                        <label className="flex items-center cursor-pointer">
+                                            <input type="radio" name="approachedAnyBank" value="true" checked={lead.approachedAnyBank === true} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" disabled={isReadOnly} />
                                             <span className="ml-2">Yes</span>
                                         </label>
-                                        <label className="flex items-center">
-                                            <input type="radio" name="approachedAnyBank" value="false" checked={lead.approachedAnyBank === false} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" />
+                                        <label className="flex items-center cursor-pointer">
+                                            <input type="radio" name="approachedAnyBank" value="false" checked={lead.approachedAnyBank === false} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" disabled={isReadOnly} />
                                             <span className="ml-2">No</span>
                                         </label>
                                     </div>
                                 </fieldset>
-                                {lead.approachedAnyBank && <input type="text" name="previousBankApproached" placeholder="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
+                                {lead.approachedAnyBank && <input type="text" name="previousBankApproached" placeholder="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} className="mt-2 w-full p-2 border border-gray-300 rounded-md" disabled={isReadOnly} />}
                             </div>
                             {/* --- NEW: Dynamic Section for Bank Approach --- */}
                             {lead.approachedAnyBank && (
@@ -990,8 +999,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <fieldset className="mb-4">
                                         <legend className="text-sm font-medium text-gray-700">Has the file been logged in at {lead.previousBankApproached || 'the bank'}?</legend>
                                         <div className="flex items-center space-x-4 mt-2">
-                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="true" checked={lead.fileLoggedIn === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="false" checked={lead.fileLoggedIn === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="true" checked={lead.fileLoggedIn === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
+                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="false" checked={lead.fileLoggedIn === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
                                         </div>
                                     </fieldset>
 
@@ -1010,8 +1019,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                         <fieldset className="mb-4">
                                             <legend className="text-sm font-medium text-gray-700">Has the loan been sanctioned?</legend>
                                             <div className="flex items-center space-x-4 mt-2">
-                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="true" checked={lead.loanSanctioned === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="false" checked={lead.loanSanctioned === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="true" checked={lead.loanSanctioned === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
+                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="false" checked={lead.loanSanctioned === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
                                             </div>
                                         </fieldset>
                                     )}
@@ -1023,9 +1032,9 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                                 {renderTextField("rateOfInterest", "Rate of Interest (%)", lead.sanctionDetails.rateOfInterest, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
                                                 {renderTextField("loanAmount", "Loan Amount (Lakhs)", lead.sanctionDetails.loanAmount, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
                                                 {renderTextField("coApplicant", "Co-Applicant", lead.sanctionDetails.coApplicant, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Processing Fee Paid?</legend><label><input type="radio" name="processingFeePaid" value="true" checked={lead.sanctionDetails.processingFeePaid === true} onChange={handleSanctionDetailsChange} /> Yes</label><label className="ml-4"><input type="radio" name="processingFeePaid" value="false" checked={lead.sanctionDetails.processingFeePaid === false} onChange={handleSanctionDetailsChange} /> No</label></fieldset></div>
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Disbursement Done?</legend><label><input type="radio" name="disbursementDone" value="true" checked={lead.sanctionDetails.disbursementDone === true} onChange={handleSanctionDetailsChange} /> Yes</label><label className="ml-4"><input type="radio" name="disbursementDone" value="false" checked={lead.sanctionDetails.disbursementDone === false} onChange={handleSanctionDetailsChange} /> No</label></fieldset></div>
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Loan Security</legend><label><input type="radio" name="loanSecurity" value="Secure" checked={lead.sanctionDetails?.loanSecurity === 'Secure'} onChange={handleSanctionDetailsChange} /> Secure</label><label className="ml-4"><input type="radio" name="loanSecurity" value="Unsecure" checked={lead.sanctionDetails.loanSecurity === 'Unsecure'} onChange={handleSanctionDetailsChange} /> Unsecure</label></fieldset></div>
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Processing Fee Paid?</legend><label><input type="radio" name="processingFeePaid" value="true" checked={lead.sanctionDetails.processingFeePaid === true} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Yes</label><label className="ml-4"><input type="radio" name="processingFeePaid" value="false" checked={lead.sanctionDetails.processingFeePaid === false} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> No</label></fieldset></div>
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Disbursement Done?</legend><label><input type="radio" name="disbursementDone" value="true" checked={lead.sanctionDetails.disbursementDone === true} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Yes</label><label className="ml-4"><input type="radio" name="disbursementDone" value="false" checked={lead.sanctionDetails.disbursementDone === false} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> No</label></fieldset></div>
+                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Loan Security</legend><label><input type="radio" name="loanSecurity" value="Secure" checked={lead.sanctionDetails?.loanSecurity === 'Secure'} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Secure</label><label className="ml-4"><input type="radio" name="loanSecurity" value="Unsecure" checked={lead.sanctionDetails.loanSecurity === 'Unsecure'} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Unsecure</label></fieldset></div>
                                             </div>
                                         </div>
                                     )}
@@ -1058,7 +1067,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700">
                             Enter a university and click the button below to check the prime university list.
                     </div>
-                    <button type="button" className="mt-2 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600" onClick={handleShowPrimeBanks}>PRIME UNIVERSITY LIST</button>
+                    <button type="button" className="mt-2 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600" onClick={handleShowPrimeBanks} disabled={isReadOnly}>PRIME UNIVERSITY LIST</button>
 
                         {/* Inline Bank List Display */}
                         {primeBankList.length > 0 && (
@@ -1108,12 +1117,17 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <div className="p-2 w-full md:w-1/3">
                             <fieldset>
                                 <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
-                                <div className="flex items-center space-x-4 mt-2">
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" /> <span className="ml-2">No</span></label>
+                                <div className="flex items-center space-x-4 mt-2" >
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
+                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
                                 </div>
                             </fieldset>
-                            {lead.hasStudentLoans && renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan, 2 Lakhs outstanding")}
+                            {lead.hasStudentLoans && (
+                                <>
+                                    {renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan")}
+                                    {renderTextField("studentLoanAmount", "Loan Amount", lead.studentLoanAmount, handleChange, "w-full", "e.g., 200000")}
+                                </>
+                            )}
                         </div>
                     </div>
                 </Accordion>
@@ -1125,12 +1139,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <div className="w-full p-2 mb-4 border-b pb-4">
                             <h4 className="font-bold text-gray-800 mb-2">Tuition Fee Options</h4>
                             <div className="flex flex-wrap gap-2">
-                                <button type="button" onClick={() => setActiveConverter(null)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${!activeConverter ? 'bg-green-600 text-white font-bold ring-2 ring-offset-1 ring-green-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                                <button type="button" onClick={() => setActiveConverter(null)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${!activeConverter ? 'bg-green-600 text-white font-bold ring-2 ring-offset-1 ring-green-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`} disabled={isReadOnly}>
                                     <span className="font-bold text-lg mr-2">₹</span>
                                     Enter in INR
                                 </button>
                                 {currencies.map(c => (
-                                    <button type="button" key={c.code} onClick={() => setActiveConverter(c.code)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${activeConverter === c.code ? 'bg-blue-600 text-white font-bold ring-2 ring-offset-1 ring-blue-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                                    <button type="button" key={c.code} onClick={() => setActiveConverter(c.code)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${activeConverter === c.code ? 'bg-blue-600 text-white font-bold ring-2 ring-offset-1 ring-blue-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`} disabled={isReadOnly}>
                                         <span className="font-bold text-lg mr-2">{c.symbol}</span>
                                         {c.label}
                                     </button>
@@ -1143,8 +1157,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                     <div className="p-2 w-full sm:w-1/2 md:w-1/3">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Conversion Rate</label>
                                         <div className="flex items-center">
-                                            <input type="text" name="conversionRate" value={lead.conversionRate} onChange={handleChange} readOnly={!isConversionRateEditable} className={`w-full p-2 border rounded-md ${!isConversionRateEditable ? 'bg-gray-100' : 'bg-white'}`} />
-                                            <button type="button" onClick={() => setIsConversionRateEditable(!isConversionRateEditable)} className="ml-2 p-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">
+                                            <input type="text" name="conversionRate" value={lead.conversionRate} onChange={handleChange} readOnly={isReadOnly || !isConversionRateEditable} className={`w-full p-2 border rounded-md ${!isConversionRateEditable ? 'bg-gray-100' : 'bg-white'}`} />
+                                            <button type="button" onClick={() => setIsConversionRateEditable(!isConversionRateEditable)} className="ml-2 p-1 text-xs bg-gray-200 hover:bg-gray-300 rounded" disabled={isReadOnly}>
                                                 {isConversionRateEditable ? 'Lock' : 'Edit'}
                                             </button>
                                         </div>
@@ -1156,7 +1170,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, "w-full sm:w-1/2 md:w-1/4")}
                         <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Tuition Fee (in Lakhs)</label>
-                            <input type="text" name="fee" value={lead.fee} onChange={handleChange} readOnly={!!activeConverter} className={`w-full p-2 border rounded-md ${!!activeConverter ? 'bg-gray-100' : 'bg-white'}`} />
+                            <input type="text" name="fee" value={lead.fee} onChange={handleChange} readOnly={isReadOnly || !!activeConverter} className={`w-full p-2 border rounded-md ${!!activeConverter ? 'bg-gray-100' : 'bg-white'}`} />
                         </div>
                         {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
                         {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
@@ -1179,8 +1193,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <fieldset className="mb-4">
                             <legend className="text-sm font-medium text-gray-700">Are assets available?</legend>
                             <div className="flex items-center space-x-4 mt-2">
-                                <label className="flex items-center"><input type="radio" value="true" checked={hasAssets === true} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                <label className="flex items-center"><input type="radio" value="false" checked={hasAssets === false} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" /> <span className="ml-2">No</span></label>
+                                <label className="flex items-center"><input type="radio" value="true" checked={hasAssets === true} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
+                                <label className="flex items-center"><input type="radio" value="false" checked={hasAssets === false} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
                             </div>
                         </fieldset>
 
@@ -1197,7 +1211,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                         renderSelectField={renderSelectField}
                                     />
                                 ))}
-                                <button type="button" onClick={addAsset} className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center">
+                                <button type="button" onClick={addAsset} className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" disabled={isReadOnly}>
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                     Add Asset
                                 </button>
@@ -1211,11 +1225,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <input
                             type="text"
                             placeholder="Enter Pincode"
+                            disabled={isReadOnly}
                             value={bankSearchPincode}
                             onChange={(e) => setBankSearchPincode(e.target.value)}
                             className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                         />
-                        <button type="button" onClick={handleBankSearch} disabled={isBankSearching} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-gray-400">
+                        <button type="button" onClick={handleBankSearch} disabled={isReadOnly || isBankSearching} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-gray-400">
                             {isBankSearching ? 'Searching...' : 'Search Banks'}
                         </button>
                     </div>
@@ -1257,7 +1272,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             />
                         ))}
 
-                        <button type="button" className="mt-4 mb-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={addRelation}>
+                        <button type="button" className="mt-4 mb-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={addRelation} disabled={isReadOnly}>
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Add New Relation
                         </button>
@@ -1268,9 +1283,11 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 Note: Own house guarantor should be one of your family members or relatives who owns a house/flat.
                             </p>
                             <p className="text-xs text-gray-600 mb-2">This property is NOT taken as a collateral.</p>
-                            <a href="#" className="text-sm text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); if (showOHGFields) { setShowOHGFields(false); setLead(prev => ({...prev, ownHouseGuarantor: EMPTY_LEAD_STATE.ownHouseGuarantor})); } else { setIsSelectingOHG(!isSelectingOHG); } }}>
-                                {showOHGFields ? 'Hide Guarantor Fields' : 'Add/Change Own House Guarantor'}
-                            </a>
+                            {!isReadOnly && (
+                                <a href="#" className="text-sm text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); if (showOHGFields) { setShowOHGFields(false); setLead(prev => ({...prev, ownHouseGuarantor: EMPTY_LEAD_STATE.ownHouseGuarantor})); } else { setIsSelectingOHG(!isSelectingOHG); } }}>
+                                    {showOHGFields ? 'Hide Guarantor Fields' : 'Add/Change Own House Guarantor'}
+                                </a>
+                            )}
 
                             {/* Inline OHG Selection */}
                             {isSelectingOHG && !showOHGFields && (
@@ -1324,8 +1341,8 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                             <fieldset>
                                                 <legend className="text-sm font-medium text-gray-700">CIBIL Issues?</legend>
                                                 <div className="flex items-center space-x-4 mt-2">
-                                                    <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="true" checked={lead.ownHouseGuarantor.hasCibilIssues === true} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" /> <span className="ml-2">Yes</span></label>
-                                                    <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="false" checked={lead.ownHouseGuarantor.hasCibilIssues === false} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" /> <span className="ml-2">No</span></label>
+                                                <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="true" checked={lead.ownHouseGuarantor.hasCibilIssues === true} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
+                                                <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="false" checked={lead.ownHouseGuarantor.hasCibilIssues === false} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
                                                 </div>
                                             </fieldset>
                                             {lead.ownHouseGuarantor.hasCibilIssues && <input type="text" name="cibilIssues" placeholder="CIBIL Issues" value={lead.ownHouseGuarantor.cibilIssues} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
@@ -1376,12 +1393,12 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <hr className="my-4" />
                         <h4 className="text-xl font-semibold mb-2">Student PAN Details</h4>
                         <fieldset>
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Interested" checked={lead.panStatus === 'Not Interested'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Not Interested</span></label>
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Available" checked={lead.panStatus === 'Not Available'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Not Available</span></label>
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Applied" checked={lead.panStatus === 'Applied'} onChange={handleChange} className="form-radio" /> <span className="ml-2">Applied</span></label>
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2" >
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Interested" checked={lead.panStatus === 'Not Interested'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Not Interested</span></label>
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Available" checked={lead.panStatus === 'Not Available'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Not Available</span></label>
+                                <label className="flex items-center"><input type="radio" name="panStatus" value="Applied" checked={lead.panStatus === 'Applied'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Applied</span></label>
                             </div>
-                            {lead.panStatus === 'Applied' && <input type="text" placeholder="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" className="mt-2 p-2 border border-gray-300 rounded-md w-full md:w-1/2" />}
+                            {lead.panStatus === 'Applied' && <input type="text" placeholder="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" className="mt-2 p-2 border border-gray-300 rounded-md w-full md:w-1/2" disabled={isReadOnly} />}
                         </fieldset>
                 </Accordion>
 
@@ -1409,15 +1426,15 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                                 className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
                                             />
                                         </div>
-                                        <input type="text" placeholder="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md" />
-                                        <button type="button" className="mt-4 px-3 py-1.5 bg-purple-600 text-white text-sm font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-400" onClick={() => handleCreateReferralLead(ref)} disabled={!ref.name || !ref.phoneNumber}>
+                                        <input type="text" placeholder="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md" disabled={isReadOnly} />
+                                        <button type="button" className="mt-4 px-3 py-1.5 bg-purple-600 text-white text-sm font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-400" onClick={() => handleCreateReferralLead(ref)} disabled={isReadOnly || !ref.name || !ref.phoneNumber}>
                                             Create Lead
                                         </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <button type="button" className="mt-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={() => setLead(p => ({...p, referralList: [...p.referralList, { name: "", code: "", phoneNumber: "" }] }))}>
+                        <button type="button" className="mt-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={() => setLead(p => ({...p, referralList: [...p.referralList, { name: "", code: "", phoneNumber: "" }] }))} disabled={isReadOnly}>
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Add Referral
                         </button>
@@ -1428,15 +1445,15 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                     <div className="space-y-6">
                         <div>
                             <h4 className="text-lg font-semibold mb-2">NL Normal</h4>
-                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Banks Connection - Intro & Docs Upload</h4>
-                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}} disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Document Upload</h4>
-                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         {emailMessage && (
                             <div className="mt-4 p-3 text-sm text-center bg-blue-100 text-blue-800 rounded-md">{emailMessage}</div>
@@ -1444,20 +1461,20 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Loan Calculators</h4>
                             <div className="flex flex-wrap gap-2">
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>$ USD TO INR EDUCATION LOAN CALCULATOR</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>Saves Lakhs By Educational Loan Transfer</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>$ USD TO INR EDUCATION LOAN CALCULATOR</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>Saves Lakhs By Educational Loan Transfer</button>
+                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button>
                             </div>
                         </div>
                         <hr/>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Banks Related - Issues</h4>
-                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                         <div>
                             <h4 className="text-lg font-semibold mb-2">Miscellaneous Situations</h4>
-                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                         </div>
                     </div>
                 </Accordion>
@@ -1485,7 +1502,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                             </div>
                                         )}
                                     </div>
-                                    <button type="button" onClick={() => handleOpenAssignModal(bank)} disabled={lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
+                                    <button type="button" onClick={() => handleOpenAssignModal(bank)} disabled={isReadOnly || lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
                                         {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign to this Bank'}
                                     </button>
                                 </div>
@@ -1500,6 +1517,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <div  style={{width:'50%'}}>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Target Sanction Date</label>
                                     <DatePicker
+                                        readOnly={isReadOnly}
                                         value={lead.targetSanctionDate ? moment(lead.targetSanctionDate) : null}
                                         onChange={(newValue) => handleDateChange('targetSanctionDate', newValue)}
                                     />
@@ -1512,6 +1530,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Last Call Date</label>
                                     <DatePicker
+                                        readOnly={isReadOnly}
                                         value={lead.lastCallDate ? moment(lead.lastCallDate) : null}
                                         onChange={(newValue) => handleDateChange('lastCallDate', newValue)}
                                     />
@@ -1519,22 +1538,23 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Next Call Date & Time</label>
                                     <DateTimePicker
+                                        readOnly={isReadOnly}
                                         value={lead.reminderCallDate ? moment(lead.reminderCallDate) : null}
                                         onChange={(newValue) => handleDateChange('reminderCallDate', newValue)}
                                     />
                                 </div>
                             </LocalizationProvider>
-                            <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                            <div className="p-2 w-full sm:w-1/2 md:w-1/4" >
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Final Status</label>
-                                <select name="leadStatus" value={lead.leadStatus} onChange={handleChange} className="w-full p-2 border rounded-md">
+                                <select name="leadStatus" value={lead.leadStatus} onChange={handleChange} className="w-full p-2 border rounded-md" disabled={isReadOnly}>
                                     {leadStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
                                 </select>
                             </div>
                             {/* --- NEW: Conditional Dropdown for Priority Status --- */}
                             {lead.leadStatus === 'On Priority' && (
                                 <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Priority</label>
-                                    <select name="priorityReason" value={lead.priorityReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-yellow-50">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Priority</label >
+                                    <select name="priorityReason" value={lead.priorityReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-yellow-50" disabled={isReadOnly}>
                                         <option value="" disabled>Select a reason...</option>
                                         {priorityReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
                                     </select>
@@ -1544,7 +1564,7 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                             {lead.leadStatus === 'Close' && (
                                 <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Closing</label>
-                                    <select name="closeReason" value={lead.closeReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-red-50">
+                                    <select name="closeReason" value={lead.closeReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-red-50" disabled={isReadOnly}>
                                         <option value="" disabled>Select a reason...</option>
                                         {closeReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
                                     </select>
@@ -1554,121 +1574,191 @@ const LeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <LocalizationProvider dateAdapter={AdapterMoment}>
                                     <div className="p-2 w-full sm:w-1/2 md:w-1/4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Date of Sanction</label>
-                                        <DatePicker value={lead.sanctionDetails.sanctionDate ? moment(lead.sanctionDetails.sanctionDate) : null} onChange={(newValue) => handleSanctionDetailsChange({ target: { name: 'sanctionDate', value: newValue ? new Date(newValue).toISOString() : null } })} />
+                                        <DatePicker readOnly={isReadOnly} value={lead.sanctionDetails.sanctionDate ? moment(lead.sanctionDetails.sanctionDate) : null} onChange={(newValue) => handleSanctionDetailsChange({ target: { name: 'sanctionDate', value: newValue ? new Date(newValue).toISOString() : null } })} />
                                     </div>
                                 </LocalizationProvider>
                             )}
                             {lead.leadStatus === 'On Priority' && <div className="w-full p-2 text-xs text-gray-500"><strong>Why mark as Priority?</strong> A lead is a priority if they have an admit, have shortlisted universities, or their intake is very soon. This helps focus on leads closest to conversion.</div>}
                             {lead.leadStatus === 'Close' && <div className="w-full p-2 text-xs text-gray-500"><strong>When to Close a Lead?</strong> Close a lead if the student is definitively not interested, cannot be reached after multiple attempts, or is clearly not eligible for any loan product.</div>}
+                            <div className="w-full p-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Add Note</label>
+                                <textarea
+                                    name="notes"
+                                    rows="2"
+                                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                    disabled={isReadOnly}
+                                    placeholder="Enter note..."
+                                    value={newNote.notes}
+                                    onChange={handleNoteChange}
+                                ></textarea>
+                            </div>
                             <div className="w-full p-2 space-y-2">
-                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Clear Preferred Next Call Time</span></label>
-                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" /> <span className="ml-2 text-sm">Student is not eligible for Connecting to Advisar</span></label>
+                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" disabled={isReadOnly} /> <span className="ml-2 text-sm">Clear Preferred Next Call Time</span></label>
+                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" disabled={isReadOnly} /> <span className="ml-2 text-sm">Student is not eligible for Connecting to Advisar</span></label>
                             </div>
                         </div>
                 </Accordion>
-            </div>
-            
-            {/* --- NEW: Call Notes & History Section --- */}
-            <Accordion title="Call Notes & History" icon="📞" defaultExpanded>
-                {/* History View */}
-                <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
-                    <h4 className="text-lg font-semibold text-gray-700 sticky top-0 bg-gray-50 py-2 -mt-4">History</h4>
-                    {lead.callHistory && lead.callHistory.length > 0 ? (
-                        lead.callHistory.slice().reverse().map((log, index) => (
-                            <div key={index} className={`p-3 rounded-lg border-l-4 ${log.callStatus === 'Log' ? 'bg-purple-50 border-purple-400' : 'bg-blue-50 border-blue-400'}`}>
-                                <div className="flex justify-between items-center mb-1">
-                                    <p className="font-bold text-sm text-gray-800">
-                                        Note by {log.loggedByName}
-                                    </p>
-                                    <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
-                                </div>
-                                <p className="text-gray-700 text-sm">{log.notes}</p>
-                                {log.callStatus && <Chip label={log.callStatus} size="small" sx={{ mt: 1 }} color={log.callStatus === 'Log' ? 'secondary' : 'primary'} variant="outlined" />}
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-center text-gray-500 py-4">No notes for this lead yet.</p>
+                </div>
+                </div>
+
+                {/* Right Column: Tasks & Notes */}
+                <div className="w-full lg:w-1/3 space-y-4 bg-blue-50 p-4 rounded-xl border border-blue-100 h-fit">
+                    {/* --- NEW: Inline Task Creator --- */}
+                    {showTaskCreator && (
+                        <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'white' }}>
+                            <Typography variant="h6" gutterBottom>Create New Task for {lead.fullName}</Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {isReadOnly ? (
+                                    <MuiTextField
+                                        label="Assign Task To"
+                                        value={`Automatically assigned to ${lead.assignedFO}`}
+                                        InputProps={{ readOnly: true }}
+                                        variant="outlined" size="small"
+                                    />
+                                ) : (
+                                    <Autocomplete
+                                        options={assignableUsers}
+                                        getOptionLabel={(option) => `${option.fullName} (${option.role})`}
+                                        value={task.assignedTo}
+                                        onChange={(event, newValue) => setTask(prev => ({ ...prev, assignedTo: newValue }))}
+                                        renderInput={(params) => <MuiTextField {...params} label="Assign Task To" variant="outlined" size="small" />}
+                                    />
+                                )}
+                                <MuiTextField fullWidth label="Task Subject" name="subject" value={task.subject} onChange={handleTaskChange} variant="outlined" size="small" />
+                                <MuiTextField fullWidth label="Task Body (Optional)" name="body" value={task.body} onChange={handleTaskChange} multiline rows={3} variant="outlined" size="small" />
+                                {taskMessage && <p className={`text-sm ${taskMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{taskMessage}</p>}
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
+                                    <MuiButton onClick={() => setShowTaskCreator(false)}>Cancel</MuiButton>
+                                    <MuiButton variant="contained" onClick={handleCreateTask}>
+                                        Create Task
+                                    </MuiButton>
+                                </Box>
+                            </Box>
+                        </Paper>
                     )}
-                </div>
 
-                {/* Add New Note Form */}
-                <div className="mt-6">
-                    <h4 className="text-lg font-semibold text-gray-700 mb-2">Add New Note</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <textarea
-                                name="notes"
-                                rows="4"
-                                className="w-full p-2 border rounded-md"
-                                placeholder="Enter detailed notes from the conversation..."
-                                value={newNote.notes}
-                                onChange={handleNoteChange}
-                            ></textarea>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Call Status *</label>
-                            <select name="callStatus" value={newNote.callStatus} onChange={handleNoteChange} className="w-full p-2 border rounded-md">
-                                <option>Connected</option>
-                                <option>Not Reached</option>
-                                <option>Busy</option>
-                                <option>Scheduled</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={!newNote.notes.trim() || !lead.reminderCallDate || !lead.lastCallDate}>
-                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    ✅ SUBMIT LEAD DATA 
-                </button>
-            </Accordion>
-
-            {/* --- NEW: Task History Section --- */}
-            <Accordion title="Task History" icon="📝" defaultExpanded>
-                <div className="space-y-4">
-                    {leadTasks.length > 0 ? (
-                        leadTasks.slice().reverse().map((task) => {
-                            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
-                            const canCompleteTask = currentUser && currentUser._id === task.assignedToId;
-
-                            return (
-                                <Paper key={task._id} elevation={2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : 'white', borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : '#64b5f6'}` }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
+                    {/* --- Call Notes & History Section (Hidden for Bank Executives) --- */}
+                    {!isReadOnly && (
+                        <Accordion title="Call Notes & History" icon="📞" defaultExpanded>
+                            {/* History View */}
+                            <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
+                                <h4 className="text-lg font-semibold text-gray-700 sticky top-0 bg-gray-50 py-2 -mt-4">History</h4>
+                        {allNotes.length > 0 ? (
+                            allNotes.map((log, index) => (
+                                <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                                    log.isExternal 
+                                        ? 'bg-orange-50 border-orange-400' 
+                                        : (log.callStatus === 'Log' ? 'bg-purple-50 border-purple-400' : 'bg-blue-50 border-blue-400')
+                                }`}>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <p className="font-bold text-sm text-gray-800">
+                                            {log.isExternal ? '🏦 Bank Note' : 'Note'} by {log.loggedByName}
+                                                </p>
+                                                <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                                            </div>
+                                            <p className="text-gray-700 text-sm">{log.notes}</p>
+                                    {log.callStatus && !log.isExternal && <Chip label={log.callStatus} size="small" sx={{ mt: 1 }} color={log.callStatus === 'Log' ? 'secondary' : 'primary'} variant="outlined" />}
+                                    {log.isExternal && <Chip label="External" size="small" sx={{ mt: 1, bgcolor: '#ff9800', color: 'white' }} />}
                                         </div>
-                                        <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
-                                    </Box>
-                                    <Divider sx={{ my: 1.5 }} />
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                        <Typography variant="caption" color="text.secondary">
-                                            Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
-                                            <br />
-                                            Assigned to: <strong>{task.assignedToName}</strong>
-                                        </Typography>
-                                        {task.status === 'Open' && canCompleteTask && (
-                                            <MuiButton
-                                                variant="contained"
-                                                color="success"
-                                                size="small"
-                                                onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
-                                            >
-                                                Mark as Done
-                                            </MuiButton>
-                                        )}
-                                    </Box>
-                                </Paper>
-                            );
-                        })
-                    ) : (
-                        <Typography sx={{ textAlign: 'center', color: 'text.secondary', p: 2 }}>
-                            No tasks have been created for this lead.
-                        </Typography>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 py-4">No notes for this lead yet.</p>
+                                )}
+                            </div>
+
+                            {/* Add New Note Form */}
+                            <div className="mt-6">
+                                <h4 className="text-lg font-semibold text-gray-700 mb-2">Add New Note</h4>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <textarea
+                                            name="notes"
+                                            rows="4"
+                                            className="w-full p-2 border rounded-md"
+                                            disabled={isReadOnly}
+                                            placeholder="Enter detailed notes from the conversation..."
+                                            value={newNote.notes}
+                                            onChange={handleNoteChange}
+                                        ></textarea>
+                                    </div>
+                                    <div >
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Call Status *</label>
+                                        <select name="callStatus" value={newNote.callStatus} onChange={handleNoteChange} className="w-full p-2 border rounded-md" disabled={isReadOnly}>
+                                            <option>Connected</option>
+                                            <option>Not Reached</option>
+                                            <option>Busy</option>
+                                            <option>Scheduled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={isReadOnly || !newNote.notes.trim() || !lead.reminderCallDate || !lead.lastCallDate}>
+                                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                ✅ SAVE NOTES
+                            </button>
+                        </Accordion>
                     )}
+
+                    {/* --- NEW: Task History Section --- */}
+                    <Accordion title="Task History" icon="📝" defaultExpanded>
+                        <div className="space-y-4">
+                            {leadTasks.length > 0 ? (
+                                leadTasks.slice().reverse().map((task) => {
+                                    const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+                                    const canCompleteTask = currentUser && currentUser._id === task.assignedToId;
+                                    const isBankTask = task.creatorRole === 'BankExecutive';
+
+                                    return (
+                                        <Paper key={task._id} elevation={isBankTask ? 3 : 2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : (isBankTask ? '#fff3e0' : 'white'), borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : (isBankTask ? '#ff9800' : '#64b5f6')}` }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div>
+                                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
+                                                </div>
+                                                <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
+                                            </Box>
+                                            <Divider sx={{ my: 1.5 }} />
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                                <Typography variant="caption" color={isBankTask ? "text.primary" : "text.secondary"} sx={{ fontWeight: isBankTask ? 500 : 400 }}>
+                                                    Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
+                                                    <br />
+                                                    Assigned to: <strong>{task.assignedToName}</strong>
+                                                </Typography>
+                                                {task.status === 'Open' && canCompleteTask && (
+                                                    <MuiButton
+                                                        variant="contained"
+                                                        color="success"
+                                                        size="small"
+                                                        onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
+                                                    >
+                                                        Mark as Done
+                                                    </MuiButton>
+                                                )}
+                                            </Box>
+                                        </Paper>
+                                    );
+                                })
+                            ) : (
+                                <Typography sx={{ textAlign: 'center', color: 'text.secondary', p: 2 }}>
+                                    No tasks have been created for this lead.
+                                </Typography>
+                            )}
+                        </div>
+                    </Accordion>
                 </div>
-            </Accordion>
+            </div>
 
             {/* Main Submit Button */}
+            <div className="mt-8 flex justify-center pb-4">
+                <button 
+                    type="submit" 
+                    className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 text-white font-bold text-lg rounded-xl shadow-xl transition duration-200 transform hover:scale-[1.02] disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center" 
+                    disabled={isReadOnly || (lead._id && (!newNote.notes?.trim() || !lead.reminderCallDate || !lead.lastCallDate))}
+                >
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    SAVE ALL CHANGES
+                </button>
+            </div>
         </form>
 
         {/* --- NEW: Email Template Modal --- */}

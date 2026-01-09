@@ -14,8 +14,11 @@ const BankExecutivePanel = ({ onLogout }) => {
     const [leads, setLeads] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
-    const [selectedLead, setSelectedLead] = useState(null);
-    const [note, setNote] = useState('');
+    // --- NEW: State for Document Access OTP ---
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otpLead, setOtpLead] = useState(null);
+    const [otpInput, setOtpInput] = useState('');
+    const [otpMessage, setOtpMessage] = useState({ text: '', type: 'info' });
 
     useEffect(() => {
         const storedUser = JSON.parse(localStorage.getItem('employeeUser'));
@@ -53,44 +56,56 @@ const BankExecutivePanel = ({ onLogout }) => {
         onLogout();
     };
 
-    const handleOpenNotesDialog = (lead) => setSelectedLead(lead);
-    const handleCloseNotesDialog = () => {
-        setSelectedLead(null);
-        setNote('');
-    };
-
-    const handleSaveNote = async () => {
-        if (!note.trim() || !selectedLead) return;
-
+    // --- NEW: Handlers for Document Access OTP Flow ---
+    const handleOpenOtpDialog = async (lead) => {
+        setOtpLead(lead);
+        setOtpMessage({ text: 'Sending OTP to student...', type: 'info' });
+        setOtpDialogOpen(true);
         try {
-            const payload = {
-                // The backend expects `newCallNote` but we'll use it for external notes
-                // A dedicated endpoint would be better in the long run.
-                externalCallNote: {
-                    notes: note,
-                    loggedByName: `${currentUser.fullName} (${currentUser.bank})`,
-                    // We need a way to pass the user ID. For now, backend will use a placeholder.
-                }
-            };
-            // This should be a dedicated endpoint like /api/leads/:id/external-note
-            // For now, we use the general update endpoint.
-            const response = await axios.put(`${API_URL}/${selectedLead._id}`, payload);
-            
-            // Update the lead in the local state
-            setLeads(leads.map(l => l._id === selectedLead._id ? response.data : l));
-            handleCloseNotesDialog();
-
+            // Request OTP from backend
+            await axios.post(`${API_URL}/${lead._id}/send-document-otp`);
+            setOtpMessage({ text: `OTP sent to ${lead.email}. Please ask the student for the code.`, type: 'success' });
         } catch (error) {
-            console.error('Failed to save external note:', error);
-            alert('Error saving note. Please try again.');
+            console.error('Failed to send OTP:', error);
+            setOtpMessage({ text: error.response?.data?.message || 'Failed to send OTP.', type: 'error' });
         }
     };
 
-    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
+    const handleCloseOtpDialog = () => {
+        setOtpDialogOpen(false);
+        setOtpLead(null);
+        setOtpInput('');
+        setOtpMessage({ text: '', type: 'info' });
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otpInput.trim()) {
+            setOtpMessage({ text: 'Please enter the OTP.', type: 'error' });
+            return;
+        }
+        setOtpMessage({ text: 'Verifying...', type: 'info' });
+        try {
+            const response = await axios.post(`${API_URL}/${otpLead._id}/verify-document-otp`, {
+                otp: otpInput
+            });
+
+            // On success, open the document page in a new tab
+            if (response.data.success) {
+                setOtpMessage({ text: 'Verification successful! Opening documents...', type: 'success' });
+                window.open(`/leads/${otpLead._id}/documents`, '_blank');
+                handleCloseOtpDialog();
+            }
+        } catch (error) {
+            console.error('OTP verification failed:', error);
+            setOtpMessage({ text: error.response?.data?.message || 'Invalid OTP.', type: 'error' });
+        }
+    };
+
+    if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress size={60} /></Box>;
 
     return (
-        <>
-            <AppBar position="static" sx={{ mb: 4, background: 'linear-gradient(45deg, #004d40 30%, #00796b 90%)' }}>
+        <Box sx={{ minHeight: '100vh', width: '100%', bgcolor: '#f4f6f8' }}>
+            <AppBar position="static" sx={{ background: 'linear-gradient(45deg, #4a148c 30%, #e65100 90%)' }}>
                 <Toolbar>
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         {currentUser?.bank || 'Bank'} Executive Portal
@@ -105,20 +120,20 @@ const BankExecutivePanel = ({ onLogout }) => {
                 </Toolbar>
             </AppBar>
 
-            <Container maxWidth="lg" sx={{ mt: 4 }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#004d40' }}>
+            <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, sm: 4 } }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#4a148c' }}>
                     Assigned Leads
                 </Typography>
 
                 <TableContainer component={Paper} elevation={3}>
                     <Table>
-                        <TableHead sx={{ bgcolor: '#e0f2f1' }}>
+                        <TableHead sx={{ bgcolor: '#4a148c', '& .MuiTableCell-root': { color: 'white' } }}>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Lead ID</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Student Name</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Loan Type</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Assigned On</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Action</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }} align="center">Action</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -130,9 +145,17 @@ const BankExecutivePanel = ({ onLogout }) => {
                                     <TableCell>
                                         {moment(lead.assignedBanks.find(b => b.bankName === currentUser.bank)?.assignedAt).format('DD MMM YYYY')}
                                     </TableCell>
-                                    <TableCell>
-                                        <Button variant="contained" size="small" onClick={() => handleOpenNotesDialog(lead)}>
-                                            View & Add Notes
+                                    <TableCell align="center">
+                                        <Button variant="outlined" size="small" href={`/leads/${lead._id}/view`} target="_blank">
+                                            View
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            sx={{ ml: 1 }}
+                                            onClick={() => handleOpenOtpDialog(lead)}
+                                        >
+                                            Access Documents
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -142,57 +165,32 @@ const BankExecutivePanel = ({ onLogout }) => {
                 </TableContainer>
             </Container>
 
-            {/* Notes Dialog */}
-            <Dialog open={!!selectedLead} onClose={handleCloseNotesDialog} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ bgcolor: '#004d40', color: 'white' }}>
-                    Notes for {selectedLead?.fullName} (Lead: {selectedLead?.leadID})
-                </DialogTitle>
-                <DialogContent dividers>
-                    {selectedLead && (
-                        <Box>
-                            <Typography variant="h6" sx={{ mt: 1, mb: 1, fontWeight: 'bold' }}>Lead Information (Read-Only)</Typography>
-                            <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
-                                <Typography><b>Email:</b> {selectedLead.email}</Typography>
-                                <Typography><b>Phone:</b> {selectedLead.mobileNumbers?.join(', ')}</Typography>
-                                <Typography><b>Location:</b> {selectedLead.permanentLocation}</Typography>
-                                <Typography><b>Loan Amount:</b> {selectedLead.fee || 'N/A'}</Typography>
-                            </Paper>
-
-                            <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>External Notes History</Typography>
-                            <Box sx={{ maxHeight: 200, overflowY: 'auto', p: 1, border: '1px solid #ddd', borderRadius: 1, mb: 3 }}>
-                                {selectedLead.externalCallHistory?.length > 0 ? (
-                                    selectedLead.externalCallHistory.slice().reverse().map((log, index) => (
-                                        <Box key={index} sx={{ mb: 1.5, borderLeft: '3px solid #00796b', pl: 1 }}>
-                                            <Typography variant="caption" display="block">
-                                                {moment(log.createdAt).format('DD MMM YYYY, h:mm A')} by <b>{log.loggedByName}</b>
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ fontStyle: 'italic' }}>"{log.notes}"</Typography>
-                                        </Box>
-                                    ))
-                                ) : (
-                                    <Typography>No external notes yet.</Typography>
-                                )}
-                            </Box>
-
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={4}
-                                label="Add a new note..."
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                            />
-                        </Box>
-                    )}
+            {/* --- NEW: OTP Dialog for Document Access --- */}
+            <Dialog open={otpDialogOpen} onClose={handleCloseOtpDialog}>
+                <DialogTitle>Document Access Verification</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mb: 2 }}>
+                        An OTP has been sent to the student's email ({otpLead?.email}). Please enter it below to access the documents.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="otp"
+                        label="Enter OTP"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value)}
+                    />
+                    {otpMessage.text && <Typography color={otpMessage.type === 'error' ? 'error' : 'primary'} sx={{ mt: 2 }}>{otpMessage.text}</Typography>}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseNotesDialog}>Cancel</Button>
-                    <Button onClick={handleSaveNote} variant="contained" color="primary" disabled={!note.trim()}>
-                        Save Note
-                    </Button>
+                    <Button onClick={handleCloseOtpDialog}>Cancel</Button>
+                    <Button onClick={handleVerifyOtp} variant="contained">Verify & View</Button>
                 </DialogActions>
             </Dialog>
-        </>
+        </Box>
     );
 };
 
