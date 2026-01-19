@@ -38,18 +38,39 @@ const BasicDetailsSection = ({ lead, setLead, handleChange, renderTextField, ren
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
                 {renderTextField("fullName", "Full Name *", lead.fullName, handleChange)}
                 {renderTextField("email", "Email id *", lead.email, handleChange)}
-               
+                {!lead._id && (
+                    <div className={`field-wrapper field-container`}>
+                        <label htmlFor="source" className="field-label">Source</label>
+                        <input
+                            type="text"
+                            id="source"
+                            name="source"
+                            value={lead.source?.source || ''}
+                            onChange={(e) => {
+                                const newValue = e.target.value;
+                                setLead(prev => ({
+                                    ...prev,
+                                    source: { ...prev.source, source: newValue }
+                                }));
+                            }}
+                            className="field-input"
+                        />
+                    </div>
+                )}
+
                 {/* Mobile Numbers Section */}
                 <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
                     {lead.mobileNumbers.map((mobile, index) => {
-                        const [code, num] = mobile.split('-');
+                        const parts = mobile.split('-');
+                        const code = parts.length > 1 ? parts[0] : '+91';
+                        const num = parts.length > 1 ? parts[1] : mobile;
                         return (
                             <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                 <TextField
                                     fullWidth
                                     size="small"
                                     value={num || ''}
-                                    onChange={(e) => handleMobileNumberChange(index, `${code || '+91'}-${e.target.value}`)}
+                                    onChange={(e) => handleMobileNumberChange(index, `${code}-${e.target.value}`)}
                                     placeholder="Enter mobile number"
                                     InputProps={{
                                         startAdornment: (
@@ -57,7 +78,7 @@ const BasicDetailsSection = ({ lead, setLead, handleChange, renderTextField, ren
                                                 <FormControl variant="standard" sx={{ minWidth: 70 }}>
                                                     <Select
                                                         disableUnderline
-                                                        value={code || '+91'}
+                                                        value={code}
                                                         onChange={(e) => handleMobileNumberChange(index, `${e.target.value}-${num || ''}`)}
                                                     >
                                                         {countryPhoneCodes.map(country => <MenuItem key={country.code} value={country.code}>{country.name} ({country.code})</MenuItem>)}
@@ -79,7 +100,8 @@ const BasicDetailsSection = ({ lead, setLead, handleChange, renderTextField, ren
                 </Box>
                 {renderAutocompleteField("permanentLocation", "Permanent Location in INDIA", lead.permanentLocation, handleChange, indianCities)}
                 {renderSelectField("state", "State", lead.state, handleChange, indianStates)}
-                {renderTextField("regionalHead", "Regional Head", lead.region, handleChange)}
+                {renderTextField("regionalHead", "Regional Head Name", lead.regionalHead, handleChange)}
+                {renderTextField("region", "Region Name", lead.region, handleChange)}
                 {renderSelectField("planningToStudy", "Planning to Study in", lead.planningToStudy, handleChange, ['India', 'Abroad'])}
             </Box>
         </>

@@ -8,8 +8,8 @@ export const EMPTY_LEAD_STATE = {
     
     // 2. Education / Loan Info
     loanId: '', loanType: "", courseStartMonth: "", courseStartYear: "", degree: "",
-    fieldOfInterest: "", interestedCountries: "", admitReceived: false, admittedUniversities: "",
-    admissionStatus: "Not Yet Applied", approachedAnyBank: false, previousBankApproached: "",
+    fieldOfInterest: "", interestedCountries: [], admitReceived: false, admittedUniversities: [],
+    admissionStatus: "Not Yet Applied", approachedAnyBank: false, approachedBanks: [],
     expectedAdmitDate: null, expectedApplicationDate: null,
     fileLoggedIn: null,
     loanSanctioned: null,
@@ -50,14 +50,14 @@ export const EMPTY_LEAD_STATE = {
         { relationship: '', name: '', address: '', phoneNumber: '' },
         { relationship: '', name: '', address: '', phoneNumber: '' }
     ], 
-    panStatus: "Not Interested", panNumber: "",
+  panStatus: "Applied", panNumber: "",
     referralList: [
         { name: "", code: "", phoneNumber: "" },
         { name: "", code: "", phoneNumber: "" },
         { name: "", code: "", phoneNumber: "" }
     ],
     collateralLocation: "", suggestedBank: "", lastCallDate: "", reminderCallDate: "",
-    leadStatus: "No status", targetSanctionDate: "",    
+    leadStatus: "No status", targetSanctionDate: "", reminders: [],
     testScores: {
         GRE: "", IELTS: "", TOEFL: "", GMAT: "",
         SAT: "", PTE: "", ACT: "", DUOLINGO: "",
@@ -260,7 +260,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
     },
 };
 
-export const regions = ['North', 'South', 'East', 'West'];
+export const regions = ['AP', 'Hyderabad', 'TG-Rest', 'Banglore', 'Tamilnadu', 'kerala', 'delhi', '7 sisters', 'mumbai', 'maharastra-rest'];
 
 export const referenceRelationships = ['Uncle', 'Aunt', 'Friend', 'Any other relatives']; // This is used for references
 

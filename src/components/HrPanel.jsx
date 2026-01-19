@@ -115,7 +115,7 @@ const totalSteps = 5;
 
 // Mock data for zones and regions
 const zones = ['North', 'South', 'East', 'West'];
-const regions = ['Region A', 'Region B', 'Region C', 'Region D', 'Region E'];
+const regions = ['AP', 'Hyderabad', 'TG-Rest', 'Banglore', 'Tamilnadu', 'kerala', 'delhi', '7 sisters', 'mumbai', 'maharastra-rest'];
 
 // --- FORM STEP COMPONENTS (Props are passed down to all steps) ---
 

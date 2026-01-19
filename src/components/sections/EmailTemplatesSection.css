@@ -1,0 +1,98 @@
+.section-block {
+    padding: 1rem;
+    background-color: #fff;
+}
+
+.template-section {
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.template-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.15s;
+}
+
+.btn-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+}
+
+.nl-normal-btn {
+    background-color: #ea580c;
+}
+
+.nl-normal-btn:hover {
+    background-color: #dc2626;
+}
+
+.banks-docs-btn {
+    background-color: #aa60c8;
+}
+
+.banks-docs-btn:hover {
+    background-color: #9333ea;
+}
+
+.document-upload-btn {
+    background-color: #16a34a;
+}
+
+.document-upload-btn:hover {
+    background-color: #15803d;
+}
+
+.loan-calculator-btn {
+    background-color: #dc2626;
+}
+
+.loan-calculator-btn:hover {
+    background-color: #b91c1c;
+}
+
+.loan-issues-btn {
+    background-color: purple;
+}
+
+.loan-issues-btn:hover {
+    opacity: 0.8;
+}
+
+.misc-situations-btn {
+    background-color: #11224e;
+}
+
+.misc-situations-btn:hover {
+    opacity: 0.8;
+}
+
+.email-message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    text-align: center;
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-radius: 0.375rem;
+}

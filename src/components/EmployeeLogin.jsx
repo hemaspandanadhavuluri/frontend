@@ -30,9 +30,9 @@ import axios from 'axios';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#1976d2',
-            light: '#42a5f5',
-            dark: '#1565c0',
+            main: '#512967',
+            light: '#ee8926',
+            dark: '#360d4c',
         },
         secondary: {
             main: '#dc004e',
@@ -171,7 +171,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
                     justifyContent: 'center',
                     bgcolor: 'background.default',
                     py: 4,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: '#512967'
                 }}
             >
                 <Paper

@@ -1,0 +1,199 @@
+.section-block {
+    padding: 1rem;
+    background-color: #fff;
+}
+
+.history-container {
+    display: grid;
+    gap: 1rem;
+    max-height: 24rem;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+    margin-bottom: 1.5rem;
+}
+
+.history-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    background-color: #f9fafb;
+    padding: 0.5rem 0;
+    margin-top: -1rem;
+}
+
+.history-item {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid;
+}
+
+.history-item.log {
+    background-color: #f3e8ff;
+    border-left-color: #a855f7;
+}
+
+.history-item.connected {
+    background-color: #dbeafe;
+    border-left-color: #3b82f6;
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.history-item-author {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #1f2937;
+}
+
+.history-item-time {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.history-item-notes {
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.empty-history {
+    text-align: center;
+    color: #6b7280;
+    padding: 1rem;
+}
+.add-note-form {
+    display: flex;
+    flex-direction: column;
+    border:#6b7280 1px solid;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+}
+
+.add-note-section {
+    margin-top: 1.5rem;
+}
+.notes-form-textarea{
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+}
+
+.add-note-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.note-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.note-form-full {
+    grid-column: 1 / -1;
+}
+
+.note-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-family: inherit;
+}
+
+.note-textarea:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.submit-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 0.75rem 1rem;
+    background-color: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submit-btn:hover {
+    background-color: #1d4ed8;
+}
+
+.submit-btn:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+.submit-lead-data-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submit-lead-data-btn.disabled {
+    background-color: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.submit-lead-data-btn.enabled {
+    background-color: #28a745;
+    color: white;
+}
+
+.submit-lead-data-btn.enabled:hover {
+    background-color: #218838;
+}
+
+.submit-lead-data-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+}
+
+.submit-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .note-form {
+        grid-template-columns: 1fr;
+    }
+
+    .note-form-full {
+        grid-column: 1;
+    }
+}

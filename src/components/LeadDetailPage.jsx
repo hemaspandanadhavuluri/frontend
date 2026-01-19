@@ -1,8 +1,11 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, AppBar, Toolbar, IconButton, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Container } from '@mui/material';
 import LeadForm from './LeadForm';
+
+const styles={
+
+}
 
 const LeadDetailPage = () => {
     const { id } = useParams();
@@ -17,16 +20,6 @@ const LeadDetailPage = () => {
 
     return (
         <>
-            <AppBar position="static">
-                <Toolbar>
-                    <IconButton onClick={() => navigate(-1)} edge="start" color="inherit" aria-label="back">
-                        <ArrowBackIcon />
-                    </IconButton>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        {id ? 'Lead Details' : 'Create New Lead'}
-                    </Typography>
-                </Toolbar>
-            </AppBar>
             <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
                 <LeadForm 
                     leadData={{ _id: id }} // Pass the ID to the form

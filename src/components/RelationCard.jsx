@@ -61,7 +61,7 @@ const RelationCard = ({
     };
 
     return (
-        <Card variant="outlined" sx={{ my: 2, p: 2, bgcolor: '#f9f9f9', position: 'relative' }}>
+        <Card variant="outlined" sx={{ my: 2, p: 2, bgcolor: '#fff', position: 'relative' }}>
             <IconButton
                 aria-label="remove relation"
                 onClick={() => onRemove(index)}
@@ -71,7 +71,7 @@ const RelationCard = ({
                 <RemoveCircleOutlineIcon color="error" />
             </IconButton>
 
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'info.main' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#360d4c' }}>
                 {relation.relationshipType || `Relation ${index + 1}`}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
@@ -139,7 +139,7 @@ const RelationCard = ({
                         </RadioGroup>
                     </FormControl>
                     {relation.hasCibilIssues && (
-                        <TextField fullWidth size="small" margin="dense" name="cibilIssues" label="CIBIL Issues" value={relation.cibilIssues || ''} onChange={handleRelationChange} />
+                        <TextField fullWidth size="small" margin="dense" color= '#360d4c' name="cibilIssues" label="CIBIL Issues" value={relation.cibilIssues || ''} onChange={handleRelationChange} />
                     )}
                 </Box>
                 <Box sx={{ width: '100%', p: 1.5 }}>

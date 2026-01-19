@@ -1,0 +1,171 @@
+.ld-container { /* Deep purple background */
+  color: #ffffff;
+  min-height: 100vh;
+  padding: 40px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.ld-title-group h1 {
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.status-badge {
+  color: #ff8c33;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #ff8c33;
+}
+
+.ld-title-group p {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+/* Grid Layout */
+.ld-main-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 30px;
+  margin-top: 30px;
+}
+
+/* Card Styling */
+.ld-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 25px;
+}
+
+.card-title {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-row span { color: rgba(255, 255, 255, 0.5); }
+.amount { font-size: 20px; color: #ffffff; }
+
+/* Progress Bar */
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.percent { color: #ff8c33; font-weight: bold; }
+
+.progress-bar-container {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff8c33, #ed6a02);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.progress-labels .active { color: #ff8c33; }
+
+/* Processing Notes / Chat */
+.ld-notes-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.online-indicator { color: #4ade80; font-size: 12px; }
+
+.chat-thread {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.date-separator {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  margin: 20px 0;
+}
+
+.system-msg {
+  text-align: center;
+  font-style: italic;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.received { background: rgba(255, 255, 255, 0.08); align-self: flex-start; }
+.sent { background: #ff8c33; color: white; align-self: flex-end; margin-left: auto; }
+
+.bubble-meta { font-size: 10px; margin-bottom: 5px; opacity: 0.7; }
+
+/* Input Area */
+.chat-input-area { padding: 20px; background: rgba(0, 0, 0, 0.2); }
+
+textarea {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  padding: 10px;
+  height: 60px;
+  resize: none;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.send-btn {
+  background: #ff8c33;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}

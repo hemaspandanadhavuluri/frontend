@@ -1,0 +1,303 @@
+.section-block {
+    padding: 1rem;
+    background-color: #fff;
+}
+
+.relations-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.5rem;
+}
+
+.form-group {
+    padding: 0.5rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+    margin-bottom: 0.25rem;
+}
+
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-family: inherit;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #360d4c;
+    border-color: #360d4c;
+}
+
+.relation-card {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.relation-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.relation-title {
+    font-weight: 600;
+    color: #360d4c;
+}
+
+.remove-btn {
+    padding: 0.375rem 0.75rem;
+    background-color: #dc2626;
+    color: #fff;
+    font-size: 0.875rem;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.remove-btn:hover {
+    background-color: #b91c1c;
+}
+
+.add-relation-btn {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+    background-color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease;
+}
+
+.add-relation-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.add-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.ohg-container {
+    padding: 1rem;
+    border: 1px dashed #9ca3af;
+    border-radius: 0.375rem;
+}
+
+.ohg-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.ohg-note {
+    font-size: 0.75rem;
+    color: #360d4c;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.ohg-link {
+    font-size: 0.875rem;
+    color: #360d4c;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.ohg-link:hover {
+    color: #360d4c;
+}
+
+.relation-selector {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+}
+
+.selector-text {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.relation-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.relation-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #fff;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.relation-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.ohg-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.ohg-details-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #360d4c;
+}
+
+.ohg-fields {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+
+.ohg-phone-field {
+    padding: 0.5rem;
+    width: 100%;
+}
+
+.ohg-phone-field.sm\:w-1\/2 {
+    width: 50%;
+}
+
+.ohg-phone-field.md\:w-1\/4 {
+    width: 25%;
+}
+
+.ohg-phone-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+    margin-bottom: 0.25rem;
+}
+
+.ohg-phone-input-group {
+    display: flex;
+}
+
+.ohg-country-select {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem 0 0 0.375rem;
+    background-color: #f9fafb;
+}
+
+.ohg-phone-input {
+    flex: 1;
+    padding: 0.5rem;
+    border-top: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    border-left: none;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.ohg-cibil-field {
+    padding: 0.5rem;
+    width: 100%;
+}
+
+.ohg-cibil-field.sm\:w-1\/2 {
+    width: 50%;
+}
+
+.ohg-cibil-field.md\:w-1\/4 {
+    width: 25%;
+}
+
+.ohg-cibil-fieldset {
+    border: none;
+    padding: 0;
+}
+
+.ohg-cibil-legend {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+}
+
+.ohg-radio-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.ohg-radio-label {
+    display: flex;
+    align-items: center;
+}
+
+.ohg-radio-input {
+    margin-right: 0.5rem;
+}
+
+.ohg-radio-text {
+    margin-left: 0.5rem;
+}
+
+.ohg-cibil-input {
+    margin-top: 0.5rem;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+}
+
+.ohg-cibil-input:focus {
+    outline: none;
+    border-color: #360d4c;
+}
+
+@media (max-width: 768px) {
+    .relations-form {
+        grid-template-columns: 1fr;
+    }
+
+    .ohg-buttons {
+        flex-direction: column;
+    }
+
+    .ohg-btn {
+        width: 100%;
+    }
+
+    .ohg-radio-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

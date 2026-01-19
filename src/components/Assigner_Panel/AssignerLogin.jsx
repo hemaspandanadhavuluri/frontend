@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { API_URL } from '../constants';
+import { API_URL } from '../../constants';
 
 const AssignerLogin = ({ onLoginSuccess }) => {
     const [step, setStep] = useState(1); // 1: Identifier, 2: OTP
