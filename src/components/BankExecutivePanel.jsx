@@ -5,6 +5,7 @@ import {
     Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, DialogActions
 } from '@mui/material';
 import { AccountCircle as AccountCircleIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import axios from 'axios';
 import moment from 'moment';
 import { API_URL } from '../constants';
