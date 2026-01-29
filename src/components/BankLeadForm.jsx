@@ -187,7 +187,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                     Lead: {lead.fullName}
                     <Chip label="View Only" color="warning" sx={{ ml: 2 }} />
                 </h1>
-                <MuiButton variant="contained" color="secondary" onClick={() => setShowTaskCreator(!showTaskCreator)}>
+                <MuiButton variant="contained" color="primary" onClick={() => setShowTaskCreator(!showTaskCreator)}>
                     {showTaskCreator ? 'Cancel Task' : 'Create Task'}
                 </MuiButton>
             </Box>

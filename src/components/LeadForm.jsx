@@ -893,7 +893,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 {isReadOnly && <Chip label="View Only" color="warning" sx={{ ml: 2 }} />}
             </h1>
             {lead._id && (
-                <MuiButton variant="contained" color="secondary" onClick={() => setShowTaskCreator(!showTaskCreator)} disabled={isReadOnly && !lead.assignedFOId}>
+                <MuiButton variant="contained" color="primary" onClick={() => setShowTaskCreator(!showTaskCreator)} disabled={isReadOnly && !lead.assignedFOId}>
                     {showTaskCreator ? 'Cancel Task' : 'Create Task'}
                 </MuiButton>
             )}
@@ -1692,7 +1692,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={isReadOnly || !newNote.notes.trim() || !lead.reminderCallDate || !lead.lastCallDate}>
+                            <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={isReadOnly || !newNote.notes.trim()}>
                                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                 ✅ SAVE NOTES
                             </button>
@@ -1752,7 +1752,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             <div className="mt-8 flex justify-center pb-4">
                 <button 
                     type="submit" 
-                    className="w-full py-4 px-6 bg-gradient-to-r from-green-600 to-green-800 hover:from-green-700 hover:to-green-900 text-white font-bold text-lg rounded-xl shadow-xl transition duration-200 transform hover:scale-[1.02] disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed flex items-center justify-center" 
+                    className="w-full py-4 px-6 bg-[#ec4c23] hover:bg-[#d13b1a] text-white font-bold text-lg rounded-xl shadow-xl transition duration-200 transform hover:scale-[1.02] disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" 
                     disabled={isReadOnly || (lead._id && (!newNote.notes?.trim() || !lead.reminderCallDate || !lead.lastCallDate))}
                 >
                     <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>

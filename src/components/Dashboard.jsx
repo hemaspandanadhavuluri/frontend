@@ -27,7 +27,9 @@ import {
     TextField,
     ButtonGroup,
     Badge,
-    Tooltip
+    Tooltip,
+    createTheme,
+    ThemeProvider
 } from '@mui/material';
 import {
     AccountCircle as AccountCircleIcon,
@@ -38,6 +40,19 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { API_URL } from '../constants';
+import logo from './logo.jpeg';
+
+// --- Custom Theme with Logo Colors ---
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#ec4c23', // Orange
+        },
+        secondary: {
+            main: '#4f2b68', // Purple
+        },
+    },
+});
 
 // --- Helper Function for Status Color ---
 const getStatusColor = (status) => {
@@ -79,7 +94,8 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                     role: user.role,
                     zone: user.zone,
                     region: user.region,
-                }
+                },
+                headers: { Authorization: `Bearer ${user.token}` }
             });
             setLeads(response.data);
         } catch (error) {
@@ -174,7 +190,8 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                     zone: currentUser.zone,
                     region: currentUser.region,
                     searchTerm: searchTerm, // Pass the search term
-                }
+                },
+                headers: { Authorization: `Bearer ${currentUser.token}` }
             });
             setLeads(response.data);
         } catch (error) {
@@ -203,10 +220,11 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
     );
 
     return (
-        <>
+        <ThemeProvider theme={theme}>
             {/* Top Navigation Bar */}
-            <AppBar position="static" sx={{ mb: 4 }}>
+            <AppBar position="static" sx={{ mb: 4 }} color="secondary">
                 <Toolbar>
+                    <Box component="img" src={logo} alt="Logo" sx={{ height: 40, mr: 2 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         Employee Portal - {currentUser?.role || 'Dashboard'}
                     </Typography>
@@ -475,7 +493,7 @@ const Dashboard = ({ onLogout, leads, setLeads }) => {
                 </TableContainer>
             </Container>
 
-        </>
+        </ThemeProvider>
     );
 };
 

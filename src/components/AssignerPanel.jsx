@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../constants';
+import logo from './logo.jpeg';
 
 const AssignerPanel = ({ onLogout }) => {
     const [unassignedLeads, setUnassignedLeads] = useState([]);
@@ -130,7 +131,10 @@ const AssignerPanel = ({ onLogout }) => {
             {/* Header */}
             <header className="bg-white shadow-md">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800">Assigner Panel</h1>
+                    <div className="flex items-center">
+                        <img src={logo} alt="Logo" className="h-10 w-auto mr-4" />
+                        <h1 className="text-2xl font-bold text-gray-800">Assigner Panel</h1>
+                    </div>
                     <div>
                         <span className="mr-4">Welcome, {currentUser?.fullName || 'Assigner'}</span>
                         <button onClick={onLogout} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">

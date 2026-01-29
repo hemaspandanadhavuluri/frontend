@@ -22,17 +22,18 @@ import {
     AccountBalance as AccountBalanceIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import logo from './logo.jpeg';
 
 // Custom Theme for the Bank Portal
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#00695c', // Teal
-            light: '#4db6ac',
-            dark: '#004d40',
+            main: '#ec4c23', // Orange
+            light: '#ff7e50',
+            dark: '#b02e00',
         },
         secondary: {
-            main: '#f9a825', // Amber
+            main: '#4f2b68', // Purple
         },
         background: {
             default: '#eceff1', // Blue Grey
@@ -143,12 +144,12 @@ const BankLogin = ({ onLoginSuccess }) => {
                     justifyContent: 'center',
                     bgcolor: 'background.default',
                     py: 4,
-                    background: 'linear-gradient(135deg, #007991 0%, #78ffd6 100%)',
+                    background: 'linear-gradient(135deg, #4f2b68  0%, #ec4c23 100%)',
                 }}
             >
                 <Paper elevation={10} sx={{ width: '100%', maxWidth: 450, p: 4, borderRadius: 3, textAlign: 'center' }}>
                     <Box sx={{ mb: 4 }}>
-                        <AccountBalanceIcon sx={{ color: 'primary.main', mb: 2, fontSize: 60 }} />
+                        <Box component="img" src={logo} alt="Logo" sx={{ height: 80, mb: 2, objectFit: 'contain' }} />
                         <Typography variant="h4" component="h1" color="primary" sx={{ fontWeight: 700, mb: 1 }}>
                             Bank Partner Portal
                         </Typography>

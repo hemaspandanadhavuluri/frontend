@@ -8,6 +8,18 @@ import { AccountCircle as AccountCircleIcon, Logout as LogoutIcon } from '@mui/i
 import axios from 'axios';
 import moment from 'moment';
 import { API_URL } from '../constants';
+import logo from './logo.jpeg';
+
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#ec4c23', // Orange
+        },
+        secondary: {
+            main: '#4f2b68', // Purple
+        },
+    },
+});
 
 const BankExecutivePanel = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
@@ -35,7 +47,8 @@ const BankExecutivePanel = ({ onLogout }) => {
                     params: {
                         role: storedUser.role,
                         bank: storedUser.bank
-                    }
+                    },
+                    headers: { Authorization: `Bearer ${storedUser.token}` }
                 });
                 
                 setLeads(response.data);
@@ -104,9 +117,11 @@ const BankExecutivePanel = ({ onLogout }) => {
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress size={60} /></Box>;
 
     return (
+        <ThemeProvider theme={theme}>
         <Box sx={{ minHeight: '100vh', width: '100%', bgcolor: '#f4f6f8' }}>
-            <AppBar position="static" sx={{ background: 'linear-gradient(45deg, #4a148c 30%, #e65100 90%)' }}>
+            <AppBar position="static" sx={{ background: 'linear-gradient(45deg, #4f2b68  30%, #ec4c23 90%)' }}>
                 <Toolbar>
+                    <Box component="img" src={logo} alt="Logo" sx={{ height: 40, mr: 2 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         {currentUser?.bank || 'Bank'} Executive Portal
                     </Typography>
@@ -121,13 +136,13 @@ const BankExecutivePanel = ({ onLogout }) => {
             </AppBar>
 
             <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, sm: 4 } }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#4a148c' }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#4f2b68 ' }}>
                     Assigned Leads
                 </Typography>
 
                 <TableContainer component={Paper} elevation={3}>
                     <Table>
-                        <TableHead sx={{ bgcolor: '#4a148c', '& .MuiTableCell-root': { color: 'white' } }}>
+                        <TableHead sx={{ bgcolor: '#4f2b68 ', '& .MuiTableCell-root': { color: 'white' } }}>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Lead ID</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Student Name</TableCell>
@@ -191,6 +206,7 @@ const BankExecutivePanel = ({ onLogout }) => {
                 </DialogActions>
             </Dialog>
         </Box>
+        </ThemeProvider>
     );
 };
 
