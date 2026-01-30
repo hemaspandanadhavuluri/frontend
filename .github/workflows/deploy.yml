@@ -32,5 +32,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/app
-            docker pull ${{ secrets.DOCKER_USERNAME }}/justap-frontend:latest
-            docker-compose -f docker-compose.prod.yml up -d frontend
+            docker-compose -f docker-compose.prod.yml pull frontend
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
