@@ -598,7 +598,7 @@ export const allCountries = [
     "United Kingdom", "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-export const API_URL = 'http://localhost:5000/api/leads';
+export const API_URL = 'http://13.48.131.69:5000/api/leads';
  
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
 

@@ -803,7 +803,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://localhost:3000/leads/${lead._id}/documents`;
+                const uploadLink = `http://13.48.131.69:3000/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
