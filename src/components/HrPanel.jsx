@@ -23,12 +23,12 @@ import RoleForm from './RoleForm';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#1976d2', // Blue
-            light: '#42a5f5',
-            dark: '#1565c0',
+            main: '#ec4c23', // Orange
+            light: '#ff7e50',
+            dark: '#b02e00',
         },
         secondary: {
-            main: '#dc004e', // Pink
+            main: '#4f2b68', // Purple
         },
         background: {
             default: '#f5f5f5',
@@ -877,7 +877,7 @@ const HrPanel = () => {
                     justifyContent: 'center',
                     bgcolor: 'background.default',
                     py: 4,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #4f2b68  0%, #ec4c23 100%)',
                 }}
             >
                 {currentView === 'dashboard' ? renderDashboard() : renderEmployeeForm()}

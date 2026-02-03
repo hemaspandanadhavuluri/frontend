@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { API_URL, regions as regionsConstant } from '../../constants';
+import { API_URL,regions } from '../../constants';
 
 const AssignerPanel = ({ onLogout }) => {
     const [unassignedLeads, setUnassignedLeads] = useState([]);
@@ -8,7 +8,7 @@ const AssignerPanel = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [currentUser, setCurrentUser] = useState(null);
-
+    
     // States to manage per-lead selections
     const [leadRegions, setLeadRegions] = useState({}); // { leadId: region }
     const [assignments, setAssignments] = useState({}); // { leadId: foId }
@@ -117,7 +117,6 @@ const AssignerPanel = ({ onLogout }) => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">{error}</div>}
-
                 {loading ? (
                     <p>Loading leads...</p>
                 ) : (
@@ -139,7 +138,7 @@ const AssignerPanel = ({ onLogout }) => {
                                                 className="p-2 border border-gray-300 rounded-md"
                                             >
                                                 <option value="">Select Region</option>
-                                                {regionsConstant.map(r => <option key={r} value={r}>{r}</option>)}
+                                                {regions.map(r => <option key={r} value={r}>{r}</option>)}
                                             </select>
 
                                             {/* Per-Lead FO Dropdown */}

@@ -10,6 +10,7 @@ const LeadDocumentPage = () => {
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isReadOnly, setIsReadOnly] = useState(false); // New state for read-only mode
 
     const fetchLead = useCallback(async () => {
         setLoading(true);
@@ -26,6 +27,16 @@ const LeadDocumentPage = () => {
     }, [id]);
 
     useEffect(() => {
+        // Check user role from localStorage
+        const storedUser = localStorage.getItem('employeeUser');
+        if (storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                if (user.role === 'BankExecutive') {
+                    setIsReadOnly(true);
+                }
+            } catch (e) { console.error("Could not parse user from storage", e); }
+        }
         fetchLead();
     }, [fetchLead]);
 
@@ -50,7 +61,7 @@ const LeadDocumentPage = () => {
                             </Typography>
                             <Typography variant="body2" color="text.secondary">Lead ID: {lead.leadID}</Typography>
                         </Box>
-                        <DocumentCenter lead={lead} onUpdate={fetchLead} />
+                        <DocumentCenter lead={lead} onUpdate={fetchLead} isReadOnly={isReadOnly} />
                     </Paper>
                 )}
             </Container>

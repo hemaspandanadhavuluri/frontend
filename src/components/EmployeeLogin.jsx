@@ -25,6 +25,7 @@ import {
     Business as BusinessIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import logo from './logo.jpeg';
 
 // Custom Theme for a modern, professional look
 const theme = createTheme({
@@ -35,7 +36,7 @@ const theme = createTheme({
             dark: '#360d4c',
         },
         secondary: {
-            main: '#dc004e',
+            main: '#4f2b68', // Purple
         },
         background: {
             default: '#f5f5f5',
@@ -185,7 +186,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
                     }}
                 >
                     <Box sx={{ mb: 4 }}>
-                        <BusinessIcon sx={{ color: 'primary.main', mb: 2, fontSize: 60 }} />
+                        <Box component="img" src={logo} alt="Logo" sx={{ height: 80, mb: 2, objectFit: 'contain' }} />
                         <Typography variant="h4" component="h1" color="primary" sx={{ fontWeight: 700, mb: 1 }}>
                             Employee Portal
                         </Typography>

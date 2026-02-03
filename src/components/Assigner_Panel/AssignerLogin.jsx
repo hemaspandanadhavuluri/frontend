@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import logo from '../logo.jpeg';
 import { API_URL } from '../../constants';
 
 const AssignerLogin = ({ onLoginSuccess }) => {
@@ -58,6 +59,9 @@ const AssignerLogin = ({ onLoginSuccess }) => {
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
+                <div className="flex justify-center mb-4">
+                    <img src={logo} alt="Logo" className="h-20 w-auto" />
+                </div>
                 <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Assigner Login</h1>
 
                 {message && <div className="bg-blue-100 text-blue-700 p-3 mb-4 rounded-md text-sm">{message}</div>}

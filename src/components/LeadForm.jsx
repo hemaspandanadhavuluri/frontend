@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import './leadForm.css';
@@ -28,8 +27,8 @@ import {
 
 
 // --- NEW: API Key for Currency Conversion ---
-const EXCHANGE_RATE_API_KEY = 'ddf59026d05ae4b9a8461fcf'; 
-// IMPORTANT: Get a free key from https://www.exchangerate-api.com and replace this placeholder.
+const EXCHANGE_RATE_API_KEY = process.env.REACT_APP_EXCHANGE_RATE_API_KEY; 
+// IMPORTANT: Your API key should be in a .env file as REACT_APP_EXCHANGE_RATE_API_KEY. Get a free key from https://www.exchangerate-api.com.
 
 // Custom Accordion component using custom CSS classes
 const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
@@ -49,7 +48,7 @@ const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
 };
 
 // IMPORTANT: LeadForm now accepts leadId and onBack as props
-const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
+const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }) => {
     // Start with the empty state if no leadId, or wait for fetch
     const [lead, setLead] = useState(EMPTY_LEAD_STATE);
 
@@ -64,7 +63,6 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
     const [hasAssets, setHasAssets] = useState(false);
     // UI-only state to control which tab/section is visible
     const [activeTab, setActiveTab] = useState(initialTab || 'basic');
-    const navigate = useNavigate();
     // --- NEW: State for Task Creation ---
     const [assignableUsers, setAssignableUsers] = useState([]);
     const [task, setTask] = useState({ assignedTo: null, subject: '', body: '' });
@@ -188,7 +186,6 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
             if (!dataToSet.regionalHead && currentUser?.regionalHead) dataToSet.regionalHead = currentUser.regionalHead;
 
             if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
-            if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }]; }
             if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }]; }
             if (!dataToSet.references || dataToSet.references.length < 2) {
                 const existingRefs = dataToSet.references || [];
@@ -202,6 +199,14 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
             dataToSet.interestedCountries = Array.isArray(dataToSet.interestedCountries) ? dataToSet.interestedCountries : [];
             dataToSet.admittedUniversities = Array.isArray(dataToSet.admittedUniversities) ? dataToSet.admittedUniversities : [];
             setLead(dataToSet);
+
+            // Initialize local UI states based on loaded data
+            if (dataToSet.ownHouseGuarantor && dataToSet.ownHouseGuarantor.name) {
+                setShowOHGFields(true);
+            }
+            if (dataToSet.hasAssets || (dataToSet.assets && dataToSet.assets.length > 0)) {
+                setHasAssets(true);
+            }
             setLoading(false);
         };
 
@@ -231,20 +236,6 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
                     console.error('Error parsing user data:', error);
                 }
             }
-            // Commented out existing code for creating new lead
-            /*
-            setLead({
-                ...EMPTY_LEAD_STATE,
-                ...leadData, // Pre-fill from the small dialog if available
-                zone: currentUser?.zone || '',
-                region: currentUser?.region || '',
-                regionalHead: currentUser?.regionalHead || '',
-                relations: [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }],
-                relations: [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }],
-                mobileNumbers: leadData?.mobileNumber ? [leadData.mobileNumber] : ["+91- "],
-                referralList: [{ name: "", code: "", phoneNumber: "" }],
-            });
-            */
             // New code for creating new lead with only basic details and source
             setLead({
                 fullName: '',
@@ -298,9 +289,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
     // --- NEW EFFECT: Fetch conversion rate when currency changes ---
     useEffect(() => {
         // Only fetch if a converter is active
-        if (!activeConverter || EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
-            if (EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
-                console.warn("Exchange rate API key is not set. Conversion rates will not be fetched automatically. Please get a free key from exchangerate-api.com and add it to LeadForm.jsx");
+        if (!activeConverter || !EXCHANGE_RATE_API_KEY) {
+            if (!EXCHANGE_RATE_API_KEY) {
+                console.warn("REACT_APP_EXCHANGE_RATE_API_KEY is not set in your .env file. Conversion rates will not be fetched automatically. Please get a free key from exchangerate-api.com.");
             }
             return;
         }
@@ -349,6 +340,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
                 id={name}
                 name={name}
                 placeholder={placeholder}
+                disabled={isReadOnly}
                 value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
                 onChange={onChange}
                 className="field-input"
@@ -364,9 +356,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
                 id={name}
                 name={name}
                 value={value || ''}
+                disabled={isReadOnly}
                 onChange={onChange}
                 className="field-input"
             >
+                <option value="">Select {label}</option>
                 {options && options.length > 0 ?
                     options.map(option => (
                         <option key={option} value={option}>{option}</option>
@@ -419,6 +413,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
                 fileLoggedIn: name === 'approachedAnyBank' && !boolValue ? null : (name === 'fileLoggedIn' ? boolValue : prev.fileLoggedIn),
                 loanSanctioned: name === 'approachedAnyBank' && !boolValue ? null : (name === 'loanSanctioned' ? boolValue : prev.loanSanctioned),
                 sanctionDetails: name === 'approachedAnyBank' && !boolValue ? EMPTY_LEAD_STATE.sanctionDetails : prev.sanctionDetails, // Clear sanction details
+                studentLoanDetails: name === 'hasStudentLoans' && !boolValue ? '' : prev.studentLoanDetails,
+                studentLoanAmount: name === 'hasStudentLoans' && !boolValue ? '' : prev.studentLoanAmount,
             }));
         } else if (name === 'admissionStatus' && value === 'Received Admission') {
             setLead(prev => ({
@@ -1094,6 +1090,13 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
             return;
         }
 
+        // If read-only, auto-assign to the lead's FO
+        if (isReadOnly && lead.assignedFOId) {
+            const assignedFO = assignableUsers.find(u => u._id === lead.assignedFOId);
+            if (assignedFO) {
+                task.assignedTo = assignedFO;
+            }
+        }
         const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
         if (!currentUser) {
             setTaskMessage('Could not identify the creator. Please log in again.');
@@ -1108,14 +1111,16 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
             body: task.body,
             createdById: currentUser._id,
             createdByName: currentUser.fullName,
+            creatorRole: currentUser.role
         };
 
         try {
-            await axios.post(API_URL.replace('/leads', '/tasks'), payload);
+            const response = await axios.post(API_URL.replace('/leads', '/tasks'), payload);
+            setLeadTasks(prev => [...prev, response.data]); // Refresh task list
             setTaskMessage('Task created successfully!');
             // Reset task form
             setTask({ assignedTo: null, subject: '', body: '' });
-            setTimeout(() => setTaskMessage(''), 3000); // Clear message after 3 seconds
+            setShowTaskCreator(false); // Close the task creator on success
         } catch (error) {
             console.error('Failed to create task:', error);
             setTaskMessage(error.response?.data?.message || 'Failed to create task.');
@@ -1134,7 +1139,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://localhost:3000/leads/${lead._id}/documents`;
+                const uploadLink = `http://localhost/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1307,6 +1312,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
         )}
         
         <form onSubmit={handleSubmit}>
+            <div className="flex flex-col lg:flex-row gap-6">
+                {/* Left Column: Lead Details */}
+                <div className="flex-1 min-w-0 space-y-4">
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
             <div className="metadata-section">
@@ -1611,6 +1619,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab }) => {
                 >
                     Save Lead
                 </button>
+            </div>
+            </div>
             </div>
         </form>
 

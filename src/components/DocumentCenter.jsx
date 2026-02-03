@@ -26,7 +26,7 @@ const documentTypes = [
 
 const API_BASE_URL = 'http://localhost:5000'; // The base URL of your backend
 
-const DocumentCenter = ({ lead, onUpdate }) => {
+const DocumentCenter = ({ lead, onUpdate, isReadOnly = false }) => {
     const [open, setOpen] = useState(false);
     const [selectedDocType, setSelectedDocType] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
@@ -106,15 +106,17 @@ const DocumentCenter = ({ lead, onUpdate }) => {
                                 >
                                     View
                                 </Button>
-                            ) : (
-                                <Button
-                                    variant="contained"
-                                    startIcon={<CloudUpload />}
-                                    onClick={() => handleOpen(docType)}
-                                >
-                                    Upload
-                                </Button>
-                            )}
+                            ) : ( !isReadOnly && (
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<CloudUpload />}
+                                        onClick={() => handleOpen(docType)}
+                                    >
+                                        Upload
+                                    </Button>
+                                )
+                            )
+                        }
                         </ListItem>
                     );
                 })}
