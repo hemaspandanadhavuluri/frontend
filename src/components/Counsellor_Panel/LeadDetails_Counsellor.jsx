@@ -43,7 +43,7 @@ const LeadDetails_Counsellor = ({ currentUser }) => {
   };
 
   if (view === "detail" && selectedLead) {
-    return <LeadDetailView_Counsellor lead={selectedLead} onBack={handleBack} />;
+    return <LeadDetailView_Counsellor lead={selectedLead} onBack={handleBack} currentUser={currentUser} />;
   }
 
   return (

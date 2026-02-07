@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import './leadForm.css';
-import BasicDetailsSection from "./BasicDetailsSection";
+import BasicDetailsSection from "./sections/BasicDetailsSection";
 import FurtherEducationSection from "./sections/FurtherEducationSection";
 import TestScoresSection from "./sections/TestScoresSection";
 import OtherDetailsSection from "./sections/OtherDetailsSection";
@@ -24,6 +25,7 @@ import {
     allCountries, API_URL, MOCK_USER_FULLNAME,
     NLTemplates,
 } from "../constants";
+import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
 
 
 // --- NEW: API Key for Currency Conversion ---
@@ -54,6 +56,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
     const [loading, setLoading] = useState(true);
     const [newNote, setNewNote] = useState({ notes: '', callStatus: 'Connected' });
+    const [counsellorNote, setCounsellorNote] = useState({ notes: '' });
     const [primeBankList, setPrimeBankList] = useState([]);
     const [tiedUpBanks, setTiedUpBanks] = useState([]);
 
@@ -63,6 +66,12 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const [hasAssets, setHasAssets] = useState(false);
     // UI-only state to control which tab/section is visible
     const [activeTab, setActiveTab] = useState(initialTab || 'basic');
+    const navigate = useNavigate();
+
+    // Scroll to top when activeTab changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [activeTab]);
     // --- NEW: State for Task Creation ---
     const [assignableUsers, setAssignableUsers] = useState([]);
     const [task, setTask] = useState({ assignedTo: null, subject: '', body: '' });
@@ -83,15 +92,35 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const [isBankSearching, setIsBankSearching] = useState(false);
     const [bankSearchMessage, setBankSearchMessage] = useState('');
 
+    // --- NEW: State for Document Checklist Modal ---
+    const [isDocumentChecklistOpen, setIsDocumentChecklistOpen] = useState(false);
+    const [documentChecklistData, setDocumentChecklistData] = useState([]);
+    const [requiredDocuments] = useState([
+        "Student Aadhar", 
+        "Student PAN Card", 
+        "Student Passport Size Photo", 
+        "Student Passport",
+        "Student 10th Class Certificate", 
+        "Student 12th Degree Certificate", 
+        "Student UG Marksheet",
+        "Student Test Score Cards", 
+        "Student Admission Letter", 
+        "Student Work Experience Letter", 
+        "Student Visa"
+    ]);
+
     // --- NEW: State for Bank Assignment Modal ---
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [selectedBankForAssignment, setSelectedBankForAssignment] = useState(null);
-    const [assignmentRegion, setAssignmentRegion] = useState('');
+    const [assignmentState, setAssignmentState] = useState('');
     const [assignmentRM, setAssignmentRM] = useState('');
     const [assignmentError, setAssignmentError] = useState('');
     const [quickNote, setQuickNote] = useState('');
     const [showRemindersDropdown, setShowRemindersDropdown] = useState(false);
     const [autocompleteStates, setAutocompleteStates] = useState({});
+    const [currentOpenDropdown, setCurrentOpenDropdown] = useState(null);
+    const dropdownRefs = useRef({});
+    const quickNoteTextareaRef = useRef(null);
 
     // Calculate pending reminders count
     const pendingRemindersCount = (lead.reminders ? lead.reminders.filter(reminder => !reminder.done).length : 0) + (lead.reminderCallDate ? 1 : 0);
@@ -106,6 +135,26 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         };
         setAutocompleteStates(initialStates);
     }, []);
+
+    // Effect to handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (currentOpenDropdown && dropdownRefs.current[currentOpenDropdown]) {
+                if (!dropdownRefs.current[currentOpenDropdown].contains(event.target)) {
+                    setAutocompleteStates(prev => ({
+                        ...prev,
+                        [currentOpenDropdown]: { ...prev[currentOpenDropdown], showDropdown: false }
+                    }));
+                    setCurrentOpenDropdown(null);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [currentOpenDropdown]);
 
 
 
@@ -624,6 +673,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 ...prev,
                 [name]: { ...prev[name], inputValue: newValue, showDropdown: true, filteredOptions: filtered }
             }));
+            setCurrentOpenDropdown(name);
         };
 
         const handleFocus = () => {
@@ -636,6 +686,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 ...prev,
                 [name]: { ...prev[name], showDropdown: newShow, filteredOptions: filtered }
             }));
+            if (newShow) {
+                setCurrentOpenDropdown(name);
+            } else {
+                setCurrentOpenDropdown(null);
+            }
         };
 
         const handleBlur = () => {
@@ -655,6 +710,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                         };
                     }
                 });
+                setCurrentOpenDropdown(null);
             }, 200);
         };
 
@@ -676,6 +732,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                     ...prev,
                     [name]: { ...prev[name], inputValue: '', showDropdown: false }
                 }));
+                setCurrentOpenDropdown(null);
             }
         };
 
@@ -689,6 +746,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 ...prev,
                 [name]: { ...prev[name], inputValue: '', showDropdown: false }
             }));
+            setCurrentOpenDropdown(null);
         };
 
         const handleRemoveItem = (itemToRemove) => {
@@ -704,7 +762,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         };
 
         return (
-            <div className={`p-2 ${widthClass}`}>
+            <div className={`p-2 ${widthClass}`} ref={(el) => (dropdownRefs.current[name] = el)}>
                 <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
                     {label}
                     {isMultiSelect && <span className="text-gray-500 text-xs ml-1">(you can select multiple)</span>}
@@ -763,6 +821,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         setNewNote(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const handleCounsellorNoteChange = (e) => {
+        setCounsellorNote(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
     const handleSaveNote = async () => {
         const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
         if (!currentUser) {
@@ -812,6 +874,40 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         } catch (error) {
             console.error('Failed to save note:', error);
             alert('Failed to save note. Check console for details.');
+        }
+    };
+
+    const handleSendCounsellorNote = async () => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            alert('You must be logged in to save notes.');
+            return;
+        }
+
+        if (!lead._id) {
+            alert('Please save the lead first before adding counsellor notes.');
+            return;
+        }
+
+        try {
+            const updatePayload = {
+                newNote: {
+                    notes: counsellorNote.notes,
+                    callStatus: 'Counsellor Note',
+                    loggedById: currentUser._id,
+                    loggedByName: currentUser.fullName
+                }
+            };
+
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+
+            // Update local state with the new, updated lead data (including the new callHistory entry)
+            setLead({ ...lead, ...response.data });
+            setCounsellorNote({ notes: '' }); // Clear the counsellor note field
+
+        } catch (error) {
+            console.error('Failed to save counsellor note:', error);
+            alert('Failed to save counsellor note. Check console for details.');
         }
     };
 
@@ -907,7 +1003,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
     const handleOpenAssignModal = (bank) => {
         setSelectedBankForAssignment(bank);
-        setAssignmentRegion('');
+        setAssignmentState('');
         setAssignmentRM('');
         setAssignmentError('');
         setIsAssignModalOpen(true);
@@ -916,6 +1012,69 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const handleCloseAssignModal = () => {
         setIsAssignModalOpen(false);
         setSelectedBankForAssignment(null);
+    };
+
+    // --- NEW: Document Checklist Handlers ---
+    const fetchDocumentChecklist = async (leadId) => {
+        try {
+            const storedUser = JSON.parse(localStorage.getItem('employeeUser') || '{}');
+            const response = await axios.get(`${API_URL}/${leadId}`, {
+                headers: { Authorization: `Bearer ${storedUser.token}` }
+            });
+
+            const fetchedLead = response.data;
+            const uploadedDocs = fetchedLead.documents || [];
+
+            // DEBUG: Log the documents
+            console.log('Uploaded Documents:', uploadedDocs);
+
+            // Create checklist with both uploaded and unuploaded documents
+            const checklist = requiredDocuments.map(docType => {
+                const uploadedDoc = uploadedDocs.find(doc => doc.documentType === docType);
+                console.log(`Checking ${docType}:`, uploadedDoc);
+                return {
+                    documentType: docType,
+                    isUploaded: !!uploadedDoc,
+                    fileName: uploadedDoc?.fileName || 'Not uploaded',
+                    uploadedAt: uploadedDoc?.uploadedAt || null,
+                    filePath: uploadedDoc?.filePath || null
+                };
+            });
+
+            console.log('Final Checklist:', checklist);
+            setDocumentChecklistData(checklist);
+            return true;
+        } catch (error) {
+            console.error('Failed to fetch document checklist:', error);
+            alert('Failed to fetch document checklist. Please try again.');
+            return false;
+        }
+    };
+
+    const handleOpenDocumentChecklist = async () => {
+        if (!lead._id) {
+            alert('Please save the lead first before viewing documents.');
+            return;
+        }
+
+        const success = await fetchDocumentChecklist(lead._id);
+        if (success) {
+            setIsDocumentChecklistOpen(true);
+        }
+    };
+
+    const handleRefreshDocumentChecklist = async () => {
+        if (!lead._id) {
+            alert('Please save the lead first before viewing documents.');
+            return;
+        }
+
+        await fetchDocumentChecklist(lead._id);
+    };
+
+    const handleCloseDocumentChecklist = () => {
+        setIsDocumentChecklistOpen(false);
+        setDocumentChecklistData([]);
     };
 
     const handleAssignToBank = async () => {
@@ -1012,6 +1171,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const handleAddQuickNote = async () => {
         if (!quickNote.trim()) {
             alert('Please enter a note before adding.');
+            return;
+        }
+
+        if (!lead._id) {
+            alert('Please save the lead first before adding quick notes.');
             return;
         }
 
@@ -1132,10 +1296,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     };
 
     // --- NEW: Email Modal Handlers ---
-    const handleOpenEmailModal = (templateName) => {
+    const handleOpenEmailModal = async (templateName) => {
         const template = EMAIL_TEMPLATE_CONTENT[templateName];
         if (template) {
-            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student');
+            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student').replace(/\[FO Name\]/g, lead.assignedFO || 'FO');
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
@@ -1143,6 +1307,41 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
+            }
+
+            // If it's the EMI calculator email, inject the API link
+            if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
+                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
+                const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
+                finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
+            }
+
+            // If it's a bank connection email (public or private), fetch bank data and populate the list
+            if (templateName === 'Only Public Banks Connection Mail' || templateName === 'Only Priavte Lender Connection Mail') {
+                const type = templateName === 'Only Public Banks Connection Mail' ? 'public' : 'private';
+                try {
+                    const response = await axios.get(`${API_URL.replace('/leads', '/banks')}/connected/${type}`);
+                    const banks = response.data;
+
+                    // Build the list of banks and executives
+                    let bankListHtml = '';
+                    banks.forEach(bank => {
+                        bankListHtml += `<li><strong>${bank.name}</strong>`;
+                        if (bank.relationshipManagers && bank.relationshipManagers.length > 0) {
+                            bank.relationshipManagers.forEach(rm => {
+                                bankListHtml += `<br/>- ${rm.name} (${rm.phoneNumber})`;
+                            });
+                        }
+                        bankListHtml += `</li>`;
+                    });
+
+                    // Replace the placeholder with the actual list
+                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', `<ul>${bankListHtml}</ul>`);
+                } catch (error) {
+                    console.error('Failed to fetch connected banks:', error);
+                    // Fallback: keep the placeholder or show an error message
+                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', '<p>Unable to load bank information at this time.</p>');
+                }
             }
 
             setCurrentEmailTemplate({ name: templateName, subject: template.subject, body: finalBody });
@@ -1551,9 +1750,22 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                             <CallNotesSection
                                 lead={lead}
                                 newNote={newNote}
+                                counsellorNote={counsellorNote}
                                 handleNoteChange={handleNoteChange}
+                                handleCounsellorNoteChange={handleCounsellorNoteChange}
                                 onSendNote={handleSaveNote}
+                                onSendCounsellorNote={handleSendCounsellorNote}
                                 onSubmitLeadData={() => {
+                                    // Check for mandatory notes if reminder exists
+                                    const hasReminder = lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0);
+                                    const hasNormalNote = lead.callHistory && lead.callHistory.some(note => note.callStatus !== 'Counsellor Note');
+                                    const hasCounsellorNote = lead.callHistory && lead.callHistory.some(note => note.callStatus === 'Counsellor Note');
+
+                                    if (hasReminder && (!hasNormalNote || !hasCounsellorNote)) {
+                                        alert('Since there is a reminder for this counsellor lead, you must submit both a normal note and a counsellor note.');
+                                        return;
+                                    }
+
                                     if (!lead.callHistory || lead.callHistory.length === 0) {
                                         alert('Please add at least one note before submitting the lead data.');
                                         return;
@@ -1578,9 +1790,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                             />
                         )}
                     </div>
-                     <div className="notes-container">
-                        <h3>Quick Notes</h3>
+                     <div className="quick-notes-container">
+                        <h3 style={{color:"white"}}>Quick Notes</h3>
                         <textarea
+                            style={{background:"white",color:"black"}}
                             value={quickNote}
                             onChange={(e) => setQuickNote(e.target.value)}
                             placeholder="Enter quick note..."
@@ -1594,7 +1807,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                         >
                             Add Note
                         </button>
+                        <button className="documents-creator-button" onClick={handleOpenDocumentChecklist} >
+                            📋 Document Checklist
+                        </button>
                     </div>
+                    
                 </main>
             </div> 
 
@@ -1661,10 +1878,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                                 className="btn secondary flex items-center gap-2"
                                 onClick={handleCopyEmailBody}
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                </svg>
-                                Copy Content
+                                <img src="/whatsapp-logo.png" alt="WhatsApp" className="w-5 h-5" />
+                                Whats App
                             </button>
                             <button
                                 className="btn primary"
@@ -1693,20 +1908,20 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                     </div>
                     <div className="modal-body bank-modal-body">
                         <div className="bank-modal-form-group">
-                            <label htmlFor="region-select" className="form-label">1. Select Region</label>
+                            <label htmlFor="state-select" className="form-label">1. Select State</label>
                             <select
-                                id="region-select"
+                                id="state-select"
                                 className="form-select"
-                                value={assignmentRegion}
+                                value={assignmentState}
                                 onChange={(e) => {
-                                    setAssignmentRegion(e.target.value);
-                                    setAssignmentRM(''); // Reset RM selection when region changes
+                                    setAssignmentState(e.target.value);
+                                    setAssignmentRM(''); // Reset RM selection when state changes
                                 }}
                             >
-                                <option value="">Select Region</option>
-                                {/* Get unique regions from the bank's RMs */}
-                                {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.region))].map(region => (
-                                    <option key={region} value={region}>{region}</option>
+                                <option value="">Select State</option>
+                                {/* Get unique states from the bank's RMs */}
+                                {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.state))].map(state => (
+                                    <option key={state} value={state}>{state}</option>
                                 ))}
                             </select>
                         </div>
@@ -1717,11 +1932,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                                 id="rm-select"
                                 className="form-select"
                                 value={assignmentRM}
-                                disabled={!assignmentRegion}
+                                disabled={!assignmentState}
                                 onChange={(e) => setAssignmentRM(e.target.value)}
                             >
                                 <option value="">Select Relationship Manager</option>
-                                {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.region === assignmentRegion).map(rm => (
+                                {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.state === assignmentState).map(rm => (
                                     <option key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.email})</option>
                                 ))}
                             </select>
@@ -1731,6 +1946,156 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                     <div className="bank-modal-actions">
                         <button className="bank-modal-btn btn secondary" onClick={handleCloseAssignModal}>Cancel</button>
                         <button className="bank-modal-btn btn primary" onClick={handleAssignToBank} disabled={!assignmentRM}>Assign Lead</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* --- NEW: Document Checklist Modal --- */}
+        {isDocumentChecklistOpen && (
+            <div className="modal-overlay" onClick={handleCloseDocumentChecklist}>
+                <div className="modal-content document-checklist-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                    <div className="modal-header">
+                        <h2 className="modal-title">📋 Document Checklist - {lead.fullName}</h2>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                                className="modal-close-btn" 
+                                onClick={handleRefreshDocumentChecklist}
+                                title="Refresh document list"
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#4caf50',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                🔄 Refresh
+                            </button>
+                            <button className="modal-close-btn" onClick={handleCloseDocumentChecklist}>
+                                <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                        <div className="document-checklist">
+                            {documentChecklistData.length > 0 ? (
+                                documentChecklistData.map((doc, index) => (
+                                    <div key={index} className={`document-item ${doc.isUploaded ? 'uploaded' : 'not-uploaded'}`} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '12px',
+                                        margin: '8px 0',
+                                        borderRadius: '6px',
+                                        backgroundColor: doc.isUploaded ? '#e8f5e9' : '#fff3e0',
+                                        border: `1px solid ${doc.isUploaded ? '#4caf50' : '#ff9800'}`,
+                                        cursor: doc.isUploaded ? 'pointer' : 'default',
+                                        transition: 'transform 0.2s, box-shadow 0.2s',
+                                        transform: doc.isUploaded ? 'translateX(0)' : 'none'
+                                    }}
+                                    onClick={() => {
+                                        if (doc.isUploaded && doc.filePath) {
+                                            const baseURL = API_URL.split('/api/')[0]; 
+                                            // Remove leading slashes from filePath
+                                            const cleanPath = doc.filePath.replace(/^\/+/, '');
+                                            const fileUrl = `${baseURL}/${cleanPath}`;
+                                            console.log('Opening document:', fileUrl);
+                                            window.open(fileUrl, '_blank');
+                                        }
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (doc.isUploaded && doc.filePath) {
+                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                                            e.currentTarget.style.transform = 'translateX(4px)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.transform = 'translateX(0)';
+                                    }}
+                                    >
+                                        <div style={{
+                                            marginRight: '12px',
+                                            fontSize: '20px',
+                                            minWidth: '30px'
+                                        }}>
+                                            {doc.isUploaded ? '✅' : '❌'}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#333' }}>
+                                                {doc.documentType}
+                                            </p>
+                                            <p style={{ margin: '0', fontSize: '13px', color: '#666' }}>
+                                                {doc.isUploaded ? (
+                                                    <>
+                                                        <span>File: {doc.fileName}</span>
+                                                        <br />
+                                                        <span>Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                        <br />
+                                                        <span style={{ color: '#2196F3', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
+                                                            Click to view
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span>{doc.fileName}</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p style={{ textAlign: 'center', color: '#999', padding: '40px 20px' }}>
+                                    📄 No document data available. Loading...
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Summary Stats */}
+                        {documentChecklistData.length > 0 && (
+                            <div style={{
+                                marginTop: '20px',
+                                padding: '16px',
+                                backgroundColor: '#f5f5f5',
+                                borderRadius: '6px',
+                                textAlign: 'center'
+                            }}>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
+                                    <strong>Summary:</strong>
+                                </p>
+                                <p style={{ margin: '4px 0', fontSize: '14px' }}>
+                                    <span style={{ color: '#4caf50', fontWeight: 'bold' }}>
+                                        ✅ {documentChecklistData.filter(d => d.isUploaded).length}
+                                    </span>
+                                    {' '}uploaded, {' '}
+                                    <span style={{ color: '#ff9800', fontWeight: 'bold' }}>
+                                        ❌ {documentChecklistData.filter(d => !d.isUploaded).length}
+                                    </span>
+                                    {' '}pending out of {documentChecklistData.length} total
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ padding: '16px', borderTop: '1px solid #eee', textAlign: 'right' }}>
+                        <button
+                            className="modal-close-btn"
+                            onClick={handleCloseDocumentChecklist}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: '#512967',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px'
+                            }}
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             </div>

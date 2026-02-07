@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Container, Box, Button, Typography } from '@mui/material';
-import BasicDetailsSection from './BasicDetailsSection';
+import BasicDetailsSection from './sections/BasicDetailsSection';
 import { EMPTY_LEAD_STATE, indianStates, indianCitiesWithState, countryPhoneCodes, API_URL } from '../constants';
 
 const CreateNewLeadPage = () => {

@@ -8,6 +8,8 @@ import LeadDetailPage from './LeadDetailPage';
 import CreateNewLeadPage from './CreateNewLeadPage';
 import HrPanel from './HrPanel';
 import LeadSectionPage from './LeadSectionPage';
+import Profile_Fo from './Profile_Fo';
+import EMICalculator from './sections/EmiCalculatorFo';
 import { API_URL } from '../constants';
 
 const FoApp = ({ onLogout }) => {
@@ -42,12 +44,15 @@ const FoApp = ({ onLogout }) => {
                             leads={leads}
                             setLeads={setLeads} />}
                     />
+                    {/* <Route path="/profile" element={<Profile_Fo currentUser={currentUser} />} /> */}
                     <Route path="/tasks" element={<TasksView onLogout={onLogout} />} />
                     <Route path="/leads/new" element={<CreateNewLeadPage />} />
                     <Route path="/leads/:id" element={<LeadDetailPage />} />
                     <Route path="/leads/:id/:tab" element={<LeadSectionPage />} />
                     <Route path="/leads/new/:tab" element={<LeadSectionPage />} />
                     <Route path="/hr-panel" element={<HrPanel />} />
+                    <Route path="/profile" element={<Profile_Fo />} />
+                    <Route path="/emi-calculator" element={<EMICalculator />} />
                 </Routes>
             </main>
         </div>

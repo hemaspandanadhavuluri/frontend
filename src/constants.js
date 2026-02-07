@@ -4,8 +4,8 @@ export const EMPTY_LEAD_STATE = {
     // 1. Basic Info
     leadID: "", fullName: "", email: "", mobileNumbers: [], permanentLocation: "", currentAddress: "",
     state: "", region: "", zone: "", regionalHead: "", zonalHead: "", planningToStudy: "",
-    source: { source: '', name: '', email: '', phoneNumber: '' }, 
-    
+    source: { source: '', name: '', email: '', phoneNumber: '' },
+
     // 2. Education / Loan Info
     loanId: '', loanType: "", courseStartMonth: "", courseStartYear: "", degree: "",
     fieldOfInterest: "", interestedCountries: [], admitReceived: false, admittedUniversities: [],
@@ -22,7 +22,7 @@ export const EMPTY_LEAD_STATE = {
         loanAmount: ''
     },
     courseDuration: "",
-    
+
     // 4. Financial Info
     age: "", workExperience: "", hasStudentLoans: false,
     studentLoanDetails: "",
@@ -49,8 +49,8 @@ export const EMPTY_LEAD_STATE = {
     references: [
         { relationship: '', name: '', address: '', phoneNumber: '' },
         { relationship: '', name: '', address: '', phoneNumber: '' }
-    ], 
-  panStatus: "Applied", panNumber: "",
+    ],
+    panStatus: "Applied", panNumber: "",
     referralList: [
         { name: "", code: "", phoneNumber: "" },
         { name: "", code: "", phoneNumber: "" },
@@ -67,20 +67,88 @@ export const EMPTY_LEAD_STATE = {
 
 export const EMAIL_TEMPLATE_CONTENT = {
     'NL1': {
-        subject: "Regarding Your Education Loan Inquiry",
-        body: `<p>Dear [Student Name],</p><p>Thank you for your interest in an education loan with Justap. This is a follow-up on your application. We would like to discuss the next steps.</p><p>Best regards,<br/>The Justap Team</p>`
+        subject: "Unable to Conect - Regarding Your Education from Just Tap Capital",
+        body: `<p>Dear [Student Name],</p><p>This is [FO Name], your Financial Officer from Just Tap Capital. India's Largest Education finance Platform for Scholarships and Education Loans.<p> We recently discussed funding your education as you had registered on the Just Tap Capital website; called you now for the same, you must have been busy as you didn't answer my call</p><p><strong> Could you please call me back on 7013148402 as soon as possible?</strong></p>
+<p>Thank you!</p>
+<p>FY1, Just Tap Capital is an organisation supported by the IT Ministry. Govt of India under the Digital India campaign and the assistance is three of cost. JTC IS BSSociated with 15+ Public and Private banks/lenders in India to help you get the best education loan matching your profile with the lowest interest rates.<p>Best regards,<br/>The Justap Team</p>`
     },
     'NL2': {
-        subject: "Follow-up: Your Education Loan Application",
-        body: `<p>Dear [Student Name],</p><p>We are writing to follow up on your recent education loan inquiry. Please let us know if you have any questions or if there is anything we can assist you with.</p><p>Best regards,<br/>The Justap Team</p>`
+        subject: "Important: Update Regarding Your Education Funding with Just Tap Capital.Reply Required",
+        body: `<p>Dear [Student Name],</p><p>This is [FO Name], your Financial Officer from Just Tap Capital-India's Largest Education Finance Platform for Scholarships and Education Loans.I was actively helping you with your Education Loan process recently as you had registered on the Just Tap Capital website. I have been trying to connect with you a few times now to discuss the same. But, my calls went unanswered
+
+<p><strong>Please call back on 7013148402 at the earliest, without fail.</strong></p>
+
+<p>I would like you to join our invite-only community on WhatsApp to get latest info and updates on Global Scholarships and Education Loan deals</p>
+
+<p>Being an organisation funded by the IT Ministry, Just Tap Capital can compare your profile with 15+ lenders to get you the lowest interest rate in India. guaranteed. Also, I can resolve any sort of issue related to your education loan</p></p><p>Best regards,<br/>The Justap Team</p>`
     },
     'NL3(Normal)': {
-        subject: "Important Update on Your Loan Application",
-        body: `<p>Dear [Student Name],</p><p>This email contains important information regarding your loan application. Please review the details at your earliest convenience.</p><p>Best regards,<br/>The Justap Team</p>`
+        subject: "Important: You’re missing India’s Lowest Interest Rate Guaranteed Education Loan",
+        body: `<p>Dear [Student Name],</p><p>This is [FO Name], your Financial Officer from Just Tap Capital- India's Largest Education Finance Platform supported under the Ministry of IT, Govt. of India.</p>
+
+        <p>
+        I have been trying to connect with you multiple times now to inform you that your profile is eligible to get 
+        <strong>India's Lowest Interest Rate Guaranteed Education Loan.</strong> But you are not answering my calls.
+        </p>
+
+        <p>
+        Students who go directly to the banks/agents will miss the below exclusive benefits of Just Tap Capital:
+        </p>
+
+        <ul>
+            <li>India's Lowest Interest Rate guaranteed for your profile</li>
+            <li>Minimum 25% discount on the bank's processing fee</li>
+            <li>3X faster loan process – better than going to the bank directly</li>
+            <li>Eligible for Interest Rate Protection Scheme (valid for 10 years)</li>
+            <li>Complete Post-sanction support till the entire repayment duration</li>
+        </ul>
+
+        <p>
+        <strong>You're eligible for a special rate! Please call back this time without fail on 9963563204.</strong>
+        </p>
+
+        <p>
+        Apart from this, if there is any specific reason for not proceeding with the loan, I request you to share the feedback with me as a friend.
+        </p>
+
+        <p>
+        I am looking forward to hearing from you this time.
+        </p></p><p>Best regards,<br/>The Justap Team</p>`
     },
     'NL3 (NBFC)': {
-        subject: "Information Regarding Your NBFC Loan Option",
-        body: `<p>Dear [Student Name],</p><p>We have an update regarding your education loan options with our NBFC partners. Please contact us to discuss the details.</p><p>Best regards,<br/>The Justap Team</p>`
+        subject: "Important: You’re missing India’s Lowest Interest Rate Guaranteed Education Loan",
+        body: `<p>Dear [Student Name],</p><p><p>
+            This is [FO Name], your Financial Officer from 
+            <strong>Just Tap Capital</strong> - India's Largest Education Finance Platform supported under the 
+            <strong>Ministry of IT, Govt. of India.</strong>
+            </p>
+
+            <p>
+            I have been trying to connect with you multiple times now to inform you that your profile is eligible to get 
+            <strong>India's Lowest Interest Rate Guaranteed Education Loan.</strong> But you are not answering my calls.
+            </p>
+
+            <p>
+            Students who go directly to the banks/agents will miss the below exclusive benefits of Just Tap Capital:
+            </p>
+
+            <ul>
+                <li>✅ India's Lowest Interest Rate guaranteed for your profile</li>
+                <li>✅ Minimum 25% discount on the bank's processing fee</li>
+                <li>✅ 3X faster loan process - better than going to the bank directly</li>
+                <li>✅ Eligible for Interest Rate Protection Scheme (valid for 10 years)</li>
+                <li>✅ Complete Post-sanction support till the entire repayment duration</li>
+            </ul>
+
+            <p>
+            <strong>You're eligible for a special rate! Please call back this time without fail on 7013148402</a>.</strong>
+            </p>
+
+            <p>
+            Apart from this, if there is any specific reason for not answering my calls, I expect you to share the feedback with me as a friend.
+            </p>
+
+            <p>I am looking forward to hearing from you this time.</p></p><p>Best regards,<br/>The Justap Team</p>`
     },
 
     // --- Bank Connection & Intro Templates ---
@@ -116,12 +184,31 @@ export const EMAIL_TEMPLATE_CONTENT = {
         subject: "Connecting You with Leading Public Sector Banks for Your Education Loan",
         body: `
             <p>Dear [Student Name],</p>
-            <p>As part of our commitment to finding you the best education loan, we are initiating your application with our network of leading <strong>Public Sector Banks (like SBI, BOB, etc.)</strong>.</p>
+            <p>As part of our commitment to finding you the best education loan, we are initiating your application with our network of leading <strong>Public Sector Banks</strong>.</p>
             <p>Public banks are known for their trust, wide reach, and government-backed schemes. By partnering with Justap, you get:</p>
             <ul>
                 <li><strong>Expert Navigation:</strong> We know the ins and outs of public bank procedures and help you navigate them efficiently.</li>
                 <li><strong>End-to-End Assistance:</strong> From document collection to submission, we are with you all the way.</li>
             </ul>
+            <p><strong>Connected Public Banks and Executives:</strong></p>
+            <ul id="connected-banks-list">
+                <!-- Dynamic list will be inserted here -->
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    // NOTE: A generic template for Private Lenders. You can create more specific ones.
+    'Only Priavte Lender Connection Mail': {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
             [UPLOAD_LINK_PLACEHOLDER]
             <p>Best regards,<br/>The Justap Team</p>`
     },
@@ -153,6 +240,95 @@ export const EMAIL_TEMPLATE_CONTENT = {
             <p>Best regards,<br/>The Justap Team</p>`
     },
 
+    // NOTE: A generic template for Private Lenders. You can create more specific ones.
+    'Only Priavte Lender Connection Mail': {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    "Public and  Private Lender connection 1st Mail ": {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    // NOTE: A generic template for Private Lenders. You can create more specific ones.
+    'Only Priavte Lender Connection Mail': {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    // NOTE: A generic template for Private Lenders. You can create more specific ones.
+    'Only Priavte Lender Connection Mail': {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+    "Public and  Private Lender connection 1st Mail ": {
+        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
+            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <ul>
+                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            [UPLOAD_LINK_PLACEHOLDER]
+            <p>Best regards,<br/>The Justap Team</p>`
+    },
+
+    'EDUCATION LOAN EMI CALCULATOR':{
+        subject: "Calculate Your Education Loan EMI with Justap's Easy-to-Use Calculator",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>To help you plan your finances better, we are excited to introduce our <strong>Education Loan EMI Calculator</strong>. This tool allows you to estimate your monthly EMI based on various loan amounts, interest rates, and repayment tenures.</p>
+            <p><strong>How to Use the EMI Calculator:</strong></p>
+            <ul>
+                <li>Enter your desired loan amount.</li>
+                <li>Select the interest rate applicable to your loan.</li>
+                <li>Choose your preferred repayment tenure.</li>
+                <li>Click 'Calculate' to see your estimated monthly EMI.</li>
+            </ul>
+            <p>You can access our EMI Calculator here: <a href="http://localhost:3000/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
+            <p>Using this calculator will give you a clear idea of your monthly financial commitment, helping you make informed decisions about your education loan.</p>
+            <p>Best regards,<br/>The Justap Team</p>`
+
+    },
+    
     // --- Document Upload Templates ---
     'Documents Partially Uplaoded 2nd followup ': {
         subject: "Reminder: Action Required for Your Education Loan Application - Partial Documents Uploaded",
@@ -177,16 +353,176 @@ export const EMAIL_TEMPLATE_CONTENT = {
 
     // --- Informational Templates for Issues & Situations ---
     'UBI Issues': {
-        subject: "Handling Common UBI (Union Bank of India) Issues",
+        subject: "Key Challenges with Union Bank of India (UBI) & Our Support",
         body: `
-            <p>When dealing with UBI, students sometimes face issues like processing delays or requests for specific documents not on the standard list. </p>
-            <p><strong>Our Strategy:</strong></p>
-            <ul>
-                <li>We leverage our direct contacts at regional processing hubs to escalate and track the application.</li>
-                <li>We pre-verify all documents to match UBI's specific requirements, reducing back-and-forth.</li>
-            </ul>
-            <p>Advise the student that we are actively managing the process to ensure a smoother experience.</p>`
+        <p>While Union Bank of India offers education loans, students commonly face a few challenges during processing and disbursement.</p>
+        <p><strong>Common UBI Challenges:</strong></p>
+        <ul>
+            <li><strong>Higher Loan Margin:</strong> Margin can go up to ~33% for top global universities, increasing upfront student contribution.</li>
+            <li><strong>No Pre-Visa Disbursement:</strong> Funds not released before visa approval for GIC, blocked accounts, etc.</li>
+            <li><strong>Tedious Living Expense Process:</strong> Monthly bill submission required for off-campus living disbursements.</li>
+            <li><strong>Unexpected EMI Deductions:</strong> EMI deductions reported during moratorium impacting CIBIL in some cases.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Lower & Transparent Margin:</strong> Starting from 15% with no hidden university-based increases.</li>
+            <li><strong>Pre-Visa Disbursement Support:</strong> Assistance for GIC, blocked accounts, and other embassy requirements.</li>
+            <li><strong>Simple Disbursement Process:</strong> Hassle-free living expense disbursement without monthly bill stress.</li>
+            <li><strong>Clear EMI Communication:</strong> No deductions without consent, protecting your CIBIL during moratorium.</li>
+        </ul>
+
+        <p>We guide students throughout the process to ensure a smooth and transparent loan experience.</p>`
     },
+    'BOB Issues': {
+        subject: "Key Challenges with Bank of Baroda (BOB) & Our Support",
+        body: `
+        <p>While Bank of Baroda is a popular public bank option, students may face certain challenges during their education loan process.</p>
+
+        <p><strong>Common BOB Challenges:</strong></p>
+        <ul>
+            <li><strong>Frequent Interest Rate Hikes:</strong> Interest rates may increase every 6 months, significantly raising total repayment.</li>
+            <li><strong>No Pre-Visa Disbursement:</strong> Funds are not released before visa approval for fee deposits or embassy requirements.</li>
+            <li><strong>Tedious Living Expense Process:</strong> Monthly bill submission required for off-campus living expense disbursement.</li>
+            <li><strong>Slow Processing Timeline:</strong> Sanction can take 2–3 months with strict collateral checks and limited tracking visibility.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Stable Interest Rates:</strong> Fixed and predictable rates without frequent unexpected hikes.</li>
+            <li><strong>Pre-Visa Disbursement Support:</strong> Assistance with fee deposits and visa-related financial requirements.</li>
+            <li><strong>Simple Disbursement Process:</strong> Smooth living expense disbursement without monthly bill hassles.</li>
+            <li><strong>Faster Processing:</strong> Quick approvals in 2–4 weeks with digital tracking and simplified collateral handling.</li>
+        </ul>
+
+        <p>We ensure a faster, transparent, and student-friendly loan experience from start to finish.</p>`
+    },
+
+    'Bank Of India Issues': {
+        subject: "Key Challenges with Bank of India (BOI) & Our Support",
+        body: `
+        <p>While Bank of India is a common choice for education loans, students may face several challenges during the loan process.</p>
+
+        <p><strong>Common BOI Challenges:</strong></p>
+        <ul>
+            <li><strong>Higher Interest Rates:</strong> Interest rates can range around 11%–12.25%, often higher than many other lenders.</li>
+            <li><strong>High Loan Margin Requirement:</strong> Margin may go up significantly based on total expenses, increasing upfront contribution.</li>
+            <li><strong>Tedious Living Expense Disbursement:</strong> Monthly bills required for off-campus living expense release.</li>
+            <li><strong>No Pre-Visa Disbursement:</strong> Funds not released before visa approval for GIC, blocked accounts, or fee deposits.</li>
+            <li><strong>Unexpected EMI Deductions:</strong> EMI deductions reported during moratorium in some cases impacting CIBIL.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Competitive Interest Rates:</strong> Lower starting rates for better affordability and repayment planning.</li>
+            <li><strong>Flexible Loan Margin:</strong> Transparent margins starting from 15% without sudden increases.</li>
+            <li><strong>Simple Disbursement Process:</strong> Smooth living expense disbursement without monthly bill stress.</li>
+            <li><strong>Pre-Visa Disbursement Support:</strong> Assistance for visa-related deposits like GIC and blocked accounts.</li>
+            <li><strong>Transparent EMI Handling:</strong> No deductions without clear consent, ensuring CIBIL safety during moratorium.</li>
+        </ul>
+
+        <p>We ensure a faster, transparent, and student-friendly loan journey from application to disbursement.</p>`
+    },
+
+    'CANARA Bank Issues': {
+        subject: "Key Challenges with Canara Bank & Our Support",
+        body: `
+        <p>While Canara Bank is a well-known public sector lender, students may experience certain challenges during their education loan process.</p>
+
+        <p><strong>Common Canara Bank Challenges:</strong></p>
+        <ul>
+            <li><strong>Higher Interest Rates:</strong> Interest rates can range around 10.85%–11.35%, often higher than many private lenders.</li>
+            <li><strong>Tedious Living Expense Disbursement:</strong> Monthly bills required for off-campus living expense release.</li>
+            <li><strong>High Loan Margin Requirement:</strong> Margin may increase significantly based on total expenses, raising upfront contribution.</li>
+            <li><strong>No Pre-Visa Disbursement:</strong> Funds not released before visa approval for GIC, blocked accounts, or fee deposits.</li>
+            <li><strong>Unexpected EMI Deductions:</strong> EMI deductions reported during moratorium in some cases impacting CIBIL.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Competitive Interest Rates:</strong> Lower starting rates for better affordability and repayment planning.</li>
+            <li><strong>Simple Disbursement Process:</strong> Smooth living expense disbursement without monthly bill stress.</li>
+            <li><strong>Flexible Loan Margin:</strong> Transparent margins starting from 15% without sudden increases.</li>
+            <li><strong>Pre-Visa Disbursement Support:</strong> Assistance for visa-related deposits like GIC and blocked accounts.</li>
+            <li><strong>Transparent EMI Handling:</strong> No deductions without consent, ensuring CIBIL safety during moratorium.</li>
+        </ul>
+
+        <p>We ensure a smooth, transparent, and student-friendly education loan experience.</p>`
+    },
+    'PNB Issues': {
+        subject: "Key Challenges with Punjab National Bank (PNB) & Our Support",
+        body: `
+        <p>Punjab National Bank is a widely used public sector bank, but students often face certain challenges during the education loan journey.</p>
+
+        <p><strong>Common PNB Challenges:</strong></p>
+        <ul>
+            <li><strong>Higher Interest Rates:</strong> Interest rates typically range from ~10.85% to 12.25%, higher than many alternatives.</li>
+            <li><strong>High Loan Margin Requirement:</strong> Margin can increase significantly based on total expenses, raising upfront contribution.</li>
+            <li><strong>Tedious Living Expense Disbursement:</strong> Monthly bill submission required for off-campus living expenses.</li>
+            <li><strong>No Pre-Visa Disbursement:</strong> Funds are not released before visa approval for GIC, blocked accounts, or fee deposits.</li>
+            <li><strong>Unexpected EMI Deductions:</strong> EMI deductions reported during moratorium, impacting student and co-applicant CIBIL.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Competitive Interest Rates:</strong> Lower starting rates for better affordability and repayment planning.</li>
+            <li><strong>Simple Disbursement Process:</strong> Smooth living expense disbursement without monthly bill stress.</li>
+            <li><strong>Flexible Loan Margin:</strong> Transparent margins starting from 15% without sudden increases.</li>
+            <li><strong>Pre-Visa Disbursement Support:</strong> Assistance for visa-related deposits like GIC and blocked accounts.</li>
+            <li><strong>Transparent EMI Handling:</strong> No deductions without consent, ensuring CIBIL safety during moratorium.</li>
+        </ul>
+
+        <p>We focus on making the education loan process smoother, faster, and student-friendly.</p>`
+    },
+
+    'USD Lender Issues (PRODIGY/MPOWER)': {
+        subject: "Key Challenges with USD Lenders (Prodigy & MPower) & Our Support",
+        body: `
+        <p>USD-based lenders like Prodigy and MPower are popular for abroad education loans, but students should be aware of certain financial and process-related challenges.</p>
+
+        <p><strong>Common USD Lender Challenges:</strong></p>
+        <ul>
+            <li><strong>Higher Effective Interest Cost:</strong> Interest rates typically range ~11.5%–14.5%, often higher than INR education loans.</li>
+            <li><strong>Exchange Rate Impact:</strong> USD loans may effectively cost much more when converted and repaid in INR.</li>
+            <li><strong>No Tax Benefits:</strong> Interest paid is not eligible for Section 80E income tax exemption in India.</li>
+            <li><strong>High Processing Fees:</strong> Processing fees can go up to 4%–5%, significantly increasing upfront cost.</li>
+            <li><strong>Strict Disbursement Checks:</strong> Semester score checks and documentation may delay future disbursements.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Lower Interest Rates:</strong> Competitive INR loan options starting from lower rates for better savings.</li>
+            <li><strong>No Forex Risk:</strong> INR-based loans protect you from currency fluctuation and repayment uncertainty.</li>
+            <li><strong>Tax Benefit Eligibility:</strong> Claim income tax deductions under Section 80E for up to 8 years.</li>
+            <li><strong>Lower Processing Fees:</strong> Minimal processing charges compared to international lenders.</li>
+            <li><strong>Smooth Disbursement Process:</strong> Easy fund release without semester-wise restrictions or delays.</li>
+        </ul>
+
+        <p>We help you choose the most cost-effective and student-friendly loan option for your study abroad plans.</p>`
+    },
+    'Overall Lender Issues - When Going Directly': {
+        subject: "Challenges Students Face When Approaching Banks Directly & Our Support",
+        body: `
+        <p>Students who approach banks or lenders directly often face unexpected challenges during their education loan journey.</p>
+
+        <p><strong>Common Challenges When Going Directly:</strong></p>
+        <ul>
+            <li><strong>Higher & Fluctuating Interest Rates:</strong> Rates may start low but increase rapidly post-disbursement, increasing repayment burden.</li>
+            <li><strong>Limited Negotiation Power:</strong> Students approaching directly often miss out on better rate negotiations and market comparisons.</li>
+            <li><strong>Slow Disbursement Timelines:</strong> Delays in fund release can impact tuition fee payments and accommodation arrangements.</li>
+        </ul>
+
+        <p><strong>How We Support You Better:</strong></p>
+        <ul>
+            <li><strong>Negotiated Lower Interest Rates:</strong> Up to 2% better ROI with access to exclusive lender partnerships.</li>
+            <li><strong>Interest Rate Protection:</strong> Support in controlling unexpected rate hikes during the loan tenure.</li>
+            <li><strong>Faster Disbursements:</strong> Streamlined processing to ensure funds are released on time.</li>
+            <li><strong>End-to-End Guidance:</strong> Continuous support from application to final disbursement and beyond.</li>
+        </ul>
+
+        <p>We ensure you get the most cost-effective and stress-free education loan experience without dealing with banks alone.</p>`
+    },
+
     'JUST TAP Intro': {
         subject: "Introduction to Justap's Services",
         body: `
@@ -213,24 +549,32 @@ export const EMAIL_TEMPLATE_CONTENT = {
             </ul>`
     },
     'Drawback of Self Funds': {
-        subject: "Smart Financing: Why an Education Loan Can Be Better Than Self-Funding",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>While using personal savings for education is an option, many students find that taking an education loan through Justap offers significant advantages:</p>
-            <ul>
-                <li><strong>Preserve Your Savings:</strong> Keep your family's savings intact for emergencies, investments, or other important life events.</li>
-                <li><strong>Build Credit History:</strong> Repaying a loan responsibly is one of the best ways to build a strong credit score, which is crucial for your future financial life.</li>
-                <li><strong>Tax Benefits:</strong> You can claim tax deductions on the interest paid on an education loan under Section 80E of the Income Tax Act.</li>
-                <li><strong>Financial Independence:</strong> Taking a loan fosters a sense of responsibility and allows you to fund your own education.</li>
-            </ul>
-            <p>We can help you find a loan with competitive terms that aligns with your financial goals. Let's discuss how we can make this work for you.</p>
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
+    subject: "Smart Financing: Why Taking an Education Loan Can Be Smarter Than Using Self-Funds",
+    body: `
+        <p>Many students initially plan to use self-funds for their education, but later realize certain financial and visa-related challenges.</p>
+
+        <p><strong>Common Challenges with Self-Funding:</strong></p>
+        <ul>
+            <li><strong>Visa Approval Concerns:</strong> Education loans are often considered a more reliable funding source by visa officers.</li>
+            <li><strong>High TCS Charges:</strong> Transfers above ₹10L attract ~5% TCS when using self-funds for foreign payments.</li>
+            <li><strong>No Tax Benefits:</strong> Self-funding does not provide Section 80E tax exemption benefits available on education loans.</li>
+        </ul>
+
+        <p><strong>How an Education Loan Helps:</strong></p>
+        <ul>
+            <li><strong>Stronger Visa Financial Profile:</strong> Loans improve financial credibility and visa acceptance chances.</li>
+            <li><strong>Zero TCS on Loan Transfers:</strong> No TCS applicable when funds are sent through education loan.</li>
+            <li><strong>Tax Savings:</strong> Claim income tax deductions on interest paid for up to 8 years under Section 80E.</li>
+        </ul>
+
+        <p>An education loan not only supports your studies but also helps you manage finances more efficiently.</p>`
+},
+
     'Referal Program': {
         subject: "Refer a Friend to Justap & Earn Rewards!",
         body: `
             <p>Dear [Student Name],</p>
-            <p>Did you know you can earn rewards by helping your friends achieve their study abroad dreams?</p>
+            <p>Did you know you can earn upto 3000 rupees rewards by helping your friends achieve their study abroad dreams?</p>
             <p>Our referral program is simple: Introduce your friends to Justap. If they successfully secure an education loan with our help, you'll receive a referral bonus as a thank you from us!</p>
             <p>It's a win-win. Your friends get expert guidance for their education loan, and you get rewarded. Feel free to share our contact details or ask us for your unique referral link.</p>
             <p>Best regards,<br/>The Justap Team</p>`
@@ -361,8 +705,8 @@ export const countryPhoneCodes = [
 ];
 
 export const loanIssues = [
-    "UBI Issues", "BOB Issues", "Overall Lender Issues - When Going Directly" , "HDFC Credilla Issues" ,"CANARA Bank Issues","PNB Issues",
-    "Bank Of India (BOB )Issues","USD Lender Issues (PRODIGY/MPOWER)"
+    "UBI Issues", "BOB Issues", "Overall Lender Issues - When Going Directly", "HDFC Credilla Issues", "CANARA Bank Issues", "PNB Issues",
+    "Bank Of India Issues", "USD Lender Issues (PRODIGY/MPOWER)"
 ];
 
 export const miscSituations = [
@@ -380,7 +724,7 @@ export const emailTemplates = [
     "Send Reminder",
     "Send Sanction Mail",
 ];
-export const NLTemplates = ['NL1', 'NL2' , 'NL3(Normal)', 'NL3 (NBFC)']
+export const NLTemplates = ['NL1', 'NL2', 'NL3(Normal)', 'NL3 (NBFC)']
 export const banksDocs = [
     "KVB Details -1st Email",
     "SBI Details 1st Email",
@@ -390,10 +734,16 @@ export const banksDocs = [
     "Vidya loans Details 1st Email"
 
 ];
+export const loanCalculator =[
+     'EDUCATION LOAN EMI CALCULATOR',
+     '$ USD TO INR EDUCATION LOAN CALCULATOR', 
+     'Saves Lakhs By Educational Loan Transfer',
+      'EL TAX Rebate Calculator'
+     ];
 
 export const documentStatus = [
     "Documents Partially Uplaoded 2nd followup ",
-"Documents Not Upaloded 2nd followup or beyond" ,
+    "Documents Not Upaloded 2nd followup or beyond",
 ];
 
 export const indianStates = [
@@ -558,10 +908,10 @@ export const courseStartQuarters = ['Jan-March', 'April-June', 'July-Sept', 'Oct
 const currentYear = new Date().getFullYear();
 export const courseStartYears = Array.from({ length: 5 }, (_, i) => String(currentYear + i));
 
-export const degrees = ['Masters', 'Graduation', 'PhD','MBBS','UG Certificate','PG Certificate'];
+export const degrees = ['Masters', 'Graduation', 'PhD', 'MBBS', 'UG Certificate', 'PG Certificate'];
 
 export const fieldsOfInterest = [
-    'Computer Science', 'Data Science & Analytics', 'Business Administration (MBA)', 'Engineering (Mechanical, Electrical, etc.)', 
+    'Computer Science', 'Data Science & Analytics', 'Business Administration (MBA)', 'Engineering (Mechanical, Electrical, etc.)',
     'Medicine & Healthcare', 'Arts & Humanities', 'Law', 'Finance & Accounting', 'Hospitality & Tourism'
 ];
 
@@ -595,12 +945,25 @@ export const allCountries = [
     "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan",
     "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste",
     "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates",
-    "United Kingdom", "United States of America", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+    "UK", "USA", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
 export const API_URL = 'http://localhost:5000/api/leads';
- 
+
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
+
+// EMI Calculator Default Values
+export const EMI_CALCULATOR_DEFAULTS = {
+  courseMonths: 24,
+  loanAmount: 2000000,
+  interest: 8.5,
+  moratorium: "No",
+  graceMonths: 6,
+  repayYears: 2,
+};
+
+// EMI Calculator Options
+export const GRACE_PERIOD_OPTIONS = Array.from({ length: 13 }, (_, i) => i); // 0 to 12
 
 // New constants for the Assets section
 export const assetTypes = ['Physical Property', 'Fixed Deposit', 'LIC Policy', 'Government Bond'];
@@ -614,3 +977,62 @@ export const leadStatusOptions = ['No status', 'On Priority', 'Sanctioned', 'App
 export const priorityReasons = ['Admit received', 'University Shortlisted', 'Nearest Intake'];
 
 export const closeReasons = ['Not Interested', 'Not lifting', 'Not eligible for loan'];
+
+// --- NEW: Indian Banks segregated into Public and Private ---
+export const publicBanksIndia = [
+    'State Bank of India',
+    'Punjab National Bank',
+    'Bank of Baroda',
+    'Canara Bank',
+    'Union Bank of India',
+    'Bank of India',
+    'Indian Bank',
+    'Central Bank of India',
+    'UCO Bank',
+    'Bank of Maharashtra',
+    'Punjab & Sind Bank',
+    'Indian Overseas Bank'
+];
+
+export const privateBanksIndia = [
+    'HDFC Bank',
+    'ICICI Bank',
+    'Axis Bank',
+    'Kotak Mahindra Bank',
+    'IndusInd Bank',
+    'Yes Bank',
+    'Federal Bank',
+    'IDFC First Bank',
+    'Bandhan Bank',
+    'RBL Bank',
+    'South Indian Bank',
+    'City Union Bank',
+    'Karur Vysya Bank',
+    'Tamilnad Mercantile Bank',
+    'Karnataka Bank',
+    'Nainital Bank',
+    'Dhanlaxmi Bank',
+    'Jammu & Kashmir Bank',
+    'Saraswat Cooperative Bank',
+    'Abhyudaya Cooperative Bank',
+    'Bharat Cooperative Bank',
+    'Catholic Syrian Bank',
+    'DCB Bank',
+    'ESAF Small Finance Bank',
+    'Equitas Small Finance Bank',
+    'Fincare Small Finance Bank',
+    'Jana Small Finance Bank',
+    'North East Small Finance Bank',
+    'Shivalik Small Finance Bank',
+    'Suryoday Small Finance Bank',
+    'Ujjivan Small Finance Bank',
+    'Utkarsh Small Finance Bank',
+    'AU Small Finance Bank',
+    'Capital Small Finance Bank',
+    'FINO Payments Bank',
+    'India Post Payments Bank',
+    'Jio Payments Bank',
+    'NSDL Payments Bank',
+    'Paytm Payments Bank',
+    'Airtel Payments Bank'
+];

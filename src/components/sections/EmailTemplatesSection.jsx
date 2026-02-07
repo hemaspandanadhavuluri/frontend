@@ -1,5 +1,5 @@
 import React from 'react';
-import { NLTemplates, banksDocs, documentStatus, loanIssues, miscSituations } from '../../constants';
+import { NLTemplates, banksDocs, documentStatus, loanIssues, miscSituations,loanCalculator } from '../../constants';
 import './EmailTemplatesSection.css';
 
 const EmailTemplatesSection = ({ handleOpenEmailModal, emailMessage }) => {
@@ -16,7 +16,7 @@ const EmailTemplatesSection = ({ handleOpenEmailModal, emailMessage }) => {
                 </div>
                 <div className="template-section">
                     <h4 className="section-title">Document Upload</h4>
-                    <div className="button-group">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="template-btn document-upload-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+                    <div className="button-group">{loanCalculator.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="template-btn document-upload-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                 </div>
                 {emailMessage && (
                     <div className="email-message">{emailMessage}</div>
@@ -24,10 +24,12 @@ const EmailTemplatesSection = ({ handleOpenEmailModal, emailMessage }) => {
                 <div className="template-section">
                     <h4 className="section-title">Loan Calculators</h4>
                     <div className="button-group">
-                        <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
+                        {/* <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
                         <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>$ USD TO INR EDUCATION LOAN CALCULATOR</button>
                         <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>Saves Lakhs By Educational Loan Transfer</button>
-                        <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button>
+                        <button type="button" className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button> */}
+                        <div className="button-group">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="template-btn loan-calculator-btn"><svg className="btn-icon" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
+
                     </div>
                 </div>
                 <hr/>

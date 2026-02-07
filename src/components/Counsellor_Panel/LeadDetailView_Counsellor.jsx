@@ -2,10 +2,25 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Counsellor_Stylling/LeadDetailView_Counsellor.css";
 import { API_URL } from "../../constants";
+import {
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Chip
+} from '@mui/material';
+import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
 
-const LeadDetailView_Counsellor = ({ lead, onBack }) => {
+const LeadDetailView_Counsellor = ({ lead, onBack, currentUser }) => {
   const [fullLead, setFullLead] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [newNote, setNewNote] = useState('');
+  const [sendingNote, setSendingNote] = useState(false);
 
   useEffect(() => {
     const fetchFullLead = async () => {
@@ -24,6 +39,42 @@ const LeadDetailView_Counsellor = ({ lead, onBack }) => {
     }
   }, [lead._id]);
 
+  const handleSendNote = async () => {
+    if (!newNote.trim()) return;
+
+    try {
+      setSendingNote(true);
+      const response = await fetch(`${API_URL}/${lead._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newNote: {
+            loggedById: currentUser._id,
+            loggedByName: currentUser.fullName || 'Counsellor',
+            notes: newNote.trim(),
+            callStatus: 'Counsellor Note'
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send note');
+      }
+
+      // Refresh the lead data
+      const updatedResponse = await axios.get(`${API_URL}/${lead._id}`);
+      setFullLead(updatedResponse.data);
+      setNewNote('');
+    } catch (err) {
+      console.error('Error sending note:', err);
+      alert('Failed to send note: ' + err.message);
+    } finally {
+      setSendingNote(false);
+    }
+  };
+
   if (loading) {
     return <div>Loading lead details...</div>;
   }
@@ -32,8 +83,8 @@ const LeadDetailView_Counsellor = ({ lead, onBack }) => {
     return <div>Error loading lead details.</div>;
   }
 
-  // Map callHistory to messages
-  const messages = fullLead.callHistory ? fullLead.callHistory.map(call => ({
+  // Map callHistory to messages, filtering to only counsellor notes
+  const messages = fullLead.callHistory ? fullLead.callHistory.filter(call => call.callStatus === 'Counsellor Note').map(call => ({
     sender: call.loggedByName,
     text: call.notes,
     time: new Date(call.createdAt).toLocaleTimeString(),
@@ -130,16 +181,28 @@ const LeadDetailView_Counsellor = ({ lead, onBack }) => {
               {displayLead.notes.messages.map((msg, index) => (
                 <div key={index} className={`chat-bubble ${msg.type}`}>
                   <div className="bubble-meta">{msg.sender} • {msg.time}</div>
+                  <div className="bubble-header">
+                  </div>
                   <p>{msg.text}</p>
                 </div>
               ))}
             </div>
 
             <div className="chat-input-area">
-              <textarea placeholder="Type a message or reply to the team..."></textarea>
+              <textarea
+                placeholder="Type a message or reply to the team..."
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+              />
               <div className="input-footer">
                 <span>Press Enter to send</span>
-                <button className="send-btn">Send ➤</button>
+                <button
+                  className="send-btn"
+                  onClick={handleSendNote}
+                  disabled={!newNote.trim() || sendingNote}
+                >
+                  {sendingNote ? 'Sending...' : 'Send ➤'}
+                </button>
               </div>
             </div>
           </div>

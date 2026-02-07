@@ -57,6 +57,26 @@ const StudentReferencesSection = ({
                 </div>
                 {lead.panStatus === 'Applied' && <input type="text" placeholder="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" className="pan-input" />}
             </fieldset>
+            <div className="jtc-info-section">
+                <div className="jtc-step">
+                  <h4>Step 1: JTC Introduction</h4>
+                  <p>1. Govt funded Initiative</p>
+                  <p>2. Best EduLoan suiting your profile</p>
+                  <p>3. No service charges</p>
+                </div>
+                <div className="jtc-step">
+                    <h4>Step 2: Benefits of JTC</h4>
+                  <p>1. Convienient Process & negotiation support</p>
+                  <p>2. Experienced in Handling Files</p>
+                  <p>3. Upto 3000 Cashback</p>
+                </div>
+                <div className="jtc-step">
+                    <h4>Step 3: Product Details</h4>
+                  <p>1. Rate of Intrest</p>
+                  <p>2. Moratorium period + Repayment Duration</p>
+                  <p>3. Processing fee</p>
+                </div>
+            </div>
         </div>
     );
 };

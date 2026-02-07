@@ -1,0 +1,146 @@
+/* Title */
+.basic-details-section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #9c27b0;
+  margin-bottom: 12px;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Form layout */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -12px;
+}
+
+/* Standard field container */
+.field-wrapper {
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .field-wrapper {
+    width: 50%;
+  }
+}
+
+@media (max-width: 600px) {
+  .field-wrapper {
+    width: 100%;
+  }
+}
+
+/* Label */
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: rgba(0,0,0,0.7);
+}
+
+/* Input */
+.field-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0,0,0,0.23);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.field-input:focus {
+  border-color: #9c27b0;
+  box-shadow: 0 0 0 1px #9c27b0;
+}
+
+/* Mobile section */
+.mobile-wrapper {
+  width: 100%;
+  padding: 12px;
+}
+
+@media (max-width: 900px) {
+  .mobile-wrapper {
+    width: 50%;
+  }
+}
+
+@media (max-width: 600px) {
+  .mobile-wrapper {
+    width: 100%;
+  }
+}
+
+.mobile-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Mobile rows */
+.mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Country + number group */
+.mobile-input-group {
+  display: flex;
+  width: 100%;
+  border: 1px solid rgba(0,0,0,0.23);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.country-code {
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  outline: none;
+  min-width: 90px;
+  border-right: 1px solid rgba(0,0,0,0.23);
+}
+
+.mobile-input {
+  border: none;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+}
+
+/* Icon Buttons */
+.icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn.primary {
+  color: #1976d2;
+}
+
+.icon-btn.danger {
+  color: #d32f2f;
+}
+
+.icon-btn:hover {
+  transform: scale(1.1);
+}

@@ -249,6 +249,8 @@
     margin-top: 0.5rem;
 }
 
+
+
 /* Metadata Section */
 .metadata-section {
     margin-bottom: 1.5rem;
@@ -493,6 +495,30 @@
 
 .tab-content {
     flex: 1;
+}
+.quick-notes-container{
+    background: #ee8926;
+    border: 1px solid #e5e7eb;
+    width: 300px;
+    height: fit-content;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    justify-content: center;
+
+}
+
+.documents-creator-button{
+    background: #512967;
+    color: #fff;
+    width: 100%;
+    margin-top: 5px;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.15s;
 }
 
 .notes-container {

@@ -1,8 +1,14 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 const Sidebar = ({ onLogout, currentUser, activePage, tasksCount }) => {
+    const navigate = useNavigate();
+
+    const handleNameClick = () => {
+        navigate('/profile');
+    };
+
     return (
         <aside className="sidebar-fo">
             <div className="sidebar-logo-section-fo">
@@ -22,7 +28,7 @@ const Sidebar = ({ onLogout, currentUser, activePage, tasksCount }) => {
             <div className="sidebar-user-section-fo">
                 <div className="user-info-row-fo">
                     <div className="user-avatar-fo">FO</div>
-                    <span style={{color:'#ee8926',fontWeight:'bold'}}>{currentUser?.fullName}</span>
+                    <span style={{color:'#ee8926',fontWeight:'bold', cursor: 'pointer'}} onClick={handleNameClick}>{currentUser?.fullName}</span>
                 </div>
                 <div style={{border: '1.3px solid #fff', borderRadius: '5px',width:'100%'}}></div>
 

@@ -29,6 +29,12 @@ const TasksView = ({ onLogout }) => {
         } catch (error) { console.error('Error:', error); } finally { setLoading(false); }
     };
 
+    const openLeadInTab = (leadId) => {
+        // Use a specific window name to ensure only one lead tab is open at a time
+        const leadUrl = `/leads/${leadId}`;
+        window.open(leadUrl, 'leadFormTab');
+    };
+
     if (loading) return (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
             <CircularProgress />
@@ -55,7 +61,7 @@ const TasksView = ({ onLogout }) => {
                                         <td>{task.createdByName}</td>
                                         <td>{moment(task.createdAt).format('DD MMM YYYY')}</td>
                                         <td><span className="chip-fo status-info">{task.status}</span></td>
-                                        <td><a href={`/leads/${task.leadId}`} target="_blank" className="btn-fo btn-warning-fo">Open Lead</a></td>
+                                        <td><button onClick={() => openLeadInTab(task.leadId)} className="btn-fo btn-warning-fo">Open Lead</button></td>
                                     </tr>
                                 ))}
                             </tbody>

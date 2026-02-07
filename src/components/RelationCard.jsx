@@ -98,7 +98,7 @@ const RelationCard = ({
                 )}
 
                 {renderTextField(`annualIncome`, "Annual Income (lacs)", relation.annualIncome, onUpdate.bind(null, index), { xs: '100%', sm: '50%', md: '25%' })}
-                <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '25%' }, boxSizing: 'border-box' }}>
+                <Box style={{width: "100%", padding: 12}}>
                     <TextField
                         fullWidth
                         label="Phone Number"

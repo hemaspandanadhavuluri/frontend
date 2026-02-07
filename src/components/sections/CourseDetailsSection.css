@@ -3,10 +3,11 @@
     background: #fff;
 }
 
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
+.course-details-section-title {
+    font-size: 24px;
+  font-weight: bold;
+  color: #512967;
+  margin-bottom: 16px;
 }
 
 /* Currency Buttons */

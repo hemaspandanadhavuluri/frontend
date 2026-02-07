@@ -53,25 +53,7 @@ const LeadDetailPage = () => {
     <ThemeProvider theme={theme}>
       <>
         {/* --- TOP HEADER BAR --- */}
-        <AppBar position="static" color="secondary">
-          <Toolbar>
-            <Box
-              component="img"
-              src={logo}
-              alt="Logo"
-              sx={{ height: 35, mr: 2 }}
-            />
-
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              {id
-                ? isReadOnly
-                  ? "View Lead Details"
-                  : "Edit Lead"
-                : "Create New Lead"}
-            </Typography>
-          </Toolbar>
-        </AppBar>
-
+        
         {/* --- FORM SECTION --- */}
         <Container maxWidth="lg" sx={{ mt: 3, mb: 4 }}>
           {userRole === "BankExecutive" ? (

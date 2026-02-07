@@ -15,7 +15,7 @@ const CourseDetailsSection = ({
 }) => {
     return (
         <div className="section-block">
-            <h4 className="section-title">Tuition Fee Options</h4>
+            <h4 className="course-details-section-title">💰Tuition Fee Options</h4>
 
             {/* Currency Buttons */}
             <div className="currency-buttons">
