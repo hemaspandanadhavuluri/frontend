@@ -323,7 +323,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
                 <li>Choose your preferred repayment tenure.</li>
                 <li>Click 'Calculate' to see your estimated monthly EMI.</li>
             </ul>
-            <p>You can access our EMI Calculator here: <a href="http://13.48.131.69:3000/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
+            <p>You can access our EMI Calculator here: <a href="http://13.48.131.69/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
             <p>Using this calculator will give you a clear idea of your monthly financial commitment, helping you make informed decisions about your education loan.</p>
             <p>Best regards,<br/>The Justap Team</p>`
 
