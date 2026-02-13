@@ -1,0 +1,121 @@
+
+
+.referFriendsSection__refer-friends-box {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.referFriendsSection-item {
+    padding: 0.5rem;
+    width: 100%;
+}
+
+@media (min-width: 640px) {
+    .referFriendsSection-item {
+        width: 50%;
+    }
+}
+
+@media (min-width: 768px) {
+    .referFriendsSection-item {
+        width: 33.3333%;
+    }
+}
+
+.referFriendsSection__referral-card {
+    padding: 1rem;
+    width: fit-content;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.referFriendsSection__referral-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #512967;
+}
+
+.referFriendsSection__input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.referFriendsSection__phone-input-group {
+    display: flex;
+    margin-bottom: 0.5rem;
+}
+
+.referFriendsSection__phone-country-select {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem 0 0 0.375rem;
+    background: #f9fafb;
+    width: 60px;
+}
+
+.referFriendsSection__phone-number-input {
+    flex: 1;
+    padding: 0.5rem;
+    border-top: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    border-left: none;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.referFriendsSection__create-lead-btn {
+    margin-top: auto;
+    padding: 0.375rem 0.75rem;
+    background: #7c3aed;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+}
+
+.referFriendsSection__create-lead-btn:hover:not(:disabled) {
+    background: #6d28d9;
+}
+
+.referFriendsSection__create-lead-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.referFriendsSection__add-referral-wrapper {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.referFriendsSection__add-referral-btn {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.referFriendsSection__add-referral-btn:hover {
+    background: #f9fafb;
+}
+
+.referFriendsSection__add-referral-btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}

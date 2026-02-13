@@ -31,9 +31,9 @@ import logo from './logo.jpeg';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#ec4c23', // Orange
-            light: '#ff7e50',
-            dark: '#b02e00',
+            main: '#512967',
+            light: '#ee8926',
+            dark: '#360d4c',
         },
         secondary: {
             main: '#4f2b68', // Purple
@@ -95,7 +95,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [userId, setUserId] = useState(null);
 
-    const API_URL = 'http://13.48.131.69:5000/api/users';
+    const API_URL = 'http://localhost:5000/api/users';
 
     const showMessage = (text, type = 'error') => {
         setMessage({ text, type });
@@ -172,7 +172,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
                     justifyContent: 'center',
                     bgcolor: 'background.default',
                     py: 4,
-                    background: 'linear-gradient(135deg, #4f2b68  0%, #ec4c23 100%)',
+                    background: '#512967'
                 }}
             >
                 <Paper

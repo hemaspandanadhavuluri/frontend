@@ -1,0 +1,77 @@
+:root {
+  --emi-container-bg-left: #efdbff;
+  --emi-container-bg-right: #ffecdc;
+  --emi-button-bg: #9419d2;
+  --emi-button-disabled-bg: #ccc;
+  --emi-border-color: #ccc;
+  --emi-border-radius: 12px;
+  --emi-input-border-radius: 8px;
+  --emi-button-border-radius: 10px;
+  --emi-gap: 30px;
+  --emi-padding: 40px;
+  --emi-section-padding: 30px;
+  --emi-margin-top: 15px;
+  --emi-input-padding: 10px;
+  --emi-input-margin-top: 5px;
+  --emi-button-margin-top: 20px;
+  --emi-button-padding: 12px;
+  --emi-button-font-size: 18px;
+  --emi-result-margin-top: 25px;
+}
+
+.emi-container {
+  display: flex;
+  gap: var(--emi-gap);
+  padding: var(--emi-padding);
+  font-family: Arial;
+}
+
+.left_emi-container {
+  flex: 1;
+  background: var(--emi-container-bg-left);
+  padding: var(--emi-section-padding);
+  border-radius: var(--emi-border-radius);
+}
+
+.right_emi-container {
+  flex: 1;
+  background: var(--emi-container-bg-right);
+  padding: var(--emi-section-padding);
+  border-radius: var(--emi-border-radius);
+}
+
+.label_emi-container {
+  display: block;
+  margin-top: var(--emi-margin-top);
+  font-weight: bold;
+}
+
+.input_emi-container,
+.select_emi-container {
+  width: 100%;
+  padding: var(--emi-input-padding);
+  margin-top: var(--emi-input-margin-top);
+  border-radius: var(--emi-input-border-radius);
+  border: 1px solid var(--emi-border-color);
+}
+
+.button_emi-container {
+  margin-top: var(--emi-button-margin-top);
+  padding: var(--emi-button-padding);
+  width: 100%;
+  background: var(--emi-button-bg);
+  color: white;
+  border: none;
+  font-size: var(--emi-button-font-size);
+  border-radius: var(--emi-button-border-radius);
+  cursor: pointer;
+}
+
+.result-box_emi-container {
+  margin-top: var(--emi-result-margin-top);
+}
+
+.button_emi_container:disabled {
+  background: var(--emi-button-disabled-bg);
+  cursor: not-allowed;
+}

@@ -61,7 +61,7 @@ const RelationCard = ({
     };
 
     return (
-        <Card variant="outlined" sx={{ my: 2, p: 2, bgcolor: '#f9f9f9', position: 'relative' }}>
+        <Card variant="outlined" sx={{ my: 2, p: 2, bgcolor: '#fff', position: 'relative' }}>
             <IconButton
                 aria-label="remove relation"
                 onClick={() => onRemove(index)}
@@ -71,7 +71,7 @@ const RelationCard = ({
                 <RemoveCircleOutlineIcon color="error" />
             </IconButton>
 
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'info.main' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#360d4c' }}>
                 {relation.relationshipType || `Relation ${index + 1}`}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
@@ -98,7 +98,7 @@ const RelationCard = ({
                 )}
 
                 {renderTextField(`annualIncome`, "Annual Income (lacs)", relation.annualIncome, onUpdate.bind(null, index), { xs: '100%', sm: '50%', md: '25%' })}
-                <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '25%' }, boxSizing: 'border-box' }}>
+                <Box style={{width: "100%", padding: 12}}>
                     <TextField
                         fullWidth
                         label="Phone Number"
@@ -123,8 +123,7 @@ const RelationCard = ({
                         }}
                     />
                 </Box>
-                {renderTextField(`currentObligations`, "Current Obligations", relation.currentObligations, handleRelationChange, { xs: '100%', sm: '50%', md: '25%' })}
-                {renderTextField(`cibilScore`, "CIBIL Score", relation.cibilScore, handleRelationChange, { xs: '100%', sm: '50%', md: '25%' })}
+                {renderTextField(`currentObligations`, "Current Obligations & Loans", relation.currentObligations, handleRelationChange, { xs: '100%', sm: '50%', md: '25%' })}
                 <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '25%' }, boxSizing: 'border-box' }}>
                     <FormControl component="fieldset">
                         <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>CIBIL Issues?</FormLabel>
@@ -139,9 +138,11 @@ const RelationCard = ({
                         </RadioGroup>
                     </FormControl>
                     {relation.hasCibilIssues && (
-                        <TextField fullWidth size="small" margin="dense" name="cibilIssues" label="CIBIL Issues" value={relation.cibilIssues || ''} onChange={handleRelationChange} />
+                        <TextField fullWidth size="small" margin="dense" color= '#360d4c' name="cibilIssues" label="CIBIL Issues" value={relation.cibilIssues || ''} onChange={handleRelationChange} />
                     )}
                 </Box>
+               {renderTextField(`cibilScore`, "CIBIL Score", relation.cibilScore, handleRelationChange, { xs: '100%', sm: '50%', md: '25%' })}
+
                 <Box sx={{ width: '100%', p: 1.5 }}>
                     <FormControlLabel
                         control={<Checkbox checked={relation.isCoApplicant} name="isCoApplicant" onChange={handleRelationChange} />}

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { API_URL } from '../constants';
-import logo from './logo.jpeg';
+import { API_URL } from '../../constants';
 
-const AssignerLogin = ({ onLoginSuccess }) => {
+const CounsellorLogin = ({ onLoginSuccess }) => {
     const [step, setStep] = useState(1); // 1: Identifier, 2: OTP
     const [identifier, setIdentifier] = useState('');
     const [otp, setOtp] = useState('');
@@ -43,10 +42,10 @@ const AssignerLogin = ({ onLoginSuccess }) => {
 
         try {
             const response = await axios.post(`${API_URL.replace('/leads', '/users')}/verify-otp`, { identifier, otp });
-            if (response.data.user && response.data.user.role.toLowerCase() === 'assigner') {
+            if (response.data.user && response.data.user.role.toLowerCase() === 'counsellor') {
                 onLoginSuccess(response.data.user);
             } else {
-                setError('Login failed. You do not have the required role.');
+                setError('User not found. Only counsellors can log in here.');
                 setStep(1); // Go back to the first step
             }
         } catch (err) {
@@ -59,10 +58,7 @@ const AssignerLogin = ({ onLoginSuccess }) => {
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
-                <div className="flex justify-center mb-4">
-                    <img src={logo} alt="Logo" className="h-20 w-auto" />
-                </div>
-                <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Assigner Login</h1>
+                <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">Counsellor Login</h1>
 
                 {message && <div className="bg-blue-100 text-blue-700 p-3 mb-4 rounded-md text-sm">{message}</div>}
                 {error && <div className="bg-red-100 text-red-700 p-3 mb-4 rounded-md text-sm">{error}</div>}
@@ -103,4 +99,4 @@ const AssignerLogin = ({ onLoginSuccess }) => {
     );
 };
 
-export default AssignerLogin;
+export default CounsellorLogin;

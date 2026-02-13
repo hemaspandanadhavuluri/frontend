@@ -1,0 +1,136 @@
+
+
+.StudentRelationsSection-relations-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.5rem;
+}
+
+.StudentRelationsSection-form-group {
+    padding: 0.5rem;
+}
+
+.StudentRelationsSection-form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+    margin-bottom: 0.25rem;
+}
+
+.StudentRelationsSection-form-input,
+.StudentRelationsSection-form-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-family: inherit;
+}
+
+.StudentRelationsSection-relation-card {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.StudentRelationsSection-add-relation-btn {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #360d4c;
+    background-color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.StudentRelationsSection-add-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.StudentRelationsSection-ohg-container {
+    padding: 1rem;
+    border: 1px dashed #9ca3af;
+    border-radius: 0.375rem;
+}
+
+.StudentRelationsSection-ohg-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.StudentRelationsSection-ohg-note {
+    font-size: 0.75rem;
+    color: #360d4c;
+}
+
+.StudentRelationsSection-ohg-link {
+    font-size: 0.875rem;
+    color: #360d4c;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.StudentRelationsSection-relation-selector {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+}
+
+.StudentRelationsSection-relation-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.StudentRelationsSection-relation-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.StudentRelationsSection-ohg-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.StudentRelationsSection-ohg-details-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #360d4c;
+}
+
+.jtc-info-section{
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    margin-top: 10px;
+}
+
+.jtc-step{
+    width: 33.33%;
+    font-size: 13px;
+    padding: 5px 10px;
+    color: #ffffff;
+    background-color: #5f397a;
+    border-radius: 10px;
+}

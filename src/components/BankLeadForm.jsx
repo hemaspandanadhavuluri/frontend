@@ -6,7 +6,7 @@ import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import { DatePicker } from '@mui/x-date-pickers';
 import moment from 'moment'; 
 
-import BasicDetailsSection from "./BasicDetailsSection";
+import BasicDetailsSection from "./sections/BasicDetailsSection";
 import RelationCard from "./RelationCard";
 import AssetCard from "./AssetCard";
 import {

@@ -11,11 +11,14 @@ import EmployeeLogin from './components/EmployeeLogin';
 import BankLogin from './components/BankLogin';
 import BankExecutivePanel from './components/BankExecutivePanel';
 import StudentForm from './components/StudentForm';
-import LeadDetailPage from './components/LeadDetailPage'; // Import the new detail page
 import LeadDocumentPage from './components/LeadDocumentPage'; // Import the new document page
 import './components/leadForm.css'; // Import LeadForm styles globally
-import AssignerPanel from './components/AssignerPanel'; // Import the new component
-import AssignerLogin from './components/AssignerLogin'; // Import the Assigner login component
+import AssignerApp from './components/Assigner_Panel/AssignerApp'; // Import the new component
+import AssignerLogin from './components/Assigner_Panel/AssignerLogin'; // Import the Assigner login component
+import FoApp from './components/FoApp'; // Import the FoApp component
+import CounsellorApp from './components/Counsellor_Panel/CounsellorApp';
+import LeadDetailPage from './components/LeadDetailPage';
+
 
 const App = () => {
     // State to hold the ID of the currently selected lead (or null if none)
@@ -86,6 +89,7 @@ const App = () => {
                 <Route path="/assigner-login" element={<AssignerLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/leads/:id/documents" element={<LeadDocumentPage />} />
                 <Route path = '/studentForm' element = {<StudentForm />} />
+                <Route path= '/counsellor/*' element={<CounsellorApp />} />
 
                 {/* Protected Routes */}
                 {isLoggedIn ? (
@@ -98,28 +102,18 @@ const App = () => {
                             </>
                         ) : currentUser?.role.toLowerCase() === 'assigner' ? (
                             // Assigner gets their own route
-                            <Route path="/assigner" element={<AssignerPanel onLogout={handleLogout} />} />
+                            <Route path="/assigner" element={<AssignerApp onLogout={handleLogout} />} />
                         ) : (
                             // Internal employees get their set of routes
-                            <>
-                                <Route 
-                                    path="/" 
-                                    element={<Dashboard
-                                        onLogout={handleLogout} 
-                                        leads={leads} 
-                                        setLeads={setLeads} />} 
-                                />
-                                <Route path="/leads/new" element={<LeadDetailPage />} />
-                                <Route path="/leads/:id" element={<LeadDetailPage />} />
-                                <Route path="/leads/:id/view" element={<LeadDetailPage />} />
-                                <Route path="/hr-panel" element={<HrPanel />} />
-                            </>
+                            <Route path="/*" element={<FoApp onLogout={handleLogout} />} />
                         )}
                     </>
                 ) : (
                     // If not logged in, default to the employee login page
                     <Route path="*" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
+                    
                 )}
+                <Route path="/hr-panel" element={<HrPanel />} />
             </Routes>
         </>
     );

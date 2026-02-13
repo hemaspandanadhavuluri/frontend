@@ -1,500 +1,316 @@
-// src/components/LeadsDashboard.js (UPDATED FOR TABLE VIEW AND STYLES)
+import React, { useState, useEffect, useCallback } from "react";
+import { CircularProgress, Box, Typography } from "@mui/material";
+import axios from "axios";
+import moment from "moment";
+import { API_URL } from "../constants";
+import "./Dashboard.css";
 
-import React, { useState, useEffect } from 'react';
-import {
-    Container,
-    Typography,
-    Paper,
-    Box,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    CircularProgress,
-    Chip, // For status visualization
-    Button, // To make the row clickable
-    AppBar,
-    Toolbar,
-    IconButton,
-    Menu,
-    MenuItem,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    ButtonGroup,
-    Badge,
-    Tooltip,
-    createTheme,
-    ThemeProvider
-} from '@mui/material';
-import {
-    AccountCircle as AccountCircleIcon,
-    Logout as LogoutIcon,
-    MoreVert as MoreVertIcon,
-    Add as AddIcon
-} from '@mui/icons-material';
-import axios from 'axios';
-import moment from 'moment';
-import { API_URL } from '../constants';
-import logo from './logo.jpeg';
-
-// --- Custom Theme with Logo Colors ---
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#ec4c23', // Orange
-        },
-        secondary: {
-            main: '#4f2b68', // Purple
-        },
-    },
-});
-
-// --- Helper Function for Status Color ---
-const getStatusColor = (status) => {
-    switch (status) {
-        case 'Sanctioned': return 'primary';
-        case 'On Priority': return 'success';
-        case 'In Progress': return 'warning';
-        case 'New': return 'secondary';
-        case 'Application Incomplete': return 'info';
-        case 'Close': return 'error';
-        default: return 'default';
-    }
+/* ---------------- STATUS CLASS ---------------- */
+const getStatusClass = (status) => {
+  switch (status) {
+    case "Sanctioned":
+      return "status-primary";
+    case "On Priority":
+      return "status-success";
+    case "In Progress":
+      return "status-warning";
+    case "New":
+      return "status-info";
+    case "Close":
+      return "status-error";
+    default:
+      return "";
+  }
 };
 
-const Dashboard = ({ onLogout, leads, setLeads }) => {
-    const [loading, setLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [openCreateDialog, setOpenCreateDialog] = useState(false);
-    const [newLead, setNewLead] = useState({ fullName: '', email: '', mobileNumber: '' });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchTime, setSearchTime] = useState(null);
-    const [isSearching, setIsSearching] = useState(false);
+/* ---------------- DASHBOARD COMPONENT ---------------- */
+const Dashboard = ({ leads, setLeads }) => {
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
-    const [newLeads, setNewLeads] = useState([]);
-    const [activeView, setActiveView] = useState('all'); // 'all', 'reminders', or 'newLeads'
-    const [reminderLeads, setReminderLeads] = useState([]);
-    const [tasks, setTasks] = useState([]);
-    const fetchAllLeads = React.useCallback(async (user) => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await axios.get(API_URL, {
-                params: {
-                    userId: user._id,
-                    role: user.role,
-                    zone: user.zone,
-                    region: user.region,
-                },
-                headers: { Authorization: `Bearer ${user.token}` }
-            });
-            setLeads(response.data);
-        } catch (error) {
-            console.error('Failed to fetch leads:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [setLeads]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTime, setSearchTime] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
- useEffect(() => {
-        // Get current user from localStorage
-        const storedUser = localStorage.getItem('employeeUser');
-        let user;
-        if (storedUser) {
-            try {
-                user = JSON.parse(storedUser);
-                setCurrentUser(user);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                setLoading(false);
-                return;
-            }
-        }
-        
-        fetchAllLeads(user);
-    // Re-run if storedUser or user-related state changes, though once is usually enough.
-    }, [fetchAllLeads]); // Dependency on setLeads to avoid lint warning
+  const [newLeads, setNewLeads] = useState([]);
+  const [reminderLeads, setReminderLeads] = useState([]);
+  const [upcomingReminders, setUpcomingReminders] = useState([]);
 
-    // --- NEW: Fetch tasks assigned to the current user ---
-    useEffect(() => {
-        if (currentUser) {
-            const fetchTasks = async () => {
-                try {
-                    const response = await axios.get(API_URL.replace('/leads', '/tasks'), {
-                        params: { assignedToId: currentUser._id }
-                    });
-                    setTasks(response.data);
-                } catch (error) {
-                    console.error('Failed to fetch tasks:', error);
-                }
-            };
-            fetchTasks();
-        }
-    }, [currentUser]);
-    // --- NEW: Effect to filter leads into New and Reminders ---
-    useEffect(() => {
-        const today = moment().startOf('day');
+  const [tasks, setTasks] = useState([]);
+  const [activeView, setActiveView] = useState("all");
 
-        // Filter for new leads (no call history)
-        const filteredNewLeads = leads.filter(lead => !lead.callHistory || lead.callHistory.length === 0);
+  /* ---------------- FETCH ALL LEADS ---------------- */
+  const fetchAllLeads = useCallback(async (user) => {
+    console.log("Fetching leads for user:", user);
+    if (!user) return;
+     
+    setLoading(true);
+    try {
+      const res = await axios.get(API_URL, {
+        params: {
+          userId: user._id,
+          role: user.role,
+          zone: user.zone,
+          region: user.region,
+        },
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
 
-        // Filter for reminders (has a reminder date and has been contacted)
-        const filteredReminderLeads = leads
-            .filter(lead => 
-                lead.reminderCallDate && 
-                moment(lead.reminderCallDate).startOf('day').isSameOrBefore(today) &&
-                lead.callHistory && lead.callHistory.length > 0
-            )
-            .sort((a, b) => new Date(a.reminderCallDate) - new Date(b.reminderCallDate)); // Sort by date
+      setLeads(res.data);
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [setLeads]);
 
-        setNewLeads(filteredNewLeads);
-        setReminderLeads(filteredReminderLeads);
+  /* ---------------- LOAD USER ---------------- */
+  useEffect(() => {
+    const storedUser = localStorage.getItem("employeeUser");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setCurrentUser(user);
+      fetchAllLeads(user);
+    }
+  }, [fetchAllLeads]);
 
-    }, [leads]); // This effect runs whenever the main 'leads' array changes
+  /* ---------------- FETCH TASKS ---------------- */
+  useEffect(() => {
+    if (!currentUser) return;
 
-    const handleMenuOpen = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
+    axios
+      .get(API_URL.replace("/leads", "/tasks"), {
+        params: { assignedToId: currentUser._id },
+      })
+      .then((res) => setTasks(res.data))
+      .catch(console.error);
+  }, [currentUser]);
 
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
+  /* ---------------- PROCESS LEADS ---------------- */
+  useEffect(() => {
+    setNewLeads(leads.filter(lead => !lead.callHistory || lead.callHistory.length === 0));
+    const allReminders = leads.filter(lead =>
+      lead.reminderCallDate || (lead.reminders && lead.reminders.some(reminder => !reminder.done))
+    ).sort((a, b) => {
+      const dateA = a.reminderCallDate || (a.reminders && a.reminders.find(reminder => !reminder.done)?.date);
+      const dateB = b.reminderCallDate || (b.reminders && b.reminders.find(reminder => !reminder.done)?.date);
+      return new Date(dateA) - new Date(dateB);
+    });
+    const upcomingRemindersFiltered = allReminders.filter(lead => {
+      const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
+      return reminderDate && moment(reminderDate).isSame(moment(), 'day');
+    });
+    setReminderLeads(upcomingRemindersFiltered);
+    setUpcomingReminders(upcomingRemindersFiltered);
+  }, [leads]);
 
-    const handleLogout = () => {
-        handleMenuClose();
-        onLogout();
-    };
+  /* ---------------- FUNCTIONS ---------------- */
+  const handleSearch = async () => {
+    if (!currentUser) return;
+    setIsSearching(true);
+    const startTime = performance.now();
+    try {
+      const res = await axios.get(API_URL, {
+        params: { userId: currentUser._id, role: currentUser.role, zone: currentUser.zone, region: currentUser.region, searchTerm },
+        headers: { Authorization: `Bearer ${currentUser.token}` },
+      });
+      setLeads(res.data);
+      setSearchTime((performance.now() - startTime).toFixed(2));
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally { setIsSearching(false); }
+  };
 
-    // --- NEW: Handler for search ---
-    const handleSearch = async () => {
-        if (!currentUser) return;
+  const openTasksCount = tasks.filter(task => task.status === 'Open').length;
 
-        setIsSearching(true);
-        setSearchTime(null);
-        const startTime = performance.now();
+  const openLeadInTab = (leadId) => {
+    // Use a specific window name to ensure only one lead tab is open at a time
+    const leadUrl = `/leads/${leadId}`;
+    window.open(leadUrl, 'leadFormTab');
+  };
 
-        try {
-            const response = await axios.get(API_URL, {
-                params: {
-                    userId: currentUser._id,
-                    role: currentUser.role,
-                    zone: currentUser.zone,
-                    region: currentUser.region,
-                    searchTerm: searchTerm, // Pass the search term
-                },
-                headers: { Authorization: `Bearer ${currentUser.token}` }
-            });
-            setLeads(response.data);
-        } catch (error) {
-            console.error('Failed to search leads:', error);
-        } finally {
-            const endTime = performance.now();
-            setSearchTime((endTime - startTime).toFixed(2));
-            setIsSearching(false);
-        }
-    };
-
-    const handleClearSearch = () => {
-        setSearchTerm('');
-        setSearchTime(null);
-        fetchAllLeads(currentUser); // Re-fetch all leads for the current user
-    };
-
-    const openTasksCount = tasks.filter(task => task.status === 'Open').length;
-
-
-    if (loading) return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-            <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Loading leads...</Typography>
-        </Box>
-    );
-
+  /* ---------------- LOADING ---------------- */
+  if (loading) {
     return (
-        <ThemeProvider theme={theme}>
-            {/* Top Navigation Bar */}
-            <AppBar position="static" sx={{ mb: 4 }} color="secondary">
-                <Toolbar>
-                    <Box component="img" src={logo} alt="Logo" sx={{ height: 40, mr: 2 }} />
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Employee Portal - {currentUser?.role || 'Dashboard'}
-                    </Typography>
-                    <Typography variant="body1" sx={{ mr: 2 }}>
-                        Welcome, {currentUser?.fullName || 'Employee'}
-                    </Typography>
-                    <IconButton
-                        size="large"
-                        edge="end"
-                        aria-label="account of current user"
-                        aria-controls="menu-appbar"
-                        aria-haspopup="true"
-                        onClick={handleMenuOpen}
-                        color="inherit"
-                    >
-                        <AccountCircleIcon />
-                    </IconButton>
-                    <Menu
-                        id="menu-appbar"
-                        anchorEl={anchorEl}
-                        anchorOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                        }}
-                        keepMounted
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                        }}
-                        open={Boolean(anchorEl)}
-                        onClose={handleMenuClose}
-                    >
-                        <MenuItem onClick={handleLogout}>
-                            <LogoutIcon sx={{ mr: 1 }} />
-                            Logout
-                        </MenuItem>
-                    </Menu>
-                </Toolbar>
-            </AppBar>
-
-            <Container maxWidth="xl" sx={{ mt: 4 }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    {currentUser?.role || 'Employee'} Lead Dashboard
-                </Typography>
-
-                {/* --- NEW: Search Bar --- */}
-                <Paper sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TextField
-                        fullWidth
-                        variant="outlined"
-                        size="small"
-                        placeholder="Search by Lead ID, Name, Email, Phone, or Source..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <Button variant="contained" onClick={handleSearch} disabled={isSearching}>
-                        {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Search'}
-                    </Button>
-                    {searchTime && (
-                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                            Found in {searchTime} ms
-                        </Typography>
-                    )}
-                    <Button variant="text" onClick={handleClearSearch} size="small">
-                        Clear
-                    </Button>
-                </Paper>
-
-
-                {/* --- View Toggle and Create Buttons --- */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    {/* View Toggles on the left */}
-                    <Box>
-                        <Button
-                            onClick={() => setActiveView('all')}
-                            variant={activeView === 'all' ? 'contained' : 'outlined'}
-                            sx={{ mr: 2 }}
-                        >
-                            All Leads ({leads.length})
-                        </Button>
-                        <Button
-                            onClick={() => setActiveView('reminders')}
-                            variant={activeView === 'reminders' ? 'contained' : 'outlined'}
-                            sx={{ mr: 2 }}
-                        >
-                            Reminders ({reminderLeads.length})
-                        </Button>
-                        <Button
-                            onClick={() => setActiveView('newLeads')}
-                            variant={activeView === 'newLeads' ? 'contained' : 'outlined'}
-                            color="secondary"
-                        >
-                            New Leads ({newLeads.length})
-                        </Button>
-                        <Badge badgeContent={openTasksCount} color="error" sx={{ ml: 2 }}>
-                            <Button
-                                onClick={() => setActiveView('tasks')}
-                                variant={activeView === 'tasks' ? 'contained' : 'outlined'}
-                                color="warning"
-                            >
-                                My Tasks ({openTasksCount})
-                            </Button>
-                        </Badge>
-                    </Box>
-
-                    {/* Create Button on the right */}
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddIcon />}
-                        href="/leads/new"
-                        sx={{ fontWeight: 'bold' }}
-                    >
-                        Create New Lead
-                    </Button>
-                </Box>
-
-                {/* --- Unified Table Container --- */}
-                <TableContainer component={Paper} elevation={5}>
-                    <Table sx={{ minWidth: 700 }} aria-label="lead dashboard table">
-                        {activeView === 'all' || activeView === 'reminders' ? (
-                            <TableHead sx={{ bgcolor: 'primary.dark' }}>
-                                <TableRow>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Contact</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Next Follow-up</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>FO / RH</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location (Z/R)</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }} align="center">Action</TableCell>
-                                </TableRow>
-                            </TableHead>
-                        ) : activeView === 'tasks' ? (
-                            <TableHead sx={{ bgcolor: 'warning.dark' }}>
-                                <TableRow>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Subject</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created By</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created On</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Action</TableCell>
-                                </TableRow>
-                            </TableHead>
-                        ) : ( // newLeads view
-                            <TableHead sx={{ bgcolor: 'secondary.dark' }}>
-                                <TableRow>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Lead ID</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Student</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Loan Type</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Created On</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>FO / RH</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location (Z/R)</TableCell>
-                                    <TableCell sx={{ color: 'white', fontWeight: 'bold', width: '100px' }} align="center">Action</TableCell>
-                                </TableRow>
-                            </TableHead>
-                        )}
-                        {activeView === 'all' ? (
-                            <TableBody>
-                                {leads.map((lead) => {
-                                    const isMissed = lead.reminderCallDate && moment(lead.reminderCallDate).startOf('day').isBefore(moment().startOf('day'));
-                                    return (
-                                        <TableRow
-                                            key={lead._id}
-                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}
-                                            hover
-                                        >
-                                            <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
-                                            <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
-                                            <TableCell>
-                                                <Typography variant="caption" display="block">{lead.email || 'No Email'}</Typography>
-                                                <Typography variant="caption" display="block">{lead.mobileNumbers?.[0] || 'No Mobile'}</Typography>
-                                            </TableCell>
-                                            <TableCell><Chip label={lead.leadStatus} color={getStatusColor(lead.leadStatus)} size="small" variant="outlined" /></TableCell>
-                                            <TableCell>{lead.reminderCallDate ? moment(lead.reminderCallDate).format('DD MMM YYYY') : <Chip label="SET DATE" color="error" size="small" />}</TableCell>
-                                            <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
-                                            <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
-                                            <TableCell align="center">
-                                                <ButtonGroup variant="outlined" size="small" aria-label="lead actions button group">
-                                                    <Button href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>View</Button>
-                                                </ButtonGroup>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {leads.length === 0 && (
-                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No leads found.</Typography></TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        ) : activeView === 'reminders' ? (
-                            <TableBody>
-                                {reminderLeads.map((lead) => {
-                                    const isMissed = moment(lead.reminderCallDate).startOf('day').isBefore(moment().startOf('day'));
-                                    return (
-                                        <TableRow
-                                            key={lead._id}
-                                            hover
-                                            sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer', backgroundColor: isMissed ? 'rgba(255, 0, 0, 0.08)' : 'inherit' }}                                            
-                                        >
-                                            <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
-                                            <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
-                                            <TableCell><Chip label={lead.leadStatus} color={getStatusColor(lead.leadStatus)} size="small" variant="outlined" /></TableCell>
-                                            <TableCell>{lead.reminderCallDate ? moment(lead.reminderCallDate).format('DD MMM YYYY') : <Chip label="SET DATE" color="error" size="small" />}</TableCell>
-                                            <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
-                                            <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>                                            <TableCell align="center">
-                                                <Button variant="contained" size="small" href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>View</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {reminderLeads.length === 0 && (
-                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No reminders for today or any missed reminders.</Typography></TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        ) : activeView === 'tasks' ? (
-                            <TableBody>
-                                {tasks.filter(task => task.status === 'Open').map((task) => {
-                                    const isBankTask = task.creatorRole === 'BankExecutive';
-                                    return (
-                                        <TableRow key={task._id} hover sx={{ cursor: 'pointer', backgroundColor: isBankTask ? '#fff3e0' : 'inherit' }}>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    {isBankTask && <Chip label="Bank Request" size="small" sx={{ bgcolor: '#ff9800', color: 'white', fontSize: '0.65rem', height: 20 }} />}
-                                                    <Typography variant="body2" sx={{ fontWeight: isBankTask ? 600 : 500 }}>{task.subject}</Typography>
-                                                </Box>
-                                                <Typography variant="caption" color="text.secondary">{task.body}</Typography>
-                                            </TableCell>
-                                            <TableCell>{task.createdByName}</TableCell>
-                                            <TableCell>{moment(task.createdAt).format('DD MMM YYYY, h:mm a')}</TableCell>
-                                            <TableCell><Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" /></TableCell>
-                                            <TableCell align="center">
-                                                <Button variant="contained" size="small" color="warning" href={`/leads/${task.leadId}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open Lead</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                                {openTasksCount === 0 && (
-                                    <TableRow><TableCell colSpan={5} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>You have no open tasks.</Typography></TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        ) : (
-                            <TableBody>
-                                {newLeads.map((lead) => (
-                                    <TableRow
-                                        key={lead._id}
-                                        hover
-                                        sx={{ '&:last-child td, &:last-child th': { border: 0 }, cursor: 'pointer' }}
-                                    >
-                                        <TableCell component="th" scope="row" sx={{ fontWeight: 'bold' }}>{lead.leadID}</TableCell>
-                                        <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{lead.fullName}</Typography></TableCell>
-                                        <TableCell>{lead.loanType || 'N/A'}</TableCell>
-                                        <TableCell>{moment(lead.createdAt).format('DD MMM YYYY')}</TableCell>
-                                        <TableCell>{lead.assignedFO || 'Unassigned'}</TableCell>
-                                        <TableCell>{`${lead.zone || 'N/A'} / ${lead.region || 'N/A'}`}</TableCell>
-                                        <TableCell align="center">
-                                            <Button variant="contained" size="small" color="secondary" href={`/leads/${lead._id}`} target="_blank" onClick={(e) => e.stopPropagation()}>Open</Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {newLeads.length === 0 && (
-                                    <TableRow><TableCell colSpan={7} align="center"><Typography color="text.secondary" sx={{ p: 3 }}>No new leads to display.</Typography></TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        )}
-                    </Table>
-                </TableContainer>
-            </Container>
-
-        </ThemeProvider>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+        <Typography variant="h6" style={{ marginLeft: '16px' }}>Loading Dashboard...</Typography>
+      </Box>
     );
+  }
+
+  /* ---------------- MAIN DASHBOARD ---------------- */
+  return (
+    <div style={{ margin: '0 auto', padding: '0 0px' }}>
+      <div style={{ padding: '0 20px' }}>
+        <div className="dashboard-header-fo">
+          <h2 style={{
+            margin: '40px 0px 0px 0px',
+            fontSize: '27px',
+            fontWeight: 'bold',
+            color: '#360d4c'
+          }}>
+            {currentUser?.role} Lead Dashboard
+          </h2>
+
+          {/* Search Bar */}
+          <div className="search-paper-fo">
+            <input
+              className="search-input-fo"
+              placeholder="Search by Lead ID, Name, Email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <a href="/leads/new" className="btn-fo btn-warning-fo">+ Create New Lead</a>
+            {searchTime && <span style={{ fontSize: '12px', color: '#666' }}>{searchTime} ms</span>}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '20px' }}>
+          {/* Left Side: Leads and Table */}
+          <div style={{ flex: 2 }}>
+            {/* Navigation and View Toggles */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+              <div>
+                <button className={`btn-fo ${activeView === 'all' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('all')} style={{ marginRight: '10px' }}>
+                  All Leads ({leads.length})
+                </button>
+                <button className={`btn-fo ${activeView === 'reminders' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('reminders')} style={{ marginRight: '10px' }}>
+                  Reminders ({reminderLeads.length})
+                </button>
+                <button className={`btn-fo ${activeView === 'newLeads' ? 'btn-secondary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('newLeads')}>
+                  New Leads ({newLeads.length})
+                </button>
+              </div>
+            </div>
+            {/* Data Table */}
+            <div className="table-container-fo">
+              <table className="table-fo">
+                <thead className={activeView === 'tasks' ? 'thead-tasks-fo' : activeView === 'newLeads' ? 'thead-new-fo' : 'thead-all-fo'}>
+                  {activeView === 'all' || activeView === 'reminders' ? (
+                    <tr>
+                      <th>Lead ID</th><th>Student</th><th>Contact</th><th>Status</th><th>Next Follow-up</th><th>FO / RH</th><th>Location</th><th>Action</th>
+                    </tr>
+                  ) : activeView === 'tasks' ? (
+                    <tr>
+                      <th>Subject</th><th>Created By</th><th>Created On</th><th>Status</th><th>Action</th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th>Lead ID</th><th>Student</th><th>Loan Type</th><th>Created On</th><th>FO / RH</th><th>Location</th><th>Action</th>
+                    </tr>
+                  )}
+                </thead>
+                <tbody>
+                  {/* --- ALL LEADS VIEW --- */}
+                  {activeView === 'all' && leads.map(lead => {
+                    const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
+                    const isMissed = reminderDate && moment(reminderDate).isBefore(moment(), 'day');
+                    const reminder = lead.reminders && lead.reminders.find(r => !r.done);
+                    const statusToShow = reminder ? reminder.status : lead.leadStatus;
+                    return (
+                      <tr key={lead._id} className={`row-hover-fo ${isMissed ? 'row-missed-fo' : ''}`}>
+                        <td><strong>{lead.leadID}</strong></td>
+                        <td>{lead.fullName}</td>
+                        <td><div style={{ fontSize: '12px' }}>{lead.email}<br />{lead.mobileNumbers?.[0]}</div></td>
+                        <td><span className={`chip-fo ${getStatusClass(statusToShow)}`}>{statusToShow}</span></td>
+                        <td>{reminderDate ? moment(reminderDate).format('DD MMM YYYY') : 'SET DATE'}</td>
+                        <td>{lead.assignedFO || 'Unassigned'}</td>
+                        <td>{lead.permanentLocation || 'N/A'}</td>
+                        <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-view-fo">View</a></td>
+                      </tr>
+                    )
+                  })}
+                  {/* --- REMINDERS VIEW --- */}
+                  {activeView === 'reminders' && reminderLeads.map(lead => {
+                    const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
+                    const reminder = lead.reminders && lead.reminders.find(r => !r.done);
+                    const statusToShow = reminder ? reminder.status : lead.leadStatus;
+                    return (
+                      <tr key={lead._id} className="row-hover-fo">
+                        <td><strong>{lead.leadID}</strong></td>
+                        <td>{lead.fullName}</td>
+                        <td>{lead.mobileNumbers?.[0]}</td>
+                        <td><span className={`chip-fo ${getStatusClass(statusToShow)}`}>{statusToShow}</span></td>
+                        <td>{reminderDate ? moment(reminderDate).format('DD MMM YYYY') : 'N/A'}</td>
+                        <td>{lead.assignedFO}</td>
+                        <td>{lead.permanentLocation || 'N/A'}</td>
+                        <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-primary-fo">View</a></td>
+                      </tr>
+                    );
+                  })}
+                  {/* --- TASKS VIEW --- */}
+                  {activeView === 'tasks' && tasks.filter(t => t.status === 'Open').map(task => (
+                    <tr key={task._id} className="row-hover-fo">
+                      <td><div><strong>{task.subject}</strong><br /><small>{task.body}</small></div></td>
+                      <td>{task.createdByName}</td>
+                      <td>{moment(task.createdAt).format('DD MMM YYYY')}</td>
+                      <td><span className="chip-fo status-info">{task.status}</span></td>
+                      <td><a href={`/leads/${task.leadId}`} target="_blank" className="btn-fo btn-warning-fo">Open Lead</a></td>
+                    </tr>
+                  ))}
+
+                  {/* --- NEW LEADS VIEW --- */}
+                  {activeView === 'newLeads' && newLeads.map(lead => (
+                    <tr key={lead._id} className="row-hover-fo">
+                      <td><strong>{lead.leadID}</strong></td>
+                      <td>{lead.fullName}</td>
+                      <td>{lead.loanType || 'N/A'}</td>
+                      <td>{moment(lead.createdAt).format('DD MMM YYYY')}</td>
+                      <td>{lead.assignedFO}</td>
+                      <td>{lead.zone} / {lead.region}</td>
+                      <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-secondary-fo">Open</a></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Right Side: My Tasks and Reminders */}
+          <div style={{ flex: 1 }}>
+            <div className="tasks-sidebar">
+              <h3>My Tasks</h3>
+              <div>
+                <h4>Priority Action Items ({openTasksCount})</h4>
+                {tasks.filter(t => t.status === 'Open').map(task => (
+                  <div key={task._id} className="task-item">
+                    <div className="task-subject">{task.subject}</div>
+                    <div className="task-body">{task.body}</div>
+                    <div className="task-time">{moment(task.createdAt).fromNow()}</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <h4>Reminders</h4>
+                {upcomingReminders.length > 0 ? (
+                  (() => {
+                    const reminderDate = upcomingReminders[0].reminderCallDate || (upcomingReminders[0].reminders && upcomingReminders[0].reminders.find(reminder => !reminder.done)?.date);
+                    const reminder = upcomingReminders[0].reminders && upcomingReminders[0].reminders.find(r => !r.done);
+                    const statusToShow = reminder ? reminder.status : upcomingReminders[0].leadStatus;
+                    const isToday = reminderDate && moment(reminderDate).isSame(moment(), 'day');
+                    return (
+                      <div className={`reminder-item ${isToday ? 'blinking-reminder' : ''}`}>
+                        <div className="reminder-title">{upcomingReminders[0].leadID} - {upcomingReminders[0].fullName}</div>
+                        <div className="reminder-date">{moment(reminderDate).format('DD MMM YYYY HH:mm')}</div>
+                        <div className="reminder-status"><span className={`chip-fo ${getStatusClass(statusToShow)}`}>{statusToShow}</span></div>
+                        <div className="reminder-note">
+                          Last Action: {upcomingReminders[0].callHistory?.length > 0 ? upcomingReminders[0].callHistory[upcomingReminders[0].callHistory.length - 1].notes : 'No notes'}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="no-reminders">No upcoming reminders</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;

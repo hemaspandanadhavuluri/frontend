@@ -115,7 +115,7 @@ const totalSteps = 5;
 
 // Mock data for zones and regions
 const zones = ['North', 'South', 'East', 'West'];
-const regions = ['Region A', 'Region B', 'Region C', 'Region D', 'Region E'];
+const regions = ['AP', 'Hyderabad', 'TG-Rest', 'Banglore', 'Tamilnadu', 'kerala', 'delhi', '7 sisters', 'mumbai', 'maharastra-rest'];
 
 // --- FORM STEP COMPONENTS (Props are passed down to all steps) ---
 
@@ -703,7 +703,7 @@ const HrPanel = () => {
 
             // Role is already in formData from RoleForm
 
-            const response = await fetch('http://13.48.131.69:5000/api/users/register', {
+            const response = await fetch('http://localhost:5000/api/users/register', {
                 method: 'POST',
                 body: formDataToSend,
             });

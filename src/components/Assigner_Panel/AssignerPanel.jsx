@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { API_URL } from '../constants';
-import logo from './logo.jpeg';
+import { API_URL,regions } from '../../constants';
 
 const AssignerPanel = ({ onLogout }) => {
     const [unassignedLeads, setUnassignedLeads] = useState([]);
     const [fos, setFos] = useState([]);
-    const [regions, setRegions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [currentUser, setCurrentUser] = useState(null);
-
+    
     // States to manage per-lead selections
     const [leadRegions, setLeadRegions] = useState({}); // { leadId: region }
     const [assignments, setAssignments] = useState({}); // { leadId: foId }
@@ -26,19 +24,7 @@ const AssignerPanel = ({ onLogout }) => {
         }
     }, []);
 
-    // Fetch all available regions on component mount
-    useEffect(() => {
-        const fetchRegions = async () => {
-            try {
-                const response = await axios.get(`${API_URL.replace('/leads', '/users')}/regions`);
-                setRegions(response.data);
-            } catch (err) {
-                setError('Failed to fetch regions.');
-                console.error(err);
-            }
-        };
-        fetchRegions();
-    }, []);
+
 
     // Fetch unassigned leads
     const fetchUnassignedLeads = useCallback(async (user) => {
@@ -128,26 +114,9 @@ const AssignerPanel = ({ onLogout }) => {
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* Header */}
-            <header className="bg-white shadow-md">
-                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div className="flex items-center">
-                        <img src={logo} alt="Logo" className="h-10 w-auto mr-4" />
-                        <h1 className="text-2xl font-bold text-gray-800">Assigner Panel</h1>
-                    </div>
-                    <div>
-                        <span className="mr-4">Welcome, {currentUser?.fullName || 'Assigner'}</span>
-                        <button onClick={onLogout} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </header>
-
             {/* Main Content */}
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">{error}</div>}
-
                 {loading ? (
                     <p>Loading leads...</p>
                 ) : (

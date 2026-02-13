@@ -1,0 +1,27 @@
+
+.test-scores-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: auto;
+    gap: 1rem;
+}
+
+.field-quarter {
+    width: 35%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .field-quarter {
+        width: 50%;
+    }
+}
+
+@media (max-width: 480px) {
+    .field-quarter {
+        width: 100%;
+    }
+}

@@ -1,0 +1,86 @@
+/* ContactCardSection.css */
+
+.contact-card-section {
+    margin-bottom: 20px;
+}
+
+.contact-card-title {
+    color: #360d4c;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.contact-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.contact-card-item {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fafafa;
+    transition: box-shadow 0.3s ease;
+}
+
+.contact-card-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contact-card-label {
+    font-weight: bold;
+    color: #360d4c;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.contact-card-icon {
+    margin-right: 8px;
+    color: #8e24aa;
+}
+
+.contact-card-value {
+    color: #333;
+    font-size: 16px;
+}
+
+.contact-card-value.empty {
+    color: #999;
+    font-style: italic;
+}
+
+.contact-card-mobile-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.contact-card-chip {
+    background-color: #e1bee7;
+    color: #360d4c;
+    border: 1px solid #ba68c8;
+}
+
+.contact-card-study-chip {
+    background-color: #8e24aa;
+    color: white;
+}
+
+.contact-card-study-chip.abroad {
+    background-color: #ff9800;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .contact-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-card-item {
+        padding: 12px;
+    }
+}

@@ -1,18 +1,23 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Autocomplete, TextField as MuiTextField, Button as MuiButton, Box, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, FormControl, InputLabel, Select, MenuItem, Chip, Divider } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
-import { DatePicker, DateTimePicker } from '@mui/x-date-pickers';
-import { ContentCopy as ContentCopyIcon, Close as CloseIcon } from '@mui/icons-material';
-import moment from 'moment'; 
-
-// You should ensure this file exists for custom styles like container width
-import CallHistorySection from "./CallHistorySection";
-import BasicDetailsSection from "./BasicDetailsSection";
-import RelationCard from "./RelationCard";
-import AssetCard from "./AssetCard";
+import moment from 'moment';
+import './leadForm.css';
+import BasicDetailsSection from "./sections/BasicDetailsSection";
+import FurtherEducationSection from "./sections/FurtherEducationSection";
+import TestScoresSection from "./sections/TestScoresSection";
+import OtherDetailsSection from "./sections/OtherDetailsSection";
+import CourseDetailsSection from "./sections/CourseDetailsSection";
+import AssetsAvailableSection from "./sections/AssetsAvailableSection";
+import BankSearchSection from "./sections/BankSearchSection";
+import StudentRelationsSection from "./sections/StudentRelationsSection";
+import StudentReferencesSection from "./sections/StudentReferencesSection";
+import ReferFriendsSection from "./sections/ReferFriendsSection";
+import EmailTemplatesSection from "./sections/EmailTemplatesSection";
+import RecommendedBanksSection from "./sections/RecommendedBanksSection";
+import RemindersSection from "./sections/RemindersSection";
+import CallNotesSection from "./sections/CallNotesSection";
+import TaskHistorySection from "./sections/TaskHistorySection";
 import {
     EMPTY_LEAD_STATE, loanIssues, miscSituations, emailTemplates, banksDocs, documentStatus,
     indianStates, indianCitiesWithState, courseStartQuarters, courseStartYears, degrees, EMAIL_TEMPLATE_CONTENT,
@@ -20,35 +25,38 @@ import {
     allCountries, API_URL, MOCK_USER_FULLNAME,
     NLTemplates,
 } from "../constants";
+import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
+
 
 // --- NEW: API Key for Currency Conversion ---
-const EXCHANGE_RATE_API_KEY = 'ddf59026d05ae4b9a8461fcf'; 
-// IMPORTANT: Get a free key from https://www.exchangerate-api.com and replace this placeholder.
+const EXCHANGE_RATE_API_KEY = process.env.REACT_APP_EXCHANGE_RATE_API_KEY; 
+// IMPORTANT: Your API key should be in a .env file as REACT_APP_EXCHANGE_RATE_API_KEY. Get a free key from https://www.exchangerate-api.com.
 
-// Custom Accordion component using Tailwind CSS
-const Accordion = ({ title, icon, children, defaultExpanded = true }) => {
+// Custom Accordion component using custom CSS classes
+const Accordion = ({ title, icon, children, defaultExpanded = false }) => {
     const [isOpen, setIsOpen] = useState(defaultExpanded);
 
     return (
-        <div className="border border-gray-200 rounded-lg mb-2">
-            <button type="button" onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 focus:outline-none">
-                <h3 className="text-lg font-bold text-gray-700 flex items-center">{icon} {title}</h3>
-                <svg className={`w-6 h-6 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+        <div className="accordion">
+            <button type="button" onClick={() => setIsOpen(!isOpen)} className="accordion-header">
+                <h3 className="accordion-title">{icon} {title}</h3>
+                <svg className={`accordion-icon ${isOpen ? 'open' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             {isOpen && (
-                <div className="p-4 border-t border-gray-200">{children}</div>
+                <div className="accordion-content">{children}</div>
             )}
         </div>
     );
 };
 
 // IMPORTANT: LeadForm now accepts leadId and onBack as props
-const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
+const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }) => {
     // Start with the empty state if no leadId, or wait for fetch
     const [lead, setLead] = useState(EMPTY_LEAD_STATE);
 
     const [loading, setLoading] = useState(true);
     const [newNote, setNewNote] = useState({ notes: '', callStatus: 'Connected' });
+    const [counsellorNote, setCounsellorNote] = useState({ notes: '' });
     const [primeBankList, setPrimeBankList] = useState([]);
     const [tiedUpBanks, setTiedUpBanks] = useState([]);
 
@@ -56,6 +64,14 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     const [showOHGFields, setShowOHGFields] = useState(false);
     const [isSelectingOHG, setIsSelectingOHG] = useState(false);
     const [hasAssets, setHasAssets] = useState(false);
+    // UI-only state to control which tab/section is visible
+    const [activeTab, setActiveTab] = useState(initialTab || 'basic');
+    const navigate = useNavigate();
+
+    // Scroll to top when activeTab changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [activeTab]);
     // --- NEW: State for Task Creation ---
     const [assignableUsers, setAssignableUsers] = useState([]);
     const [task, setTask] = useState({ assignedTo: null, subject: '', body: '' });
@@ -76,12 +92,71 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     const [isBankSearching, setIsBankSearching] = useState(false);
     const [bankSearchMessage, setBankSearchMessage] = useState('');
 
+    // --- NEW: State for Document Checklist Modal ---
+    const [isDocumentChecklistOpen, setIsDocumentChecklistOpen] = useState(false);
+    const [documentChecklistData, setDocumentChecklistData] = useState([]);
+    const [requiredDocuments] = useState([
+        "Student Aadhar", 
+        "Student PAN Card", 
+        "Student Passport Size Photo", 
+        "Student Passport",
+        "Student 10th Class Certificate", 
+        "Student 12th Degree Certificate", 
+        "Student UG Marksheet",
+        "Student Test Score Cards", 
+        "Student Admission Letter", 
+        "Student Work Experience Letter", 
+        "Student Visa"
+    ]);
+
     // --- NEW: State for Bank Assignment Modal ---
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [selectedBankForAssignment, setSelectedBankForAssignment] = useState(null);
-    const [assignmentRegion, setAssignmentRegion] = useState('');
+    const [assignmentState, setAssignmentState] = useState('');
     const [assignmentRM, setAssignmentRM] = useState('');
     const [assignmentError, setAssignmentError] = useState('');
+    const [quickNote, setQuickNote] = useState('');
+    const [showRemindersDropdown, setShowRemindersDropdown] = useState(false);
+    const [autocompleteStates, setAutocompleteStates] = useState({});
+    const [currentOpenDropdown, setCurrentOpenDropdown] = useState(null);
+    const dropdownRefs = useRef({});
+    const quickNoteTextareaRef = useRef(null);
+
+    // Calculate pending reminders count
+    const pendingRemindersCount = (lead.reminders ? lead.reminders.filter(reminder => !reminder.done).length : 0) + (lead.reminderCallDate ? 1 : 0);
+
+    // Initialize autocomplete states for all possible fields
+    useEffect(() => {
+        const initialStates = {
+            permanentLocation: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false },
+            interestedCountries: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false },
+            admittedUniversities: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false },
+            location: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false } // for ownHouseGuarantor
+        };
+        setAutocompleteStates(initialStates);
+    }, []);
+
+    // Effect to handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (currentOpenDropdown && dropdownRefs.current[currentOpenDropdown]) {
+                if (!dropdownRefs.current[currentOpenDropdown].contains(event.target)) {
+                    setAutocompleteStates(prev => ({
+                        ...prev,
+                        [currentOpenDropdown]: { ...prev[currentOpenDropdown], showDropdown: false }
+                    }));
+                    setCurrentOpenDropdown(null);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [currentOpenDropdown]);
+
+
 
 
     // --- EFFECT: Fetch Lead Data ---
@@ -132,14 +207,46 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             }
         };
         const processLeadData = (data) => {
-            const dataToSet = { ...EMPTY_LEAD_STATE, ...data };
+            const storedUser = localStorage.getItem('employeeUser');
+            let currentUser = null;
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                }
+            }
+
+            const dataToSet = { ...EMPTY_LEAD_STATE };
+            // Only override defaults with non-null values from data
+            Object.keys(data).forEach(key => {
+                if (data[key] != null) {
+                    dataToSet[key] = data[key];
+                }
+            });
+
+            // Special handling for panStatus: default to "Applied" for existing leads if not set or "Not Interested"
+            if (!dataToSet.panStatus || dataToSet.panStatus === 'Not Interested') {
+                dataToSet.panStatus = 'Applied';
+            }
+            // Populate zone, region, and regionalHead from current user if not already set
+            if (!dataToSet.zone && currentUser?.zone) dataToSet.zone = currentUser.zone;
+            if (!dataToSet.region && currentUser?.region) dataToSet.region = currentUser.region;
+            if (!dataToSet.regionalHead && currentUser?.regionalHead) dataToSet.regionalHead = currentUser.regionalHead;
+
             if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
-            if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }]; }
             if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }]; }
             if (!dataToSet.references || dataToSet.references.length < 2) {
                 const existingRefs = dataToSet.references || [];
                 dataToSet.references = [...existingRefs, ...Array(2 - existingRefs.length).fill({ relationship: '', name: '', address: '', phoneNumber: '' })].slice(0, 2);
             }
+            if (!dataToSet.referralList || dataToSet.referralList.length < 1) {
+                const existingRefs = dataToSet.referralList || [];
+                dataToSet.referralList = [...existingRefs, ...Array(1 - existingRefs.length).fill({ name: "", code: "", phoneNumber: "" })].slice(0, 1);
+            }
+            // Ensure array fields are arrays to prevent errors in autocomplete
+            dataToSet.interestedCountries = Array.isArray(dataToSet.interestedCountries) ? dataToSet.interestedCountries : [];
+            dataToSet.admittedUniversities = Array.isArray(dataToSet.admittedUniversities) ? dataToSet.admittedUniversities : [];
             setLead(dataToSet);
 
             // Initialize local UI states based on loaded data
@@ -166,7 +273,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 // Full lead object was passed, process it directly.
                 processLeadData(leadData);
             }
-        } else { 
+        } else {
             // This is for creating a new lead
             setLoading(false);
             const storedUser = localStorage.getItem('employeeUser');
@@ -178,15 +285,19 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                     console.error('Error parsing user data:', error);
                 }
             }
+            // New code for creating new lead with only basic details and source
             setLead({
-                ...EMPTY_LEAD_STATE,
-                ...leadData, // Pre-fill from the small dialog if available
-                zone: currentUser?.zone || '',
+                fullName: '',
+                email: '',
+                source: { source: '', name: '', email: '', phoneNumber: '' },
+                mobileNumbers: ["+91- "],
+                permanentLocation: '',
+                state: '',
+                regionalHead: currentUser?.regionalHead || '',
                 region: currentUser?.region || '',
-                relations: [{ relationshipType: 'Father', name: '', employmentType: '', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false }],
-                relations: [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }],
-                mobileNumbers: leadData?.mobileNumber ? [leadData.mobileNumber] : ["+91- "],
-                referralList: [{ name: "", code: "", phoneNumber: "" }],
+                planningToStudy: '',
+                sanctionDetails: EMPTY_LEAD_STATE.sanctionDetails,
+                // Add other basic fields as needed
             });
         }
     // This effect now runs whenever the selected lead object changes.
@@ -195,7 +306,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     // --- EFFECT: Pre-populate fields from Sanction Details ---
     useEffect(() => {
         // When a sanctioned loan amount is entered, update the main 'fee' field.
-        if (lead.sanctionDetails.loanAmount) {
+        if (lead.sanctionDetails && lead.sanctionDetails.loanAmount) {
             const sanctionedAmount = parseFloat(lead.sanctionDetails.loanAmount);
             if (!isNaN(sanctionedAmount) && sanctionedAmount !== parseFloat(lead.fee)) {
                 setLead(prev => ({ ...prev, fee: sanctionedAmount.toString() }));
@@ -203,7 +314,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
         }
 
         // When a co-applicant name is entered, update the relations array.
-        if (lead.sanctionDetails.coApplicant) {
+        if (lead.sanctionDetails && lead.sanctionDetails.coApplicant) {
             const coApplicantName = lead.sanctionDetails.coApplicant;
             const existingRelations = lead.relations || [];
             const coApplicantExists = existingRelations.some(rel => rel.name.toLowerCase() === coApplicantName.toLowerCase());
@@ -211,7 +322,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             if (!coApplicantExists) {
                 // Un-mark any previous co-applicants
                 const updatedRelations = existingRelations.map(rel => ({ ...rel, isCoApplicant: false }));
-                
+
                 // Add the new co-applicant
                 updatedRelations.push({
                     ...EMPTY_LEAD_STATE.relations[0], // Start with a blank relation object
@@ -222,14 +333,14 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 setLead(prev => ({ ...prev, relations: updatedRelations }));
             }
         }
-    }, [lead.sanctionDetails.loanAmount, lead.sanctionDetails.coApplicant]);
+    }, [lead.sanctionDetails?.loanAmount, lead.sanctionDetails?.coApplicant]);
 
     // --- NEW EFFECT: Fetch conversion rate when currency changes ---
     useEffect(() => {
         // Only fetch if a converter is active
-        if (!activeConverter || EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
-            if (EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
-                console.warn("Exchange rate API key is not set. Conversion rates will not be fetched automatically. Please get a free key from exchangerate-api.com and add it to LeadForm.jsx");
+        if (!activeConverter || !EXCHANGE_RATE_API_KEY) {
+            if (!EXCHANGE_RATE_API_KEY) {
+                console.warn("REACT_APP_EXCHANGE_RATE_API_KEY is not set in your .env file. Conversion rates will not be fetched automatically. Please get a free key from exchangerate-api.com.");
             }
             return;
         }
@@ -270,9 +381,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     // --- Handlers ---
 
     // Helper for text fields (updated to handle both flat and nested state)
-    const renderTextField = (name, label, value, onChange, widthClass = "w-full md:w-1/3", placeholder = "") => (
-        <div className={`p-2 ${widthClass}`}>
-            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    const renderTextField = (name, label, value, onChange, widthClass = "field-container", placeholder = "") => (
+        <div className={`field-wrapper ${widthClass}`}>
+            <label htmlFor={name} className="field-label">{label}</label>
             <input
                 type="text"
                 id={name}
@@ -281,22 +392,22 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 disabled={isReadOnly}
                 value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
                 onChange={onChange}
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="field-input"
             />
         </div>
     );
 
     // Helper for select/dropdown fields
-    const renderSelectField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => (
-        <div className={`p-2 ${widthClass}`}>
-            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    const renderSelectField = (name, label, value, onChange, options, widthClass = "field-container") => (
+        <div className={`field-wrapper ${widthClass}`}>
+            <label htmlFor={name} className="field-label">{label}</label>
             <select
                 id={name}
                 name={name}
                 value={value || ''}
                 disabled={isReadOnly}
                 onChange={onChange}
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="field-input"
             >
                 <option value="">Select {label}</option>
                 {options && options.length > 0 ?
@@ -315,10 +426,29 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
+        // Handle array values for multi-select fields
+        if (Array.isArray(value)) {
+            setLead((prev) => ({
+                ...prev,
+                [name]: value
+            }));
+            return;
+        }
+
+        // Handle nested fields like source.source
+        if (name.includes('.')) {
+            const [section, field] = name.split('.');
+            setLead(prev => ({
+                ...prev,
+                [section]: { ...prev[section], [field]: value }
+            }));
+            return;
+        }
+
         if (
-            name === 'approachedAnyBank' || 
-            name === 'hasStudentLoans' || 
-            name === 'hasCibilIssues' || 
+            name === 'approachedAnyBank' ||
+            name === 'hasStudentLoans' ||
+            name === 'hasCibilIssues' ||
             name === 'documentsAvailable' ||
             name === 'fileLoggedIn' || name === 'loanSanctioned'
         ) {
@@ -342,9 +472,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 [name]: value
             }));
         } else {
-            setLead((prev) => ({ 
-                ...prev, 
-                [name]: type === 'checkbox' ? checked : value 
+            setLead((prev) => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
             }));
         }
     };
@@ -355,6 +485,17 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             ...prev,
             [name]: newValue ? new Date(newValue).toISOString() : null
         }));
+
+        // Add notes to call history for reminder date, including last call if set
+        if (newValue && name === 'reminderCallDate') {
+            const formattedDate = new Date(newValue).toLocaleString();
+            let noteText = `Next call reminder set for ${formattedDate}`;
+            if (lead.lastCallDate) {
+                const lastFormatted = new Date(lead.lastCallDate).toLocaleString();
+                noteText = `Last call date set to ${lastFormatted} and Next call reminder set for ${formattedDate}`;
+            }
+            logActionAsNote(noteText);
+        }
     };
 
     // Simplified handler for nested state (like coApplicant/references) - *Kept from your original code*
@@ -508,40 +649,190 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     };
 
 
-    // Helper for Autocomplete fields
-    const renderAutocompleteField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => (
-        <div className={`p-2 ${widthClass}`}>
-            <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-            <input
-                type="text"
-                id={name}
-                name={name}
-                value={value || ''}
-                onChange={onChange}
-                list={`${name}-list`}
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            />
-            <datalist id={`${name}-list`}>
-                {options.map(option => (
-                    <option key={option} value={option} />
-                ))}
-            </datalist>
-        </div>
-    );
+    // Helper for Autocomplete fields (supports multi-select for arrays)
+    const renderAutocompleteField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => {
+        const isMultiSelect = Array.isArray(value);
+
+        // Initialize state for this field if not exists
+        if (!autocompleteStates[name]) {
+            setAutocompleteStates(prev => ({
+                ...prev,
+                [name]: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false }
+            }));
+        }
+
+        const state = autocompleteStates[name] || { inputValue: '', showDropdown: false, filteredOptions: [] };
+
+        const handleInputChange = (e) => {
+            const newValue = e.target.value;
+            const filtered = options.filter(option =>
+                option.toLowerCase().includes(newValue.toLowerCase()) &&
+                (!isMultiSelect || !value.includes(option))
+            );
+            setAutocompleteStates(prev => ({
+                ...prev,
+                [name]: { ...prev[name], inputValue: newValue, showDropdown: true, filteredOptions: filtered }
+            }));
+            setCurrentOpenDropdown(name);
+        };
+
+        const handleFocus = () => {
+            const current = autocompleteStates[name];
+            const newShow = !current.showDropdown;
+            const filtered = newShow ? options.filter(option =>
+                (!isMultiSelect || !value.includes(option))
+            ) : [];
+            setAutocompleteStates(prev => ({
+                ...prev,
+                [name]: { ...prev[name], showDropdown: newShow, filteredOptions: filtered }
+            }));
+            if (newShow) {
+                setCurrentOpenDropdown(name);
+            } else {
+                setCurrentOpenDropdown(null);
+            }
+        };
+
+        const handleBlur = () => {
+            if (isMultiSelect) return; // Don't hide dropdown for multi-select on blur
+            setTimeout(() => {
+                setAutocompleteStates(prev => {
+                    const current = prev[name];
+                    if (current.optionClicked) {
+                        return {
+                            ...prev,
+                            [name]: { ...current, optionClicked: false }
+                        };
+                    } else {
+                        return {
+                            ...prev,
+                            [name]: { ...current, showDropdown: false }
+                        };
+                    }
+                });
+                setCurrentOpenDropdown(null);
+            }, 200);
+        };
+
+        const handleOptionClick = (option) => {
+            if (isMultiSelect) {
+                const currentArray = value || [];
+                if (!currentArray.includes(option)) {
+                    const newArray = [...currentArray, option];
+                    onChange({ target: { name, value: newArray } });
+                    const filtered = options.filter(opt => !newArray.includes(opt));
+                    setAutocompleteStates(prev => ({
+                        ...prev,
+                        [name]: { ...prev[name], inputValue: '', showDropdown: true, filteredOptions: filtered, optionClicked: true }
+                    }));
+                }
+            } else {
+                onChange({ target: { name, value: option } });
+                setAutocompleteStates(prev => ({
+                    ...prev,
+                    [name]: { ...prev[name], inputValue: '', showDropdown: false }
+                }));
+                setCurrentOpenDropdown(null);
+            }
+        };
+
+        const handleAddItem = (newValue) => {
+            if (!newValue.trim()) return;
+            const currentArray = isMultiSelect ? value : [];
+            if (!currentArray.includes(newValue)) {
+                onChange({ target: { name, value: [...currentArray, newValue] } });
+            }
+            setAutocompleteStates(prev => ({
+                ...prev,
+                [name]: { ...prev[name], inputValue: '', showDropdown: false }
+            }));
+            setCurrentOpenDropdown(null);
+        };
+
+        const handleRemoveItem = (itemToRemove) => {
+            const newArray = value.filter(item => item !== itemToRemove);
+            onChange({ target: { name, value: newArray } });
+        };
+
+        const handleInputKeyDown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddItem(state.inputValue);
+            }
+        };
+
+        return (
+            <div className={`p-2 ${widthClass}`} ref={(el) => (dropdownRefs.current[name] = el)}>
+                <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+                    {label}
+                    {isMultiSelect && <span className="text-gray-500 text-xs ml-1">(you can select multiple)</span>}
+                </label>
+                {isMultiSelect && value.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                        {value.map((item, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {item}
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveItem(item)}
+                                    className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-500"
+                                >
+                                    <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                )}
+                <div className="relative">
+                    <input
+                        type="text"
+                        id={`${name}-input`}
+                        name={name}
+                        value={state.inputValue}
+                        onChange={handleInputChange}
+                        onClick={handleFocus}
+                        onBlur={handleBlur}
+                        onKeyDown={handleInputKeyDown}
+                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder={isMultiSelect ? "Type to add..." : "Select or type..."}
+                    />
+                    {state.showDropdown && state.filteredOptions.length > 0 && (
+                        <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                            {state.filteredOptions.map(option => (
+                                <div
+                                    key={option}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                    onClick={() => handleOptionClick(option)}
+                                >
+                                    {option}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
     // --- New Note Handlers ---
 
     const handleNoteChange = (e) => {
         setNewNote(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const handleCounsellorNoteChange = (e) => {
+        setCounsellorNote(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
     const handleSaveNote = async () => {
         const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
-        if (!currentUser && lead._id) { // only check if updating
+        if (!currentUser) {
             alert('You must be logged in to save notes.');
             return;
         }
 
-        // If there's no lead._id, this is a create operation
+        // If there's no lead._id, this is a create operation (for new leads, create silently without navigation)
         if (!lead._id) {
             // CREATE logic here (POST /api/leads)
             try {
@@ -550,12 +841,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 };
 
                 const response = await axios.post(API_URL, createPayload);
-                alert('Lead created successfully!');
-                onUpdate(response.data); // Notify parent of the new lead
-                console.log('Created lead:', response.data);
-                // Reset form or navigate back
-                setLead(EMPTY_LEAD_STATE);
+                // Update local state with the created lead, but don't navigate
+                setLead({ ...EMPTY_LEAD_STATE, ...response.data });
                 setNewNote({ notes: '', callStatus: 'Connected' });
+                // Optionally show a success message
+                alert('Lead created and note added successfully!');
             } catch (error) {
                 console.error('Failed to create lead:', error);
                 alert('Failed to create lead. Check console for details.');
@@ -563,34 +853,61 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             return;
         }
 
-
+        // For existing leads, only send the note, not the entire lead
         try {
-            // Prepare payload with all current form fields (lead state) AND the new note
             const updatePayload = {
-                ...lead, // Send all current lead data for a full update
-                // The backend controller expects newCallNote for logging
                 newNote: {
                     notes: newNote.notes,
                     callStatus: newNote.callStatus,
                     loggedById: currentUser._id,
                     loggedByName: currentUser.fullName
-                },
-                // The referralList needs to be an array of objects for the backend to process
-                // (Assuming the backend handles the referralList creation logic)
-                referralList: lead.referralList.filter(r => r.name || r.phoneNumber)
+                }
             };
 
-            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload); // Use lead._id from state
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
 
             // Update local state with the new, updated lead data (including the new callHistory entry)
-            setLead({ ...EMPTY_LEAD_STATE, ...response.data });
-            onUpdate(response.data); // Notify parent of the update
+            setLead({ ...lead, ...response.data });
             setNewNote({ notes: '', callStatus: 'Connected' }); // Clear the note field
-            // No need for a separate success alert, let the refreshed history show it.
+            // No navigation, just update the history
 
         } catch (error) {
-            console.error('Failed to save note/update lead:', error);
-            alert('Failed to update lead. Check console for details.');
+            console.error('Failed to save note:', error);
+            alert('Failed to save note. Check console for details.');
+        }
+    };
+
+    const handleSendCounsellorNote = async () => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            alert('You must be logged in to save notes.');
+            return;
+        }
+
+        if (!lead._id) {
+            alert('Please save the lead first before adding counsellor notes.');
+            return;
+        }
+
+        try {
+            const updatePayload = {
+                newNote: {
+                    notes: counsellorNote.notes,
+                    callStatus: 'Counsellor Note',
+                    loggedById: currentUser._id,
+                    loggedByName: currentUser.fullName
+                }
+            };
+
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+
+            // Update local state with the new, updated lead data (including the new callHistory entry)
+            setLead({ ...lead, ...response.data });
+            setCounsellorNote({ notes: '' }); // Clear the counsellor note field
+
+        } catch (error) {
+            console.error('Failed to save counsellor note:', error);
+            alert('Failed to save counsellor note. Check console for details.');
         }
     };
 
@@ -641,7 +958,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
 
         try {
             const response = await axios.put(`${API_URL}/${lead._id}`, payload);
-            setLead(response.data); // Update the lead state with the new history
+            setLead(prev => ({
+                ...prev,
+                callHistory: response.data.callHistory // Update only the callHistory to preserve local changes
+            }));
         } catch (error) {
             console.error('Failed to log action as note:', error);
         }
@@ -683,7 +1003,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
 
     const handleOpenAssignModal = (bank) => {
         setSelectedBankForAssignment(bank);
-        setAssignmentRegion('');
+        setAssignmentState('');
         setAssignmentRM('');
         setAssignmentError('');
         setIsAssignModalOpen(true);
@@ -692,6 +1012,69 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     const handleCloseAssignModal = () => {
         setIsAssignModalOpen(false);
         setSelectedBankForAssignment(null);
+    };
+
+    // --- NEW: Document Checklist Handlers ---
+    const fetchDocumentChecklist = async (leadId) => {
+        try {
+            const storedUser = JSON.parse(localStorage.getItem('employeeUser') || '{}');
+            const response = await axios.get(`${API_URL}/${leadId}`, {
+                headers: { Authorization: `Bearer ${storedUser.token}` }
+            });
+
+            const fetchedLead = response.data;
+            const uploadedDocs = fetchedLead.documents || [];
+
+            // DEBUG: Log the documents
+            console.log('Uploaded Documents:', uploadedDocs);
+
+            // Create checklist with both uploaded and unuploaded documents
+            const checklist = requiredDocuments.map(docType => {
+                const uploadedDoc = uploadedDocs.find(doc => doc.documentType === docType);
+                console.log(`Checking ${docType}:`, uploadedDoc);
+                return {
+                    documentType: docType,
+                    isUploaded: !!uploadedDoc,
+                    fileName: uploadedDoc?.fileName || 'Not uploaded',
+                    uploadedAt: uploadedDoc?.uploadedAt || null,
+                    filePath: uploadedDoc?.filePath || null
+                };
+            });
+
+            console.log('Final Checklist:', checklist);
+            setDocumentChecklistData(checklist);
+            return true;
+        } catch (error) {
+            console.error('Failed to fetch document checklist:', error);
+            alert('Failed to fetch document checklist. Please try again.');
+            return false;
+        }
+    };
+
+    const handleOpenDocumentChecklist = async () => {
+        if (!lead._id) {
+            alert('Please save the lead first before viewing documents.');
+            return;
+        }
+
+        const success = await fetchDocumentChecklist(lead._id);
+        if (success) {
+            setIsDocumentChecklistOpen(true);
+        }
+    };
+
+    const handleRefreshDocumentChecklist = async () => {
+        if (!lead._id) {
+            alert('Please save the lead first before viewing documents.');
+            return;
+        }
+
+        await fetchDocumentChecklist(lead._id);
+    };
+
+    const handleCloseDocumentChecklist = () => {
+        setIsDocumentChecklistOpen(false);
+        setDocumentChecklistData([]);
     };
 
     const handleAssignToBank = async () => {
@@ -722,10 +1105,127 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
         }
     };
 
+    const handleSetReminder = async () => {
+        if (!lead._id) {
+            alert('Please save the lead first before setting a reminder.');
+            return;
+        }
+        if (!lead.reminderCallDate) {
+            alert('Please select a date and time for the reminder.');
+            return;
+        }
+
+        try {
+            const newReminder = {
+                date: lead.reminderCallDate,
+                done: false,
+                createdAt: new Date().toISOString(),
+                status: lead.leadStatus || 'No status' // Capture the current lead status, default to 'No status'
+            };
+            const updatePayload = {
+                reminders: [...(lead.reminders || []), newReminder],
+                reminderCallDate: null // Clear the current reminder date after setting
+            };
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+            setLead(response.data);
+            alert(`Reminder set for ${new Date(lead.reminderCallDate).toLocaleString()}`);
+        } catch (error) {
+            console.error('Failed to set reminder:', error);
+            alert('Failed to set reminder. Please try again.');
+        }
+    };
+
+    const handleMarkReminderDone = async (reminderIndex) => {
+        if (!lead._id) return;
+
+        try {
+            const updatedReminders = [...(lead.reminders || [])];
+            updatedReminders[reminderIndex].done = true;
+
+            const updatePayload = {
+                reminders: updatedReminders
+            };
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+            setLead(response.data);
+        } catch (error) {
+            console.error('Failed to mark reminder as done:', error);
+            alert('Failed to mark reminder as done. Please try again.');
+        }
+    };
+
+    const handleMarkCurrentReminderDone = async () => {
+        if (!lead._id) return;
+
+        try {
+            const updatePayload = {
+                reminderCallDate: null
+            };
+            const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+            setLead(response.data);
+        } catch (error) {
+            console.error('Failed to mark current reminder as done:', error);
+            alert('Failed to mark current reminder as done. Please try again.');
+        }
+    };
+
+    const handleAddQuickNote = async () => {
+        if (!quickNote.trim()) {
+            alert('Please enter a note before adding.');
+            return;
+        }
+
+        if (!lead._id) {
+            alert('Please save the lead first before adding quick notes.');
+            return;
+        }
+
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            alert('You must be logged in to add notes.');
+            return;
+        }
+
+        const payload = {
+            newNote: {
+                notes: quickNote,
+                callStatus: 'Quick Note',
+                loggedById: currentUser._id,
+                loggedByName: currentUser.fullName
+            }
+        };
+
+        try {
+            const response = await axios.put(`${API_URL}/${lead._id}`, payload);
+            setLead(prev => ({
+                ...prev,
+                callHistory: response.data.callHistory
+            }));
+            setQuickNote('');
+            alert('Quick note added successfully!');
+        } catch (error) {
+            console.error('Failed to add quick note:', error);
+            alert('Failed to add quick note. Please try again.');
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         // Since the lead form is large, the main submit should trigger the full update
-        handleSaveNote(); 
+        handleSaveNote();
+    };
+
+    const handleSubmitLeadData = async () => {
+        if (!lead.callHistory || lead.callHistory.length === 0) {
+            alert('Please add at least one note before submitting the lead data.');
+            return;
+        }
+        if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
+            alert('Please set a reminder before submitting the lead data.');
+            return;
+        }
+        // Trigger form submission
+        const form = document.querySelector('form');
+        if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
     };
 
     const handleUpdateTaskStatus = async (taskId, newStatus) => {
@@ -796,17 +1296,52 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
     };
 
     // --- NEW: Email Modal Handlers ---
-    const handleOpenEmailModal = (templateName) => {
+    const handleOpenEmailModal = async (templateName) => {
         const template = EMAIL_TEMPLATE_CONTENT[templateName];
         if (template) {
-            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student');
+            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student').replace(/\[FO Name\]/g, lead.assignedFO || 'FO');
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://13.48.131.69/leads/${lead._id}/documents`;
+                const uploadLink = `http://localhost/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
+            }
+
+            // If it's the EMI calculator email, inject the API link
+            if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
+                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
+                const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
+                finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
+            }
+
+            // If it's a bank connection email (public or private), fetch bank data and populate the list
+            if (templateName === 'Only Public Banks Connection Mail' || templateName === 'Only Priavte Lender Connection Mail') {
+                const type = templateName === 'Only Public Banks Connection Mail' ? 'public' : 'private';
+                try {
+                    const response = await axios.get(`${API_URL.replace('/leads', '/banks')}/connected/${type}`);
+                    const banks = response.data;
+
+                    // Build the list of banks and executives
+                    let bankListHtml = '';
+                    banks.forEach(bank => {
+                        bankListHtml += `<li><strong>${bank.name}</strong>`;
+                        if (bank.relationshipManagers && bank.relationshipManagers.length > 0) {
+                            bank.relationshipManagers.forEach(rm => {
+                                bankListHtml += `<br/>- ${rm.name} (${rm.phoneNumber})`;
+                            });
+                        }
+                        bankListHtml += `</li>`;
+                    });
+
+                    // Replace the placeholder with the actual list
+                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', `<ul>${bankListHtml}</ul>`);
+                } catch (error) {
+                    console.error('Failed to fetch connected banks:', error);
+                    // Fallback: keep the placeholder or show an error message
+                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', '<p>Unable to load bank information at this time.</p>');
+                }
             }
 
             setCurrentEmailTemplate({ name: templateName, subject: template.subject, body: finalBody });
@@ -844,7 +1379,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
             setEmailStatus(response.data.message);
             
             // NEW: Log this action as a note
-            await logActionAsNote(`Email Sent: "${currentEmailTemplate.subject}"`);
+            await logActionAsNote(`${currentEmailTemplate.name} is sent - ${currentEmailTemplate.subject}`);
 
             setTimeout(() => {
                 handleCloseEmailModal();
@@ -872,57 +1407,108 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
         }
     };
 
-    // --- NEW: Combine Internal and External Notes for Display ---
-    const allNotes = React.useMemo(() => {
-        const internal = (lead.callHistory || []).map(n => ({ ...n, isExternal: false }));
-        const external = (lead.externalCallHistory || []).map(n => ({ ...n, isExternal: true }));
-        return [...internal, ...external].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    }, [lead.callHistory, lead.externalCallHistory]);
-
-    if (loading) return <p className="text-center mt-5">Loading Lead Details...</p>;
+    if (loading) return <p className="loading-text">Loading Lead Details...</p>;
 
     // Calculate total expenses (Unchanged)
     const totalFee = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);
 
     return (
-    <div className="p-4 md:p-8 w-full mx-auto my-8 bg-white rounded-lg shadow-xl">
+    <div className="lead-form-container">
         {/* --- Header with Create Task Button --- */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-                {lead._id ? `Lead: ${lead.fullName}` : 'Create New Lead'}
-                {isReadOnly && <Chip label="View Only" color="warning" sx={{ ml: 2 }} />}
+        <div className="lead-form-header">
+            <h1 className="lead-form-title">
+               Lead: {lead.fullName}
             </h1>
             {lead._id && (
-                <MuiButton variant="contained" color="primary" onClick={() => setShowTaskCreator(!showTaskCreator)} disabled={isReadOnly && !lead.assignedFOId}>
-                    {showTaskCreator ? 'Cancel Task' : 'Create Task'}
-                </MuiButton>
+                <div className="header-buttons">
+                    <button className="task-creator-button" onClick={() => setShowTaskCreator(!showTaskCreator)}>
+                        {showTaskCreator ? 'Cancel Task' : 'Create Task'}
+                    </button>
+                </div>
             )}
-        </Box>
+        </div>
 
+        {/* --- NEW: Inline Task Creator --- */}
+        {showTaskCreator && (
+            <div className="task-creator">
+                <h3 className="task-creator-title">Create New Task for {lead.fullName}</h3>
+                <div className="task-creator-form">
+                    <div className="task-creator-field">
+                        <label htmlFor="assignTo" className="task-creator-label">Assign Task To</label>
+                        <select
+                            id="assignTo"
+                            className="task-creator-input"
+                            value={task.assignedTo ? task.assignedTo._id : ''}
+                            onChange={(e) => {
+                                const selected = assignableUsers.find(u => u._id === e.target.value);
+                                setTask(prev => ({ ...prev, assignedTo: selected }));
+                            }}
+                        >
+                            <option value="">Select User</option>
+                            {assignableUsers.map(user => (
+                                <option key={user._id} value={user._id}>
+                                    {user.fullName} ({user.role})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="task-creator-field">
+                        <label htmlFor="subject" className="task-creator-label">Task Subject</label>
+                        <input
+                            type="text"
+                            id="subject"
+                            name="subject"
+                            className="task-creator-input"
+                            value={task.subject}
+                            onChange={handleTaskChange}
+                            placeholder="Enter task subject"
+                        />
+                    </div>
+                    <div className="task-creator-field">
+                        <label htmlFor="body" className="task-creator-label">Task Body (Optional)</label>
+                        <textarea
+                            id="body"
+                            name="body"
+                            className="task-creator-textarea"
+                            value={task.body}
+                            onChange={handleTaskChange}
+                            rows={3}
+                            placeholder="Enter task details"
+                        />
+                    </div>
+                    {taskMessage && <p className={`task-message ${taskMessage.includes('success') ? 'success' : 'error'}`}>{taskMessage}</p>}
+                    <div className="task-creator-actions">
+                        <button type="button" className="task-cancel-button" onClick={() => setShowTaskCreator(false)}>Cancel</button>
+                        <button type="button" className="task-creator-button " onClick={handleCreateTask}>Create Task</button>
+                    </div>
+                </div>
+            </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
             <div className="flex flex-col lg:flex-row gap-6">
                 {/* Left Column: Lead Details */}
                 <div className="flex-1 min-w-0 space-y-4">
 
             {/* 1. TOP METADATA & SOURCE INFO - Organized into a Card */}
-            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="p-2 space-y-2">
+            <div className="metadata-section">
+                <div className="metadata-content">
                     {/* First line: Applied Date and FO */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="metadata-row">
                         {lead.studentAppliedDate ? (
-                            <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                            <span className="metadata-badge applied">
                                 {`Applied On: Date: ${moment(lead.studentAppliedDate).format('DD MMM YYYY')} | Time: ${moment(lead.studentAppliedDate).format('h:mm A')}`}
                             </span>
                         ) : null}
-                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-purple-600 bg-purple-200">{`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`}</span>
-                        <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`Loan ID: ${lead.loanId || 'N/A'}`}</span>
-                        <span className="text-xs font-mono inline-block py-1 px-2 border border-gray-300 rounded">{`User ID: ${lead.leadID || 'N/A'}`}</span>
+                        <span className="metadata-badge fo">{`FO: ${lead.assignedFO || 'N/A'} (${lead.assignedFOPhone || 'N/A'})`}</span>
+                        <span className="metadata-id">{`Loan ID: ${lead.loanId || 'N/A'}`}</span>
+                        <span className="metadata-id">{`User ID: ${lead.leadID || 'N/A'}`}</span>
                     </div>
                     {/* Second line: IDs and Source */}
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                        <span className="text-gray-600">
-                            <strong className="font-bold text-gray-800">Source/Referal:</strong> {lead.source.source || 'N/A'}
-                            {lead.source.source === 'Referral' ? 
+                    <div className="metadata-row">
+                        <span className="metadata-source">
+                            <strong>Source/Referal:</strong> {lead.source.source || 'N/A'}
+                            {lead.source.source === 'Referral' ?
                                 ` - ${lead.source.name || 'N/A'} (${lead.source.email || 'N/A'}, ${lead.source.phoneNumber || 'N/A'})` :
                                 ` - ${lead.source.name || 'N/A'}`
                             }
@@ -931,926 +1517,547 @@ const LeadForm = ({ leadData, onBack, onUpdate, isReadOnly = false }) => {
                 </div>
             </div>
 
-            {/* 2. ADD BASIC DETAILS */}
-            <BasicDetailsSection
-                lead={lead}
-                setLead={setLead}
-                handleChange={handleChange} 
-                renderTextField={renderTextField} 
-                renderSelectField={renderSelectField}
-                renderAutocompleteField={renderAutocompleteField} // Pass the new helper
-                indianStates={indianStates} // Existing prop for State field
-                indianCities={indianCitiesWithState} // New prop for Permanent Location
-            />
-            <div className="mt-4">
-                {/* 3. FURTHER EDUCATION DETAILS */}
-                <Accordion title="Further Education Details" icon="🎓" defaultExpanded>
-                    <div className="flex flex-wrap -mx-2">
-                            {renderSelectField("loanType", "Loan Type", lead.loanType, handleChange, ['Balance Transfer', 'New Loan'], "w-full sm:w-1/2 md:w-1/4")}
-                            {renderSelectField("courseStartMonth", "Course Start Month", lead.courseStartMonth, handleChange, courseStartQuarters, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderSelectField("courseStartYear", "Course Start Year", lead.courseStartYear, handleChange, courseStartYears, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderSelectField("degree", "Degree", lead.degree, handleChange, degrees, "w-full sm:w-1/2 md:w-1/4")}
-                            {renderSelectField("fieldOfInterest", "Field of Interest", lead.fieldOfInterest, handleChange, fieldsOfInterest)}
-                            {renderAutocompleteField("interestedCountries", "Interested Countries", lead.interestedCountries, handleChange, allCountries)}
-                            {renderSelectField("admissionStatus", "Admission Status", lead.admissionStatus, handleChange, admissionStatuses)}
-                            {/* --- NEW: Conditional Date Pickers --- */}
-                            <LocalizationProvider dateAdapter={AdapterMoment}>
-                                {lead.admissionStatus === 'Applied - No Admit Yet' && (
-                                    <div className="p-2 w-full md:w-1/3">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expected Admit Date</label>
-                                        <DatePicker
-                                            readOnly={isReadOnly}
-                                            value={lead.expectedAdmitDate ? moment(lead.expectedAdmitDate) : null}
-                                            onChange={(newValue) => handleDateChange('expectedAdmitDate', newValue)}
-                                        />
-                                    </div>
-                                )}
-                                {lead.admissionStatus === 'Not Yet Applied' && (
-                                    <div className="p-2 w-full md:w-1/3">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Expected Application Date</label>
-                                        <DatePicker
-                                            readOnly={isReadOnly}
-                                            value={lead.expectedApplicationDate ? moment(lead.expectedApplicationDate) : null}
-                                            onChange={(newValue) => handleDateChange('expectedApplicationDate', newValue)}
-                                        />
-                                    </div>
-                                )}
-                            </LocalizationProvider>
-                            {renderAutocompleteField("admittedUniversities", "Admitted Universities", lead.admittedUniversities, handleChange, universities, "w-full md:w-1/2")}
-                            <div className="p-2 w-full md:w-1/2">
-                                <fieldset>
-                                    <legend className="text-sm font-medium text-gray-700">Has the student already approached any bank? *</legend>
-                                    <div className="flex items-center space-x-4 mt-2">
-                                        <label className="flex items-center cursor-pointer">
-                                            <input type="radio" name="approachedAnyBank" value="true" checked={lead.approachedAnyBank === true} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" disabled={isReadOnly} />
-                                            <span className="ml-2">Yes</span>
-                                        </label>
-                                        <label className="flex items-center cursor-pointer">
-                                            <input type="radio" name="approachedAnyBank" value="false" checked={lead.approachedAnyBank === false} onChange={handleChange} className="form-radio h-4 w-4 text-blue-600" disabled={isReadOnly} />
-                                            <span className="ml-2">No</span>
-                                        </label>
-                                    </div>
-                                </fieldset>
-                                {lead.approachedAnyBank && <input type="text" name="previousBankApproached" placeholder="Previous Bank Approached" value={lead.previousBankApproached} onChange={handleChange} className="mt-2 w-full p-2 border border-gray-300 rounded-md" disabled={isReadOnly} />}
-                            </div>
-                            {/* --- NEW: Dynamic Section for Bank Approach --- */}
-                            {lead.approachedAnyBank && (
-                                <div className="w-full p-2 mt-4 border-t pt-4">
-                                    <fieldset className="mb-4">
-                                        <legend className="text-sm font-medium text-gray-700">Has the file been logged in at {lead.previousBankApproached || 'the bank'}?</legend>
-                                        <div className="flex items-center space-x-4 mt-2">
-                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="true" checked={lead.fileLoggedIn === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
-                                            <label className="flex items-center"><input type="radio" name="fileLoggedIn" value="false" checked={lead.fileLoggedIn === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
-                                        </div>
-                                    </fieldset>
-
-                                    {lead.fileLoggedIn === false && (
-                                        <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800">
-                                            <h4 className="font-bold">Advantages of going with Justap:</h4>
-                                            <ul className="list-disc list-inside text-sm mt-2">
-                                                <li>We have direct tie-ups which can speed up your application.</li>
-                                                <li>Our expert team ensures your file is complete and correct, reducing rejection chances.</li>
-                                                <li>You get a dedicated advisor to guide you through the entire process.</li>
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {lead.fileLoggedIn === true && (
-                                        <fieldset className="mb-4">
-                                            <legend className="text-sm font-medium text-gray-700">Has the loan been sanctioned?</legend>
-                                            <div className="flex items-center space-x-4 mt-2">
-                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="true" checked={lead.loanSanctioned === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
-                                                <label className="flex items-center"><input type="radio" name="loanSanctioned" value="false" checked={lead.loanSanctioned === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
-                                            </div>
-                                        </fieldset>
-                                    )}
-
-                                    {lead.loanSanctioned === true && (
-                                        <div className="p-4 border rounded-md bg-gray-50 space-y-4">
-                                            <h4 className="font-bold text-gray-800">Sanction Details</h4>
-                                            <div className="flex flex-wrap -mx-2">
-                                                {renderTextField("rateOfInterest", "Rate of Interest (%)", lead.sanctionDetails.rateOfInterest, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
-                                                {renderTextField("loanAmount", "Loan Amount (Lakhs)", lead.sanctionDetails.loanAmount, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
-                                                {renderTextField("coApplicant", "Co-Applicant", lead.sanctionDetails.coApplicant, (e) => handleNestedChange('sanctionDetails', e), "w-full sm:w-1/2 md:w-1/3")}
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Processing Fee Paid?</legend><label><input type="radio" name="processingFeePaid" value="true" checked={lead.sanctionDetails.processingFeePaid === true} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Yes</label><label className="ml-4"><input type="radio" name="processingFeePaid" value="false" checked={lead.sanctionDetails.processingFeePaid === false} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> No</label></fieldset></div>
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Disbursement Done?</legend><label><input type="radio" name="disbursementDone" value="true" checked={lead.sanctionDetails.disbursementDone === true} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Yes</label><label className="ml-4"><input type="radio" name="disbursementDone" value="false" checked={lead.sanctionDetails.disbursementDone === false} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> No</label></fieldset></div>
-                                                <div className="p-2 w-full sm:w-1/2 md:w-1/3"><fieldset><legend className="text-sm">Loan Security</legend><label><input type="radio" name="loanSecurity" value="Secure" checked={lead.sanctionDetails?.loanSecurity === 'Secure'} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Secure</label><label className="ml-4"><input type="radio" name="loanSecurity" value="Unsecure" checked={lead.sanctionDetails.loanSecurity === 'Unsecure'} onChange={handleSanctionDetailsChange} disabled={isReadOnly} /> Unsecure</label></fieldset></div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {lead.fileLoggedIn && lead.loanSanctioned !== null && (
-                                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-800">
-                                                <h4 className="font-bold">Disadvantages of Current Choice:</h4>
-                                                <ul className="list-disc list-inside text-sm mt-2">
-                                                    <li>You might be missing out on better interest rates from other lenders.</li>
-                                                    <li>The process could be slower without a dedicated follow-up team.</li>
-                                                    <li>Hidden charges or complex terms might not be immediately obvious.</li>
-                                                    <li>Lack of a single point of contact for all your queries.</li>
-                                                </ul>
-                                            </div>
-                                            <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-800">
-                                                <h4 className="font-bold">Advantages if you go with Justap:</h4>
-                                                <ul className="list-disc list-inside text-sm mt-2">
-                                                    <li>We compare offers from multiple banks to find you the best deal.</li>
-                                                    <li>Our team actively follows up to ensure the fastest possible sanction.</li>
-                                                    <li>Complete transparency on all fees and charges.</li>
-                                                    <li>A dedicated Justap advisor as your single point of contact.</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                    </div>
-                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700">
-                            Enter a university and click the button below to check the prime university list.
-                    </div>
-                    <button type="button" className="mt-2 px-4 py-2 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600" onClick={handleShowPrimeBanks} disabled={isReadOnly}>PRIME UNIVERSITY LIST</button>
-
-                        {/* Inline Bank List Display */}
-                        {primeBankList.length > 0 && (
-                            <div className="mt-4">
-                                <h4 className="text-xl font-semibold mb-2">Prime Banks for "{fetchedForUniversity}"</h4>
-                                <div className="overflow-x-auto border rounded-lg">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Name</th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Max Loan Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {primeBankList.map((bank, index) => (
-                                                <tr key={index}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{bank.bankName}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{bank.maxLoanAmount}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                </Accordion>
-                
-                {/* NEW: Test Scores Section */}
-                <Accordion title="Test Scores" icon="📝">
-                    <div className="flex flex-wrap -mx-2">
-                            {renderTextField("GRE", "GRE (200-990)", lead.testScores.GRE, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("IELTS", "IELTS (0-9)", lead.testScores.IELTS, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("TOEFL", "TOEFL (0-120)", lead.testScores.TOEFL, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("GMAT", "GMAT (200-800)", lead.testScores.GMAT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("SAT", "SAT (400-1600)", lead.testScores.SAT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("PTE", "PTE (10-90)", lead.testScores.PTE, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                            {renderTextField("ACT", "ACT (1-36)", lead.testScores.ACT, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w1/4")}
-                            {renderTextField("DUOLINGO", "DuoLingo (10-160)", lead.testScores.DUOLINGO, (e) => handleNestedChange('testScores', e), "w-full sm:w-1/2 md:w-1/4")}
-                    </div>
-                </Accordion>
-                
-                {/* --- REFACTORED: Other Details Section --- */}
-                <Accordion title="Other Details" icon="📋">
-                    <div className="flex flex-wrap -mx-2 items-start">
-                        {renderTextField("age", "Age", lead.age, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-                        {renderTextField("workExperience", "Work Experience (in months)", lead.workExperience, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-                        <div className="p-2 w-full md:w-1/3">
-                            <fieldset>
-                                <legend className="text-sm font-medium text-gray-700">Is there any loan on the student?</legend>
-                                <div className="flex items-center space-x-4 mt-2" >
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="true" checked={lead.hasStudentLoans === true} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
-                                    <label className="flex items-center"><input type="radio" name="hasStudentLoans" value="false" checked={lead.hasStudentLoans === false} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
-                                </div>
-                            </fieldset>
-                            {lead.hasStudentLoans && (
-                                <>
-                                    {renderTextField("studentLoanDetails", "Details about the loan", lead.studentLoanDetails, handleChange, "w-full", "e.g., Personal Loan")}
-                                    {renderTextField("studentLoanAmount", "Loan Amount", lead.studentLoanAmount, handleChange, "w-full", "e.g., 200000")}
-                                </>
-                            )}
+            {/* 2. BASIC DETAILS: compact summary shown in sidebar; full form appears below when the 'Basic Details' tab is active */}
+            <div className="form-layout">
+                <aside className="sidebar">
+                    <div className="sidebar-content">
+                        <div className="sidebar-summary">
+                            <h3 className="summary-name">{lead.fullName || '—'}</h3>
+                            <p className="summary-phone">{(lead.mobileNumbers && lead.mobileNumbers[0]) ? lead.mobileNumbers[0] : ''}</p>
+                            <p className="summary-email">{lead.email || lead.emailId || ''}</p>
                         </div>
-                    </div>
-                </Accordion>
+                        
 
-                {/* --- REFACTORED: Course Details Section --- */}
-                <Accordion title="Course Details" icon="📄">
-                    <div className="flex flex-wrap -mx-2 items-start">
-                        {/* --- MOVED: Currency Converter --- */}
-                        <div className="w-full p-2 mb-4 border-b pb-4">
-                            <h4 className="font-bold text-gray-800 mb-2">Tuition Fee Options</h4>
-                            <div className="flex flex-wrap gap-2">
-                                <button type="button" onClick={() => setActiveConverter(null)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${!activeConverter ? 'bg-green-600 text-white font-bold ring-2 ring-offset-1 ring-green-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`} disabled={isReadOnly}>
-                                    <span className="font-bold text-lg mr-2">₹</span>
-                                    Enter in INR
-                                </button>
-                                {currencies.map(c => (
-                                    <button type="button" key={c.code} onClick={() => setActiveConverter(c.code)} className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 flex items-center justify-center shadow-sm ${activeConverter === c.code ? 'bg-blue-600 text-white font-bold ring-2 ring-offset-1 ring-blue-500' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`} disabled={isReadOnly}>
-                                        <span className="font-bold text-lg mr-2">{c.symbol}</span>
-                                        {c.label}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="sidebar-tabs">
+                            <div className="tabs-list">
+                                <button type="button" onClick={() => setActiveTab('basic')} className={`tab-button ${activeTab==='basic' ? 'active' : ''}`}>
+                                👤Basic Details
+                            </button>
+                                <button type="button" onClick={() => setActiveTab('furtherEducation')} className={`tab-button ${activeTab==='furtherEducation' ? 'active' : ''}`}>🎓Further Education Details</button>
+                                <button type="button" onClick={() => setActiveTab('testScores')} className={`tab-button ${activeTab==='testScores' ? 'active' : ''}`}>📝Test Scores</button>
+                                <button type="button" onClick={() => setActiveTab('otherDetails')} className={`tab-button ${activeTab==='otherDetails' ? 'active' : ''}`}>📋Other Details</button>
+                                <button type="button" onClick={() => setActiveTab('courseDetails')} className={`tab-button ${activeTab==='courseDetails' ? 'active' : ''}`}>💰Course Details</button>
+                                <button type="button" onClick={() => setActiveTab('assetsAvailable')} className={`tab-button ${activeTab==='assetsAvailable' ? 'active' : ''}`}>🏠Assets Available</button>
+                                <button type="button" onClick={() => setActiveTab('studentRelations')} className={`tab-button ${activeTab==='studentRelations' ? 'active' : ''}`}>👨‍👩‍👧‍👦Student Relations</button>
+                                <button type="button" onClick={() => setActiveTab('studentReferences')} className={`tab-button ${activeTab==='studentReferences' ? 'active' : ''}`}>🤝Student References & PAN</button>
+                                <button type="button" onClick={() => setActiveTab('bankSearch')} className={`tab-button ${activeTab==='bankSearch' ? 'active' : ''}`}>🏦Bank Search by Pincode</button>
+                                <button type="button" onClick={() => setActiveTab('referFriends')} className={`tab-button ${activeTab==='referFriends' ? 'active' : ''}`}>👥Refer Applicant's Friends</button>
+                                <button type="button" onClick={() => setActiveTab('emailTemplates')} className={`tab-button ${activeTab==='emailTemplates' ? 'active' : ''}`}>🛠️Email Templates</button>
+                                <button type="button" onClick={() => setActiveTab('recommendedBanks')} className={`tab-button ${activeTab==='recommendedBanks' ? 'active' : ''}`}>💳Recommended Banks</button>
+                                <button type="button" onClick={() => setActiveTab('taskHistory')} className={`tab-button ${activeTab==='taskHistory' ? 'active' : ''}`}>🕘Task History</button>
+                                <button type="button" onClick={() => setActiveTab('reminders')} className={`tab-button ${activeTab==='reminders' ? 'active' : ''}`}>🗓️Reminders & Final Status</button>
+                                <button type="button" onClick={() => setActiveTab('callNotes')} className={`tab-button ${activeTab==='callNotes' ? 'active' : ''}`}>📞Call Notes & History</button>
 
-                            {activeConverter && (
-                                <div className="flex flex-wrap -mx-2 items-end bg-gray-50 p-4 rounded-lg mt-4">
-                                    {renderTextField("originalFee", `Tuition Fee (in ${activeConverter})`, lead.originalFee, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/3">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Conversion Rate</label>
-                                        <div className="flex items-center">
-                                            <input type="text" name="conversionRate" value={lead.conversionRate} onChange={handleChange} readOnly={isReadOnly || !isConversionRateEditable} className={`w-full p-2 border rounded-md ${!isConversionRateEditable ? 'bg-gray-100' : 'bg-white'}`} />
-                                            <button type="button" onClick={() => setIsConversionRateEditable(!isConversionRateEditable)} className="ml-2 p-1 text-xs bg-gray-200 hover:bg-gray-300 rounded" disabled={isReadOnly}>
-                                                {isConversionRateEditable ? 'Lock' : 'Edit'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {renderSelectField("courseDuration", "Course Duration", lead.courseDuration, handleChange, courseDurations, "w-full sm:w-1/2 md:w-1/4")}
-                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Tuition Fee (in Lakhs)</label>
-                            <input type="text" name="fee" value={lead.fee} onChange={handleChange} readOnly={isReadOnly || !!activeConverter} className={`w-full p-2 border rounded-md ${!!activeConverter ? 'bg-gray-100' : 'bg-white'}`} />
-                        </div>
-                        {renderTextField("living", "Living (in Lakhs)", lead.living, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                        {renderTextField("otherExpenses", "Other Expenses (in Lakhs)", lead.otherExpenses, handleChange, "w-full sm:w-1/2 md:w-1/4")}
-                        {renderTextField("loanAmountRequired", "Loan Amount Required (Lakhs)", lead.loanAmountRequired, handleChange, "w-full sm:w-1/2 md:w-1/3")}
-
-                        <div className="p-2 w-full sm:w-1/2 md:w-1/3 mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Loan Amount (in Lakhs)</label>
-                            <input type="text" value={totalFee.toFixed(2)} readOnly className="w-full p-2 bg-gray-200 border border-gray-300 rounded-md font-bold text-lg" />
-                            {/* --- NEW: Progress Bar for Total Amount --- */}
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${Math.min((totalFee / 200) * 100, 100)}%` }}></div>
                             </div>
                         </div>
                     </div>
-                </Accordion>
-
-
-                {/* NEW: Assets Available Section */}
-                <Accordion title="Assets Available" icon="🏠">
-                        <fieldset className="mb-4">
-                            <legend className="text-sm font-medium text-gray-700">Are assets available?</legend>
-                            <div className="flex items-center space-x-4 mt-2">
-                                <label className="flex items-center"><input type="radio" value="true" checked={hasAssets === true} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
-                                <label className="flex items-center"><input type="radio" value="false" checked={hasAssets === false} onChange={(e) => setHasAssets(e.target.value === 'true')} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
-                            </div>
-                        </fieldset>
-
-                        {hasAssets && (
-                            <>
-                                {lead.assets.map((asset, index) => (
-                                    <AssetCard
-                                        key={index}
-                                        asset={asset}
-                                        index={index}
-                                        onUpdate={updateAsset}
-                                        onRemove={removeAsset}
-                                        renderTextField={renderTextField}
-                                        renderSelectField={renderSelectField}
-                                    />
-                                ))}
-                                <button type="button" onClick={addAsset} className="mt-4 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" disabled={isReadOnly}>
-                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                    Add Asset
-                                </button>
-                            </>
-                        )}
-                </Accordion>
-
-                {/* --- NEW: Bank Search by Pincode --- */}
-                <Accordion title="Bank Search by Pincode" icon="🏦">
-                    <div className="flex items-center gap-2 mb-4">
-                        <input
-                            type="text"
-                            placeholder="Enter Pincode"
-                            disabled={isReadOnly}
-                            value={bankSearchPincode}
-                            onChange={(e) => setBankSearchPincode(e.target.value)}
-                            className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <button type="button" onClick={handleBankSearch} disabled={isReadOnly || isBankSearching} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-gray-400">
-                            {isBankSearching ? 'Searching...' : 'Search Banks'}
-                        </button>
-                    </div>
-                    {bankSearchMessage && <p className="text-sm text-gray-600">{bankSearchMessage}</p>}
-                    {bankSearchResults.length > 0 && (
-                        <div className="mt-4 space-y-3">
-                            <h4 className="text-lg font-semibold">Search Results for Pincode: {bankSearchPincode}</h4>
-                            {bankSearchResults.map(bank => (
-                                <div key={bank._id} className="p-4 border rounded-lg bg-gray-50">
-                                    <p className="font-bold text-blue-800">{bank.name}</p>
-                                    <div className="mt-2 pl-4 border-l-2 border-gray-300">
-                                        {bank.branches.filter(branch => branch.pincode === bankSearchPincode).map((branch, idx) => (
-                                            <div key={idx} className="text-sm text-gray-700 mb-3 pb-2 border-b last:border-b-0">
-                                                <p><strong>Branch:</strong> {branch.branchName}</p>
-                                                <p><strong>IFSC:</strong> {branch.ifsc}</p>
-                                                <p><strong>Address:</strong> {branch.address}</p>
-                                                <p><strong>Location:</strong> {branch.city}, {branch.district}, {branch.state} - {branch.pincode}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Accordion>
-
-                {/* 4. FAMILY/CO-APPLICANT INFO */}
-                <Accordion title="Student Relations (Co-Applicant/Guarantor)" icon="👨‍👩‍👧‍👦">
-                        {lead.relations.map((relation, index) => (
-                            <RelationCard
-                                key={index}
-                                relation={relation}
-                                index={index}
-                                onUpdate={updateRelation}
-                                onRemove={removeRelation}
+                </aside>
+                <main className="main-content">
+                    <div className="tab-content">
+                        {/* Basic Details (full form shown in main when the Basic Details tab is active) */}
+                        {activeTab === 'basic' && (
+                        <div className="section-block">
+                            <BasicDetailsSection
+                                lead={lead}
+                                setLead={setLead}
+                                handleChange={handleChange}
                                 renderTextField={renderTextField}
                                 renderSelectField={renderSelectField}
-                                employmentTypes={employmentTypes}
+                                renderAutocompleteField={renderAutocompleteField}
+                                indianStates={indianStates}
+                                indianCities={indianCitiesWithState}
                             />
-                        ))}
-
-                        <button type="button" className="mt-4 mb-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={addRelation} disabled={isReadOnly}>
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Add New Relation
-                        </button>
-
-                        <div className="p-4 border border-dashed border-gray-400 rounded-md">
-                            <h4 className="font-bold text-gray-800">🏠 Own House Guarantor (OHG)</h4>
-                            <p className="text-xs text-gray-600 mt-1 mb-1">
-                                Note: Own house guarantor should be one of your family members or relatives who owns a house/flat.
-                            </p>
-                            <p className="text-xs text-gray-600 mb-2">This property is NOT taken as a collateral.</p>
-                            {!isReadOnly && (
-                                <a href="#" className="text-sm text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); if (showOHGFields) { setShowOHGFields(false); setLead(prev => ({...prev, ownHouseGuarantor: EMPTY_LEAD_STATE.ownHouseGuarantor})); } else { setIsSelectingOHG(!isSelectingOHG); } }}>
-                                    {showOHGFields ? 'Hide Guarantor Fields' : 'Add/Change Own House Guarantor'}
-                                </a>
-                            )}
-
-                            {/* Inline OHG Selection */}
-                            {isSelectingOHG && !showOHGFields && (
-                                <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                                    <p className="text-sm mb-2">Select a relation type:</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Father', 'Mother', 'Spouse', 'Brother', 'Other'].map((type) => (
-                                            <button
-                                                key={type}
-                                                type="button"
-                                                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100"
-                                                onClick={() => handleSelectOHG(type)}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Conditionally rendered card for OHG details */}
-                            {showOHGFields && (
-                                <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
-                                    <h5 className="text-xl font-bold mb-4 text-blue-700">Own House Guarantor Details</h5>
-                                    <div className="flex flex-wrap -mx-2">
-                                        {renderTextField("name", "Guarantor Name", lead.ownHouseGuarantor.name, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderSelectField("relationshipType", "Relationship to Student", lead.ownHouseGuarantor.relationshipType, (e) => handleNestedChange('ownHouseGuarantor', e), ['Father', 'Mother', 'Spouse', 'Brother', 'Other', 'Uncle', 'Aunt', 'Cousin', 'Grandparent', 'Other Relative'], "w-full sm:w-1/2 md:w-1/4")}
-                                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Guarantor Phone Number</label>
-                                            <div className="flex">
-                                                <select
-                                                    value={(lead.ownHouseGuarantor.phoneNumber || '+91-').split('-')[0]}
-                                                    onChange={(e) => handleNestedChange('ownHouseGuarantor', { target: { name: 'phoneNumber', value: `${e.target.value}-${(lead.ownHouseGuarantor.phoneNumber || '').split('-')[1] || ''}` } })}
-                                                    className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
-                                                >
-                                                    {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
-                                                </select>
-                                                <input
-                                                    type="text"
-                                                    value={(lead.ownHouseGuarantor.phoneNumber || '').split('-')[1] || ''}
-                                                    onChange={(e) => handleNestedChange('ownHouseGuarantor', { target: { name: 'phoneNumber', value: `${(lead.ownHouseGuarantor.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
-                                                    className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
-                                                />
-                                            </div>
-                                        </div>
-                                        {renderSelectField("employmentType", "Employment Type", lead.ownHouseGuarantor.employmentType, (e) => handleNestedChange('ownHouseGuarantor', e), employmentTypes, "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderTextField("annualIncome", "Annual Income (lacs)", lead.ownHouseGuarantor.annualIncome, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderTextField("currentObligations", "Current Obligations", lead.ownHouseGuarantor.currentObligations, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
-                                        {renderTextField("cibilScore", "CIBIL Score", lead.ownHouseGuarantor.cibilScore, (e) => handleNestedChange('ownHouseGuarantor', e), "w-full sm:w-1/2 md:w-1/4")}
-                                        <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                            <fieldset>
-                                                <legend className="text-sm font-medium text-gray-700">CIBIL Issues?</legend>
-                                                <div className="flex items-center space-x-4 mt-2">
-                                                <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="true" checked={lead.ownHouseGuarantor.hasCibilIssues === true} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Yes</span></label>
-                                                <label className="flex items-center"><input type="radio" name="hasCibilIssues" value="false" checked={lead.ownHouseGuarantor.hasCibilIssues === false} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">No</span></label>
-                                                </div>
-                                            </fieldset>
-                                            {lead.ownHouseGuarantor.hasCibilIssues && <input type="text" name="cibilIssues" placeholder="CIBIL Issues" value={lead.ownHouseGuarantor.cibilIssues} onChange={(e) => handleNestedChange('ownHouseGuarantor', e)} className="mt-2 w-full p-2 border border-gray-300 rounded-md" />}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                </Accordion>
-
-                {/* 5. STUDENT REFERENCES & PAN DETAILS */}
-                <Accordion title="Student References & PAN Details" icon="🤝">
-                        <div className="p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 mb-4">
-                            <p className="text-sm">
-                                References are people other than your parents and siblings who you know (e.g., friends, neighbours, relatives).
-                                They will NOT be added to the loan; they are for contact purposes only if the student/family are not contactable.
-                            </p>
-                        </div>
-                        <h4 className="text-xl font-semibold mb-2">Student References</h4>
-                        {lead.references.map((ref, index) => (
-                            <div key={index} className="mb-4 p-4 border rounded-lg bg-gray-50">
-                                <h5 className="font-bold mb-2 text-gray-600">Reference {index + 1}</h5>
-                                <div className="flex flex-wrap -mx-2">
-                                    {renderTextField(`references[${index}].name`, "Name*", ref.name, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
-                                    {renderSelectField(`references[${index}].relationship`, "Relationship*", ref.relationship, (e) => handleNestedChange('references', e), referenceRelationships, "w-full sm:w-1/2 md:w-1/4")}
-                                    {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/2")}
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                                        <div className="flex">
-                                            <select
-                                                value={(ref.phoneNumber || '+91-').split('-')[0]}
-                                                onChange={(e) => handleNestedChange('references', { target: { name: `references[${index}].phoneNumber`, value: `${e.target.value}-${(ref.phoneNumber || '').split('-')[1] || ''}` } })}
-                                                className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
-                                            >
-                                                {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
-                                            </select>
-                                            <input
-                                                type="text"
-                                                value={(ref.phoneNumber || '').split('-')[1] || ''}
-                                                onChange={(e) => handleNestedChange('references', { target: { name: `references[${index}].phoneNumber`, value: `${(ref.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
-                                                className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <hr className="my-4" />
-                        <h4 className="text-xl font-semibold mb-2">Student PAN Details</h4>
-                        <fieldset>
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2" >
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Interested" checked={lead.panStatus === 'Not Interested'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Not Interested</span></label>
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Not Available" checked={lead.panStatus === 'Not Available'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Not Available</span></label>
-                                <label className="flex items-center"><input type="radio" name="panStatus" value="Applied" checked={lead.panStatus === 'Applied'} onChange={handleChange} className="form-radio" disabled={isReadOnly} /> <span className="ml-2">Applied</span></label>
-                            </div>
-                            {lead.panStatus === 'Applied' && <input type="text" placeholder="PAN Card Number" value={lead.panNumber} onChange={handleChange} name="panNumber" className="mt-2 p-2 border border-gray-300 rounded-md w-full md:w-1/2" disabled={isReadOnly} />}
-                        </fieldset>
-                </Accordion>
-
-                {/* 6. REFER APPLICANT'S FRIENDS */}
-                <Accordion title="Refer Applicant's Friends" icon="👥">
-                        <div className="flex flex-wrap -mx-2">
-                            {lead.referralList.map((ref, index) => (
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/3" key={index}>
-                                    <div className="p-4 border rounded-lg h-full flex flex-col">
-                                        <h5 className="font-bold mb-2 text-blue-700">Referral {index + 1}</h5>
-                                        <input type="text" placeholder="Name" value={ref.name || ''} name={`referralList[${index}].name`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md mb-2" />
-                                        <div className="flex mb-2">
-                                            <select
-                                                value={(ref.phoneNumber || '+91-').split('-')[0]}
-                                                onChange={(e) => handleNestedChange('referralList', { target: { name: `referralList[${index}].phoneNumber`, value: `${e.target.value}-${(ref.phoneNumber || '').split('-')[1] || ''}` } })}
-                                                className="p-2 border border-gray-300 rounded-l-md bg-gray-50"
-                                            >
-                                                {countryPhoneCodes.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="Phone Number"
-                                                value={(ref.phoneNumber || '').split('-')[1] || ''}
-                                                onChange={(e) => handleNestedChange('referralList', { target: { name: `referralList[${index}].phoneNumber`, value: `${(ref.phoneNumber || '+91-').split('-')[0]}-${e.target.value}` } })}
-                                                className="w-full p-2 border-t border-b border-r border-gray-300 rounded-r-md"
-                                            />
-                                        </div>
-                                        <input type="text" placeholder="Code" value={ref.code || ''} name={`referralList[${index}].code`} onChange={(e) => handleNestedChange('referralList', e)} className="w-full p-2 border rounded-md" disabled={isReadOnly} />
-                                        <button type="button" className="mt-4 px-3 py-1.5 bg-purple-600 text-white text-sm font-semibold rounded-md hover:bg-purple-700 disabled:bg-gray-400" onClick={() => handleCreateReferralLead(ref)} disabled={isReadOnly || !ref.name || !ref.phoneNumber}>
-                                            Create Lead
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <button type="button" className="mt-4 px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center" onClick={() => setLead(p => ({...p, referralList: [...p.referralList, { name: "", code: "", phoneNumber: "" }] }))} disabled={isReadOnly}>
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Add Referral
-                        </button>
-                </Accordion>
-
-                {/* 9. Email Templates */}
-                <Accordion title="Email Templates" icon="🛠️">
-                    <div className="space-y-6">
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">NL Normal</h4>
-                            <div className="flex flex-wrap gap-2">{NLTemplates.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
-                        </div>
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Banks Connection - Intro & Docs Upload</h4>
-                            <div className="flex flex-wrap gap-2">{banksDocs.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:bg-purple-700 flex items-center" style={{backgroundColor:'#AA60C8'}} disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
-                        </div>
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Document Upload</h4>
-                            <div className="flex flex-wrap gap-2">{documentStatus.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
-                        </div>
-                        {emailMessage && (
-                            <div className="mt-4 p-3 text-sm text-center bg-blue-100 text-blue-800 rounded-md">{emailMessage}</div>
                         )}
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Loan Calculators</h4>
-                            <div className="flex flex-wrap gap-2">
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EDUCATION LOAN EMI CALCULATOR</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>$ USD TO INR EDUCATION LOAN CALCULATOR</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>Saves Lakhs By Educational Loan Transfer</button>
-                                <button type="button" className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>EL TAX Rebate Calculator</button>
-                            </div>
-                        </div>
-                        <hr/>
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Banks Related - Issues</h4>
-                            <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'purple'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
-                        </div>
-                        <div>
-                            <h4 className="text-lg font-semibold mb-2">Miscellaneous Situations</h4>
-                            <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} style={{backgroundColor:'#11224E'}} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center" disabled={isReadOnly}><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
-                        </div>
+
+                        {/* 3. FURTHER EDUCATION DETAILS */}
+                        {activeTab==='furtherEducation' && (
+                            <FurtherEducationSection
+                                lead={lead}
+                                setLead={setLead}
+                                handleChange={handleChange}
+                                handleDateChange={handleDateChange}
+                                renderSelectField={renderSelectField}
+                                renderAutocompleteField={renderAutocompleteField}
+                                handleShowPrimeBanks={handleShowPrimeBanks}
+                                primeBankList={primeBankList}
+                                fetchedForUniversity={fetchedForUniversity}
+                            />
+                        )}
+
+                        {/* NEW: Test Scores Section */}
+                        {activeTab==='testScores' && (
+                            <TestScoresSection
+                                lead={lead}
+                                handleNestedChange={handleNestedChange}
+                                renderTextField={renderTextField}
+                            />
+                        )}
+
+                        {/* --- REFACTORED: Other Details Section --- */}
+                        {activeTab==='otherDetails' && (
+                            <OtherDetailsSection
+                                lead={lead}
+                                handleChange={handleChange}
+                                renderTextField={renderTextField}
+                            />
+                        )}
+
+                        {/* --- REFACTORED: Course Details Section --- */}
+                        {activeTab==='courseDetails' && (
+                            <CourseDetailsSection
+                                lead={lead}
+                                setLead={setLead}
+                                handleChange={handleChange}
+                                renderTextField={renderTextField}
+                                renderSelectField={renderSelectField}
+                                setActiveConverter={setActiveConverter}
+                                activeConverter={activeConverter}
+                                isConversionRateEditable={isConversionRateEditable}
+                                setIsConversionRateEditable={setIsConversionRateEditable}
+                                totalFee={totalFee}
+                            />
+                        )}
+
+                        {/* NEW: Assets Available Section */}
+                        {activeTab==='assetsAvailable' && (
+                            <AssetsAvailableSection
+                                lead={lead}
+                                setLead={setLead}
+                                hasAssets={hasAssets}
+                                setHasAssets={setHasAssets}
+                                updateAsset={updateAsset}
+                                removeAsset={removeAsset}
+                                addAsset={addAsset}
+                                renderTextField={renderTextField}
+                                renderSelectField={renderSelectField}
+                            />
+                        )}
+
+                        {/* --- NEW: Bank Search by Pincode --- */}
+                        {activeTab==='bankSearch' && (
+                            <BankSearchSection
+                                bankSearchPincode={bankSearchPincode}
+                                setBankSearchPincode={setBankSearchPincode}
+                                handleBankSearch={handleBankSearch}
+                                isBankSearching={isBankSearching}
+                                bankSearchResults={bankSearchResults}
+                                bankSearchMessage={bankSearchMessage}
+                                handleOpenAssignModal={handleOpenAssignModal}
+                            />
+                        )}
+
+                        {/* 4. FAMILY/CO-APPLICANT INFO */}
+                        {/* REFACTORED: Student Relations Section */}
+                        {activeTab==='studentRelations' && (
+                            <StudentRelationsSection
+                                lead={lead}
+                                setLead={setLead}
+                                updateRelation={updateRelation}
+                                removeRelation={removeRelation}
+                                addRelation={addRelation}
+                                renderTextField={renderTextField}
+                                renderSelectField={renderSelectField}
+                                handleNestedChange={handleNestedChange}
+                                employmentTypes={employmentTypes}
+                                showOHGFields={showOHGFields}
+                                setShowOHGFields={setShowOHGFields}
+                                isSelectingOHG={isSelectingOHG}
+                                setIsSelectingOHG={setIsSelectingOHG}
+                                handleSelectOHG={handleSelectOHG}
+                                countryPhoneCodes={countryPhoneCodes}
+                            />
+                        )}
+
+                        {/* REFACTORED: Student References Section */}
+                        {activeTab==='studentReferences' && (
+                            <StudentReferencesSection
+                                lead={lead}
+                                handleChange={handleChange}
+                                handleNestedChange={handleNestedChange}
+                                renderTextField={renderTextField}
+                                renderSelectField={renderSelectField}
+                                referenceRelationships={referenceRelationships}
+                                countryPhoneCodes={countryPhoneCodes}
+                            />
+                        )}
+
+                        {/* REFACTORED: Refer Friends Section */}
+                        {activeTab==='referFriends' && (
+                            <ReferFriendsSection
+                                lead={lead}
+                                setLead={setLead}
+                                handleNestedChange={handleNestedChange}
+                                handleCreateReferralLead={handleCreateReferralLead}
+                                countryPhoneCodes={countryPhoneCodes}
+                            />
+                        )}
+
+                        {/* REFACTORED: Email Templates Section */}
+                        {activeTab==='emailTemplates' && (
+                            <EmailTemplatesSection
+                                handleOpenEmailModal={handleOpenEmailModal}
+                                emailMessage={emailMessage}
+                            />
+                        )}
+                        {/* REFACTORED: Recommended Banks Section */}
+                        {activeTab==='recommendedBanks' && (
+                            <RecommendedBanksSection
+                                lead={lead}
+                                tiedUpBanks={tiedUpBanks}
+                                handleOpenAssignModal={handleOpenAssignModal}
+                            />
+                        )}
+
+                        {/* REFACTORED: Reminders & Final Status Section */}
+                        {activeTab==='reminders' && (
+                            <RemindersSection
+                                lead={lead}
+                                handleChange={handleChange}
+                                handleDateChange={handleDateChange}
+                                handleSanctionDetailsChange={handleSanctionDetailsChange}
+                                handleSetReminder={handleSetReminder}
+                            />
+                        )}
+
+
+                        {/* REFACTORED: Call Notes & History Section */}
+                        {activeTab==='callNotes' && (
+                            <CallNotesSection
+                                lead={lead}
+                                newNote={newNote}
+                                counsellorNote={counsellorNote}
+                                handleNoteChange={handleNoteChange}
+                                handleCounsellorNoteChange={handleCounsellorNoteChange}
+                                onSendNote={handleSaveNote}
+                                onSendCounsellorNote={handleSendCounsellorNote}
+                                onSubmitLeadData={() => {
+                                    // Check for mandatory notes if reminder exists
+                                    const hasReminder = lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0);
+                                    const hasNormalNote = lead.callHistory && lead.callHistory.some(note => note.callStatus !== 'Counsellor Note');
+                                    const hasCounsellorNote = lead.callHistory && lead.callHistory.some(note => note.callStatus === 'Counsellor Note');
+
+                                    if (hasReminder && (!hasNormalNote || !hasCounsellorNote)) {
+                                        alert('Since there is a reminder for this counsellor lead, you must submit both a normal note and a counsellor note.');
+                                        return;
+                                    }
+
+                                    if (!lead.callHistory || lead.callHistory.length === 0) {
+                                        alert('Please add at least one note before submitting the lead data.');
+                                        return;
+                                    }
+                                    if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
+                                        alert('Please set a reminder before submitting the lead data.');
+                                        return;
+                                    }
+                                    // Trigger form submission
+                                    const form = document.querySelector('form');
+                                    if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
+                                }}
+                                isSubmitDisabled={false}
+                            />
+                        )}
+
+                        {/* REFACTORED: Task History Section */}
+                        {activeTab==='taskHistory' && (
+                            <TaskHistorySection
+                                leadTasks={leadTasks}
+                                handleUpdateTaskStatus={handleUpdateTaskStatus}
+                            />
+                        )}
                     </div>
-                </Accordion>
-                 {/* 8. RECOMMENDED BANKS & ISSUES */}
-                <Accordion title="Recommended Banks" icon="💳">
-                    <div>
-                        <h4 className="font-bold mb-4 text-gray-800">Tied-Up Banks</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {tiedUpBanks.map((bank) => (
-                                <div key={bank._id} className="p-4 border rounded-lg shadow-sm bg-white flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex justify-between items-start">
-                                            <p className="font-bold text-base text-gray-900">{bank.name}</p>
-                                            {lead.assignedBanks?.some(b => b.bankId === bank._id) && (
-                                                <span className="text-xs font-semibold inline-flex items-center py-1 px-2 rounded-full text-green-600 bg-green-200">
-                                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-                                                    Assigned
-                                                </span>
-                                            )}
-                                        </div>
-                                        {lead.assignedBanks?.find(b => b.bankId === bank._id) && (
-                                            <div className="mt-2 p-2 bg-green-50 rounded-md text-xs">
-                                                <p>Assigned To: <strong>{lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMName}</strong></p>
-                                                <p>Email: {lead.assignedBanks.find(b => b.bankId === bank._id).assignedRMEmail}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button type="button" onClick={() => handleOpenAssignModal(bank)} disabled={isReadOnly || lead.assignedBanks?.some(b => b.bankId === bank._id)} className="mt-3 w-full px-3 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:bg-gray-400">
-                                        {lead.assignedBanks?.some(b => b.bankId === bank._id) ? 'Assigned' : 'Assign to this Bank'}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                     <div className="quick-notes-container">
+                        <h3 style={{color:"white"}}>Quick Notes</h3>
+                        <textarea
+                            style={{background:"white",color:"black"}}
+                            value={quickNote}
+                            onChange={(e) => setQuickNote(e.target.value)}
+                            placeholder="Enter quick note..."
+                            rows={10}
+                            className="notes-textarea"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddQuickNote}
+                            className="add-note-btn"
+                        >
+                            Add Note
+                        </button>
+                        <button className="documents-creator-button" onClick={handleOpenDocumentChecklist} >
+                            📋 Document Checklist
+                        </button>
                     </div>
-                </Accordion>
+                    
+                </main>
+            </div> 
 
-                {/* 10. REMINDERS & FINAL STATUS */}
-                <Accordion title="Reminders & Final Status" icon="🗓️">
-                    <LocalizationProvider dateAdapter={AdapterMoment}>
-                                <div  style={{width:'50%'}}>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Sanction Date</label>
-                                    <DatePicker
-                                        readOnly={isReadOnly}
-                                        value={lead.targetSanctionDate ? moment(lead.targetSanctionDate) : null}
-                                        onChange={(newValue) => handleDateChange('targetSanctionDate', newValue)}
-                                    />
-                                </div>
-                             </LocalizationProvider>
-                        <div className="flex flex-wrap -mx-2">
-                             
-                            <LocalizationProvider dateAdapter={AdapterMoment}>
-                                
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Call Date</label>
-                                    <DatePicker
-                                        readOnly={isReadOnly}
-                                        value={lead.lastCallDate ? moment(lead.lastCallDate) : null}
-                                        onChange={(newValue) => handleDateChange('lastCallDate', newValue)}
-                                    />
-                                </div>
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Next Call Date & Time</label>
-                                    <DateTimePicker
-                                        readOnly={isReadOnly}
-                                        value={lead.reminderCallDate ? moment(lead.reminderCallDate) : null}
-                                        onChange={(newValue) => handleDateChange('reminderCallDate', newValue)}
-                                    />
-                                </div>
-                            </LocalizationProvider>
-                            <div className="p-2 w-full sm:w-1/2 md:w-1/4" >
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Final Status</label>
-                                <select name="leadStatus" value={lead.leadStatus} onChange={handleChange} className="w-full p-2 border rounded-md" disabled={isReadOnly}>
-                                    {leadStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
-                                </select>
-                            </div>
-                            {/* --- NEW: Conditional Dropdown for Priority Status --- */}
-                            {lead.leadStatus === 'On Priority' && (
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Priority</label >
-                                    <select name="priorityReason" value={lead.priorityReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-yellow-50" disabled={isReadOnly}>
-                                        <option value="" disabled>Select a reason...</option>
-                                        {priorityReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
-                                    </select>
-                                </div>
-                            )}
-                            {/* --- NEW: Conditional Dropdown for Close Status --- */}
-                            {lead.leadStatus === 'Close' && (
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Closing</label>
-                                    <select name="closeReason" value={lead.closeReason || ''} onChange={handleChange} className="w-full p-2 border rounded-md bg-red-50" disabled={isReadOnly}>
-                                        <option value="" disabled>Select a reason...</option>
-                                        {closeReasons.map(reason => <option key={reason} value={reason}>{reason}</option>)}
-                                    </select>
-                                </div>
-                            )}
-                            {lead.leadStatus === 'Sanctioned' && (
-                                <LocalizationProvider dateAdapter={AdapterMoment}>
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Sanction</label>
-                                        <DatePicker readOnly={isReadOnly} value={lead.sanctionDetails.sanctionDate ? moment(lead.sanctionDetails.sanctionDate) : null} onChange={(newValue) => handleSanctionDetailsChange({ target: { name: 'sanctionDate', value: newValue ? new Date(newValue).toISOString() : null } })} />
-                                    </div>
-                                </LocalizationProvider>
-                            )}
-                            {lead.leadStatus === 'On Priority' && <div className="w-full p-2 text-xs text-gray-500"><strong>Why mark as Priority?</strong> A lead is a priority if they have an admit, have shortlisted universities, or their intake is very soon. This helps focus on leads closest to conversion.</div>}
-                            {lead.leadStatus === 'Close' && <div className="w-full p-2 text-xs text-gray-500"><strong>When to Close a Lead?</strong> Close a lead if the student is definitively not interested, cannot be reached after multiple attempts, or is clearly not eligible for any loan product.</div>}
-                            <div className="w-full p-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Add Note</label>
-                                <textarea
-                                    name="notes"
-                                    rows="2"
-                                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                    disabled={isReadOnly}
-                                    placeholder="Enter note..."
-                                    value={newNote.notes}
-                                    onChange={handleNoteChange}
-                                ></textarea>
-                            </div>
-                            <div className="w-full p-2 space-y-2">
-                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" disabled={isReadOnly} /> <span className="ml-2 text-sm">Clear Preferred Next Call Time</span></label>
-                                <label className="flex items-center"><input type="checkbox" className="form-checkbox" disabled={isReadOnly} /> <span className="ml-2 text-sm">Student is not eligible for Connecting to Advisar</span></label>
-                            </div>
-                        </div>
-                </Accordion>
-                </div>
-                </div>
-
-                {/* Right Column: Tasks & Notes */}
-                <div className="w-full lg:w-1/3 space-y-4 bg-blue-50 p-4 rounded-xl border border-blue-100 h-fit">
-                    {/* --- NEW: Inline Task Creator --- */}
-                    {showTaskCreator && (
-                        <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'white' }}>
-                            <Typography variant="h6" gutterBottom>Create New Task for {lead.fullName}</Typography>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {isReadOnly ? (
-                                    <MuiTextField
-                                        label="Assign Task To"
-                                        value={`Automatically assigned to ${lead.assignedFO}`}
-                                        InputProps={{ readOnly: true }}
-                                        variant="outlined" size="small"
-                                    />
-                                ) : (
-                                    <Autocomplete
-                                        options={assignableUsers}
-                                        getOptionLabel={(option) => `${option.fullName} (${option.role})`}
-                                        value={task.assignedTo}
-                                        onChange={(event, newValue) => setTask(prev => ({ ...prev, assignedTo: newValue }))}
-                                        renderInput={(params) => <MuiTextField {...params} label="Assign Task To" variant="outlined" size="small" />}
-                                    />
-                                )}
-                                <MuiTextField fullWidth label="Task Subject" name="subject" value={task.subject} onChange={handleTaskChange} variant="outlined" size="small" />
-                                <MuiTextField fullWidth label="Task Body (Optional)" name="body" value={task.body} onChange={handleTaskChange} multiline rows={3} variant="outlined" size="small" />
-                                {taskMessage && <p className={`text-sm ${taskMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{taskMessage}</p>}
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
-                                    <MuiButton onClick={() => setShowTaskCreator(false)}>Cancel</MuiButton>
-                                    <MuiButton variant="contained" onClick={handleCreateTask}>
-                                        Create Task
-                                    </MuiButton>
-                                </Box>
-                            </Box>
-                        </Paper>
-                    )}
-
-                    {/* --- Call Notes & History Section (Hidden for Bank Executives) --- */}
-                    {!isReadOnly && (
-                        <Accordion title="Call Notes & History" icon="📞" defaultExpanded>
-                            {/* History View */}
-                            <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
-                                <h4 className="text-lg font-semibold text-gray-700 sticky top-0 bg-gray-50 py-2 -mt-4">History</h4>
-                        {allNotes.length > 0 ? (
-                            allNotes.map((log, index) => (
-                                <div key={index} className={`p-3 rounded-lg border-l-4 ${
-                                    log.isExternal 
-                                        ? 'bg-orange-50 border-orange-400' 
-                                        : (log.callStatus === 'Log' ? 'bg-purple-50 border-purple-400' : 'bg-blue-50 border-blue-400')
-                                }`}>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <p className="font-bold text-sm text-gray-800">
-                                            {log.isExternal ? '🏦 Bank Note' : 'Note'} by {log.loggedByName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
-                                            </div>
-                                            <p className="text-gray-700 text-sm">{log.notes}</p>
-                                    {log.callStatus && !log.isExternal && <Chip label={log.callStatus} size="small" sx={{ mt: 1 }} color={log.callStatus === 'Log' ? 'secondary' : 'primary'} variant="outlined" />}
-                                    {log.isExternal && <Chip label="External" size="small" sx={{ mt: 1, bgcolor: '#ff9800', color: 'white' }} />}
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-center text-gray-500 py-4">No notes for this lead yet.</p>
-                                )}
-                            </div>
-
-                            {/* Add New Note Form */}
-                            <div className="mt-6">
-                                <h4 className="text-lg font-semibold text-gray-700 mb-2">Add New Note</h4>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <textarea
-                                            name="notes"
-                                            rows="4"
-                                            className="w-full p-2 border rounded-md"
-                                            disabled={isReadOnly}
-                                            placeholder="Enter detailed notes from the conversation..."
-                                            value={newNote.notes}
-                                            onChange={handleNoteChange}
-                                        ></textarea>
-                                    </div>
-                                    <div >
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Call Status *</label>
-                                        <select name="callStatus" value={newNote.callStatus} onChange={handleNoteChange} className="w-full p-2 border rounded-md" disabled={isReadOnly}>
-                                            <option>Connected</option>
-                                            <option>Not Reached</option>
-                                            <option>Busy</option>
-                                            <option>Scheduled</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="submit" className="w-full mt-8 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" disabled={isReadOnly || !newNote.notes.trim()}>
-                                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                ✅ SAVE NOTES
-                            </button>
-                        </Accordion>
-                    )}
-
-                    {/* --- NEW: Task History Section --- */}
-                    <Accordion title="Task History" icon="📝" defaultExpanded>
-                        <div className="space-y-4">
-                            {leadTasks.length > 0 ? (
-                                leadTasks.slice().reverse().map((task) => {
-                                    const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
-                                    const canCompleteTask = currentUser && currentUser._id === task.assignedToId;
-                                    const isBankTask = task.creatorRole === 'BankExecutive';
-
-                                    return (
-                                        <Paper key={task._id} elevation={isBankTask ? 3 : 2} sx={{ p: 2, position: 'relative', bgcolor: task.status === 'Done' ? '#f1f8e9' : (isBankTask ? '#fff3e0' : 'white'), borderLeft: `4px solid ${task.status === 'Done' ? '#81c784' : (isBankTask ? '#ff9800' : '#64b5f6')}` }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <div>
-                                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{task.subject}</Typography>
-                                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>{task.body}</Typography>
-                                                </div>
-                                                <Chip label={task.status} color={task.status === 'Open' ? 'info' : 'success'} size="small" />
-                                            </Box>
-                                            <Divider sx={{ my: 1.5 }} />
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                                <Typography variant="caption" color={isBankTask ? "text.primary" : "text.secondary"} sx={{ fontWeight: isBankTask ? 500 : 400 }}>
-                                                    Created by: <strong>{task.createdByName}</strong> on {moment(task.createdAt).format('DD MMM YYYY')}
-                                                    <br />
-                                                    Assigned to: <strong>{task.assignedToName}</strong>
-                                                </Typography>
-                                                {task.status === 'Open' && canCompleteTask && (
-                                                    <MuiButton
-                                                        variant="contained"
-                                                        color="success"
-                                                        size="small"
-                                                        onClick={() => handleUpdateTaskStatus(task._id, 'Done')}
-                                                    >
-                                                        Mark as Done
-                                                    </MuiButton>
-                                                )}
-                                            </Box>
-                                        </Paper>
-                                    );
-                                })
-                            ) : (
-                                <Typography sx={{ textAlign: 'center', color: 'text.secondary', p: 2 }}>
-                                    No tasks have been created for this lead.
-                                </Typography>
-                            )}
-                        </div>
-                    </Accordion>
-                </div>
+            
             </div>
-
-            {/* Main Submit Button */}
-            <div className="mt-8 flex justify-center pb-4">
-                <button 
-                    type="submit" 
-                    className="w-full py-4 px-6 bg-[#ec4c23] hover:bg-[#d13b1a] text-white font-bold text-lg rounded-xl shadow-xl transition duration-200 transform hover:scale-[1.02] disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center" 
-                    disabled={isReadOnly || (lead._id && (!newNote.notes?.trim() || !lead.reminderCallDate || !lead.lastCallDate))}
-                >
-                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    SAVE ALL CHANGES
-                </button>
             </div>
         </form>
 
         {/* --- NEW: Email Template Modal --- */}
-        <Dialog open={isEmailModalOpen} onClose={handleCloseEmailModal} maxWidth="md" fullWidth>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                Send Email: {currentEmailTemplate.name}
-                <IconButton aria-label="close" onClick={handleCloseEmailModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Typography variant="h6" gutterBottom>Subject: {currentEmailTemplate.subject}</Typography>
-                <Paper variant="outlined" sx={{ p: 2, mt: 1, maxHeight: '50vh', overflowY: 'auto' }}>
-                    <div dangerouslySetInnerHTML={{ __html: currentEmailTemplate.body }} />
-                </Paper>
-                {emailStatus && (
-                    <Typography sx={{ mt: 2, color: emailStatus.includes('success') ? 'success.main' : 'info.main' }}>
-                        {emailStatus}
-                    </Typography>
-                )}
-            </DialogContent>
-            {/* Conditionally render actions only for actual email templates */}
-            {(NLTemplates.includes(currentEmailTemplate.name) ||
-              banksDocs.includes(currentEmailTemplate.name) ||
-              documentStatus.includes(currentEmailTemplate.name) ||
-              loanIssues.includes(currentEmailTemplate.name) ||
-              miscSituations.includes(currentEmailTemplate.name)
-            ) && (
-                <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
-                    <MuiButton
-                        startIcon={<ContentCopyIcon />}
-                        onClick={handleCopyEmailBody}
-                    >
-                        Copy Content
-                    </MuiButton>
-                    <MuiButton variant="contained" onClick={handleSendTemplateEmail} disabled={emailStatus === 'Sending...'}>
-                        {emailStatus === 'Sending...' ? 'Sending...' : 'Send Email'}
-                    </MuiButton>
-                </DialogActions>
-            )}
-        </Dialog>
+        {isEmailModalOpen && (
+            <div className="modal-overlay" onClick={handleCloseEmailModal}>
+                <div className="modal-content email-modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h2 className="modal-title">Send Email: {currentEmailTemplate.name}</h2>
+                        <button className="modal-close-btn" onClick={handleCloseEmailModal}>
+                            <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="modal-body email-modal-body">
+                        <div className="email-subject">
+                            <h3 className="text-lg font-semibold mb-2">Subject: {currentEmailTemplate.subject}</h3>
+                        </div>
+                        <div className="email-content border border-gray-300 rounded p-4 max-h-96 overflow-y-auto bg-white">
+                            <div dangerouslySetInnerHTML={{ __html: currentEmailTemplate.body }} />
+                        </div>
+                        {emailStatus && (
+                            <div className={`mt-4 p-2 rounded ${emailStatus.includes('success') ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {emailStatus}
+                            </div>
+                        )}
+                    </div>
+                    {/* Conditionally render actions only for actual email templates */}
+                    {(NLTemplates.includes(currentEmailTemplate.name) ||
+                      banksDocs.includes(currentEmailTemplate.name) ||
+                      documentStatus.includes(currentEmailTemplate.name) ||
+                      loanIssues.includes(currentEmailTemplate.name) ||
+                      miscSituations.includes(currentEmailTemplate.name)
+                    ) && (
+                        <div className="email-modal-actions">
+                            <button
+                                className="btn secondary flex items-center gap-2"
+                                onClick={handleCopyEmailBody}
+                            >
+                                <img src="/whatsapp-logo.png" alt="WhatsApp" className="w-5 h-5" />
+                                Whats App
+                            </button>
+                            <button
+                                className="btn primary"
+                                onClick={handleSendTemplateEmail}
+                                disabled={emailStatus === 'Sending...'}
+                            >
+                                {emailStatus === 'Sending...' ? 'Sending...' : 'Send Email'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        )}
 
         {/* --- NEW: Bank Assignment Modal --- */}
-        <Dialog open={isAssignModalOpen} onClose={handleCloseAssignModal} maxWidth="sm" fullWidth>
-            <DialogTitle>
-                Assign Lead to {selectedBankForAssignment?.name}
-                <IconButton aria-label="close" onClick={handleCloseAssignModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
-                    <CloseIcon />
-                </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-                    <FormControl fullWidth>
-                        <InputLabel id="region-select-label">1. Select Region</InputLabel>
-                        <Select
-                            labelId="region-select-label"
-                            value={assignmentRegion}
-                            label="1. Select Region"
-                            onChange={(e) => {
-                                setAssignmentRegion(e.target.value);
-                                setAssignmentRM(''); // Reset RM selection when region changes
+        {isAssignModalOpen && (
+            <div className="modal-overlay" onClick={handleCloseAssignModal}>
+                <div className="modal-content bank-modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h2 className="modal-title">Assign Lead to {selectedBankForAssignment?.name}</h2>
+                        <button className="modal-close-btn" onClick={handleCloseAssignModal}>
+                            <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="modal-body bank-modal-body">
+                        <div className="bank-modal-form-group">
+                            <label htmlFor="state-select" className="form-label">1. Select State</label>
+                            <select
+                                id="state-select"
+                                className="form-select"
+                                value={assignmentState}
+                                onChange={(e) => {
+                                    setAssignmentState(e.target.value);
+                                    setAssignmentRM(''); // Reset RM selection when state changes
+                                }}
+                            >
+                                <option value="">Select State</option>
+                                {/* Get unique states from the bank's RMs */}
+                                {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.state))].map(state => (
+                                    <option key={state} value={state}>{state}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="bank-modal-form-group">
+                            <label htmlFor="rm-select" className="form-label">2. Select Relationship Manager</label>
+                            <select
+                                id="rm-select"
+                                className="form-select"
+                                value={assignmentRM}
+                                disabled={!assignmentState}
+                                onChange={(e) => setAssignmentRM(e.target.value)}
+                            >
+                                <option value="">Select Relationship Manager</option>
+                                {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.state === assignmentState).map(rm => (
+                                    <option key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.email})</option>
+                                ))}
+                            </select>
+                        </div>
+                        {assignmentError && <div className="error-message">{assignmentError}</div>}
+                    </div>
+                    <div className="bank-modal-actions">
+                        <button className="bank-modal-btn btn secondary" onClick={handleCloseAssignModal}>Cancel</button>
+                        <button className="bank-modal-btn btn primary" onClick={handleAssignToBank} disabled={!assignmentRM}>Assign Lead</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* --- NEW: Document Checklist Modal --- */}
+        {isDocumentChecklistOpen && (
+            <div className="modal-overlay" onClick={handleCloseDocumentChecklist}>
+                <div className="modal-content document-checklist-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                    <div className="modal-header">
+                        <h2 className="modal-title">📋 Document Checklist - {lead.fullName}</h2>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                                className="modal-close-btn" 
+                                onClick={handleRefreshDocumentChecklist}
+                                title="Refresh document list"
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#4caf50',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                🔄 Refresh
+                            </button>
+                            <button className="modal-close-btn" onClick={handleCloseDocumentChecklist}>
+                                <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-body" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                        <div className="document-checklist">
+                            {documentChecklistData.length > 0 ? (
+                                documentChecklistData.map((doc, index) => (
+                                    <div key={index} className={`document-item ${doc.isUploaded ? 'uploaded' : 'not-uploaded'}`} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '12px',
+                                        margin: '8px 0',
+                                        borderRadius: '6px',
+                                        backgroundColor: doc.isUploaded ? '#e8f5e9' : '#fff3e0',
+                                        border: `1px solid ${doc.isUploaded ? '#4caf50' : '#ff9800'}`,
+                                        cursor: doc.isUploaded ? 'pointer' : 'default',
+                                        transition: 'transform 0.2s, box-shadow 0.2s',
+                                        transform: doc.isUploaded ? 'translateX(0)' : 'none'
+                                    }}
+                                    onClick={() => {
+                                        if (doc.isUploaded && doc.filePath) {
+                                            const baseURL = API_URL.split('/api/')[0]; 
+                                            // Remove leading slashes from filePath
+                                            const cleanPath = doc.filePath.replace(/^\/+/, '');
+                                            const fileUrl = `${baseURL}/${cleanPath}`;
+                                            console.log('Opening document:', fileUrl);
+                                            window.open(fileUrl, '_blank');
+                                        }
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (doc.isUploaded && doc.filePath) {
+                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                                            e.currentTarget.style.transform = 'translateX(4px)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.transform = 'translateX(0)';
+                                    }}
+                                    >
+                                        <div style={{
+                                            marginRight: '12px',
+                                            fontSize: '20px',
+                                            minWidth: '30px'
+                                        }}>
+                                            {doc.isUploaded ? '✅' : '❌'}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: '#333' }}>
+                                                {doc.documentType}
+                                            </p>
+                                            <p style={{ margin: '0', fontSize: '13px', color: '#666' }}>
+                                                {doc.isUploaded ? (
+                                                    <>
+                                                        <span>File: {doc.fileName}</span>
+                                                        <br />
+                                                        <span>Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                        <br />
+                                                        <span style={{ color: '#2196F3', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontWeight: '500' }}>
+                                                            Click to view
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span>{doc.fileName}</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p style={{ textAlign: 'center', color: '#999', padding: '40px 20px' }}>
+                                    📄 No document data available. Loading...
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Summary Stats */}
+                        {documentChecklistData.length > 0 && (
+                            <div style={{
+                                marginTop: '20px',
+                                padding: '16px',
+                                backgroundColor: '#f5f5f5',
+                                borderRadius: '6px',
+                                textAlign: 'center'
+                            }}>
+                                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
+                                    <strong>Summary:</strong>
+                                </p>
+                                <p style={{ margin: '4px 0', fontSize: '14px' }}>
+                                    <span style={{ color: '#4caf50', fontWeight: 'bold' }}>
+                                        ✅ {documentChecklistData.filter(d => d.isUploaded).length}
+                                    </span>
+                                    {' '}uploaded, {' '}
+                                    <span style={{ color: '#ff9800', fontWeight: 'bold' }}>
+                                        ❌ {documentChecklistData.filter(d => !d.isUploaded).length}
+                                    </span>
+                                    {' '}pending out of {documentChecklistData.length} total
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ padding: '16px', borderTop: '1px solid #eee', textAlign: 'right' }}>
+                        <button
+                            className="modal-close-btn"
+                            onClick={handleCloseDocumentChecklist}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: '#512967',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px'
                             }}
                         >
-                            {/* Get unique regions from the bank's RMs */}
-                            {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.region))].map(region => (
-                                <MenuItem key={region} value={region}>{region}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
-                    <FormControl fullWidth disabled={!assignmentRegion}>
-                        <InputLabel id="rm-select-label">2. Select Relationship Manager</InputLabel>
-                        <Select
-                            labelId="rm-select-label"
-                            value={assignmentRM}
-                            label="2. Select Relationship Manager"
-                            onChange={(e) => setAssignmentRM(e.target.value)}
-                        >
-                            {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.region === assignmentRegion).map(rm => (
-                                <MenuItem key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.email})</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    {assignmentError && <Typography color="error.main" variant="body2">{assignmentError}</Typography>}
-                </Box>
-            </DialogContent>
-            <DialogActions>
-                <MuiButton onClick={handleCloseAssignModal}>Cancel</MuiButton>
-                <MuiButton variant="contained" onClick={handleAssignToBank} disabled={!assignmentRM}>Assign Lead</MuiButton>
-            </DialogActions>
-        </Dialog>
-    </div>);
+    </div>
+    );
 };
-
+    
 export default LeadForm;

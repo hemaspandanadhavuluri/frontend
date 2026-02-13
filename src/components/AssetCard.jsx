@@ -45,6 +45,13 @@ const AssetCard = ({
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
                 {renderSelectField(`assetType`, "Asset Type", asset.assetType, handleAssetChange, assetTypes, { xs: '100%', sm: '50%', md: '33.33%' })}
 
+                {/* Property Type beside Asset Type for Physical Property */}
+                {asset.assetType === 'Physical Property' && (
+                    <>
+                        {renderSelectField(`propertyType`, "Property Type", asset.propertyType, handleAssetChange, physicalPropertyTypes, { xs: '100%', sm: '50%', md: '33.33%' })}
+                    </>
+                )}
+
                 {/* Common Fields */}
                 {asset.assetType && (
                     <>
@@ -54,12 +61,12 @@ const AssetCard = ({
                     </>
                 )}
 
-                {/* Conditional Fields for Physical Property */}
+                {/* Remaining Conditional Fields for Physical Property */}
                 {asset.assetType === 'Physical Property' && (
                     <>
-                        {renderSelectField(`propertyType`, "Property Type", asset.propertyType, handleAssetChange, physicalPropertyTypes, { xs: '100%', sm: '50%', md: '33.33%' })}
                         {renderTextField(`pendingLoan`, "Pending Loan (if any)", asset.pendingLoan, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
-                       
+                        {renderTextField(`bankName`, "Bank Name", asset.bankName, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+
                         <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
                             <FormControl component="fieldset">
                                 <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Documents Available?</FormLabel>
@@ -78,6 +85,15 @@ const AssetCard = ({
                 {asset.assetType === 'Fixed Deposit' && (
                     <>
                         {renderTextField(`bankName`, "Bank Name", asset.bankName, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+                        <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
+                            <FormControl component="fieldset">
+                                <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Documents Available?</FormLabel>
+                                <RadioGroup row name="documentsAvailable" value={String(asset.documentsAvailable)} onChange={handleAssetChange}>
+                                    <FormControlLabel value="true" control={<Radio size="small" />} label="Yes" />
+                                    <FormControlLabel value="false" control={<Radio size="small" />} label="No" />
+                                </RadioGroup>
+                            </FormControl>
+                        </Box>
                     </>
                 )}
 

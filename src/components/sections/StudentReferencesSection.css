@@ -1,0 +1,161 @@
+
+
+.info-box {
+    padding: 1rem;
+    background-color: #c4a7d3;
+    border-left: 4px solid #512967;
+    color: #360d4c;
+    margin-bottom: 1rem;
+}
+
+.info-text {
+    font-size: 0.875rem;
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.reference-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+}
+
+.reference-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #512967;
+}
+
+.reference-fields {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+
+.phone-field {
+    padding: 0.5rem;
+    width: 100%;
+}
+
+.phone-field.sm\:w-1\/2 {
+    width: 50%;
+}
+
+.phone-field.md\:w-1\/4 {
+    width: 25%;
+}
+
+.phone-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+.phone-input-group {
+    display: flex;
+}
+
+.country-code-select {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem 0 0 0.375rem;
+    background-color: #f9fafb;
+}
+
+.phone-number-input {
+    flex: 1;
+    padding: 0.5rem;
+    border-top: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+    border-right: 1px solid #d1d5db;
+    border-left: none;
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.section-divider {
+    margin: 1rem 0;
+}
+
+.pan-fieldset {
+    border: none;
+    padding: 0;
+}
+
+.radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem 1rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+}
+
+.radio-input {
+    margin-right: 0.5rem;
+}
+
+.radio-text {
+    margin-left: 0.5rem;
+}
+
+.pan-input {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    width: 100%;
+}
+
+.pan-input:focus {
+    outline: none;
+    border-color: #512967;
+}
+.jtc-step{
+    width: 100%;
+    text-align: left;
+    font-size: 15px;
+    font-weight:bold;
+     margin-bottom: 1rem; }
+
+@media (max-width: 768px) {
+    .pan-input {
+        width: 50%;
+    }
+}
+
+@media (max-width: 640px) {
+    .references-form {
+        grid-template-columns: 1fr;
+    }
+
+    .phone-input-group {
+        flex-direction: column;
+    }
+
+    .country-code-select {
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .phone-number-input {
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+    }
+
+    .radio-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
