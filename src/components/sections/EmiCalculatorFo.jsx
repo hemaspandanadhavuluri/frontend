@@ -19,7 +19,7 @@ const [maxPsi, setMaxPsi] = useState(0);
 
   const fetchMaxPSI = async () => {
   try {
-    const res = await fetch("http://13.48.131.69:5000/api/emi/max-psi", {
+    const res = await fetch("http://13.48.131.69/api/emi/max-psi", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -48,7 +48,7 @@ useEffect(() => {
     setError("");
 
     try {
-      const response = await fetch('http://13.48.131.69:5000/api/emi/calculate', {
+      const response = await fetch('http://13.48.131.69/api/emi/calculate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

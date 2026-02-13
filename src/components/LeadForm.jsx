@@ -1311,7 +1311,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'http://13.48.131.69:5000/api/emi/calculate';
+                const emiApiLink = 'http://13.48.131.69/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }
