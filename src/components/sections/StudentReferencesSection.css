@@ -1,7 +1,4 @@
-.section-block {
-    padding: 1rem;
-    background-color: #fff;
-}
+
 
 .info-box {
     padding: 1rem;
@@ -124,6 +121,12 @@
     outline: none;
     border-color: #512967;
 }
+.jtc-step{
+    width: 100%;
+    text-align: left;
+    font-size: 15px;
+    font-weight:bold;
+     margin-bottom: 1rem; }
 
 @media (max-width: 768px) {
     .pan-input {

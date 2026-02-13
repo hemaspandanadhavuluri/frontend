@@ -18,6 +18,11 @@
     margin: 0;
 }
 
+.section-block{
+    width : 100%;
+    background:white;
+}
+
 .task-creator-button {
     background: #ee8926;
     color: #fff;
@@ -220,12 +225,14 @@
 .task-creator-input:focus,
 .task-creator-textarea:focus {
     outline: none;
+        color: black;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .task-creator-textarea {
     min-height: 6rem;
+    color:'black';
     resize: vertical;
 }
 
@@ -388,18 +395,17 @@
 
 /* Sidebar Styles */
 .sidebar {
-    width: 300px;
     
     padding-right: 1rem;
 }
 
 .sidebar-content {
-
     position: sticky;
     top: 6rem;
 }
 
 .sidebar-summary {
+    width:250px;
     background-color: #ee8926 ;
     border-radius: 0.375rem;
     padding: 0.75rem;
@@ -422,7 +428,7 @@
 
 .summary-email {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: #6b7280
 }
 
 .sidebar-section {
@@ -452,6 +458,7 @@
 }
 
 .sidebar-tabs {
+    width:250px;
     background: #512967;
     border-radius: 10px;
     margin-top: 1rem;
