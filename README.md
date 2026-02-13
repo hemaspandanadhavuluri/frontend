@@ -9,7 +9,7 @@ In the project directory, you can run:
 ### `npm start`
 
 Runs the app in the development mode.\
-Open [http://13.48.131.69](http://13.48.131.69) to view it in your browser.
+Open [https://justtapcapital.com](https://justtapcapital.com) to view it in your browser.
 
 The page will reload when you make changes.\
 You may also see any lint errors in the console.

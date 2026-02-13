@@ -65,7 +65,7 @@ const BankLogin = ({ onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    const API_URL = 'http://13.48.131.69/api/users';
+    const API_URL = 'https://justtapcapital.com/api/users';
 
     const showMessage = (text, type = 'error') => {
         setMessage({ text, type });
