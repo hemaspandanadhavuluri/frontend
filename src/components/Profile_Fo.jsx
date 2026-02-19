@@ -49,7 +49,7 @@ const Profile_Fo = () => {
                     </div>
                     <div className="profile-header">
                         {userDetails.profilePictureUrl ? (
-                            <img src={`https://justtapcapital.com/${userDetails.profilePictureUrl}`} alt="Profile" className="profile-picture" />
+                            <img src={`http://16.112.180.35/${userDetails.profilePictureUrl}`} alt="Profile" className="profile-picture" />
                         ) : (
                             <div className="profile-picture-placeholder">
                                 <span>{userDetails.fullName.charAt(0).toUpperCase()}</span>
