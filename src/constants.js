@@ -606,7 +606,10 @@ export const EMAIL_TEMPLATE_CONTENT = {
 
 export const regions = ['AP', 'Hyderabad', 'TG-Rest', 'Banglore', 'Tamilnadu', 'kerala', 'delhi', '7 sisters', 'mumbai', 'maharastra-rest'];
 
-export const referenceRelationships = ['Uncle', 'Aunt', 'Friend', 'Any other relatives']; // This is used for references
+// Bank states for bank executive form
+export const bankStates = ['Ap', 'Ts', 'Ap/Ts', 'Tamilnadu', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Odissa', 'Maharastra', '7 Sisters', 'Delhi', 'Gujarat', 'Bihar'];
+
+ export const referenceRelationships = ['Friend']//['Uncle', 'Aunt', 'Friend', 'Any other relatives']; // This is used for references
 
 export const assetOwnerRelationships = ['Father', 'Mother', 'Uncle', 'Aunt', 'Cousin', 'Friend', 'Self'];
 

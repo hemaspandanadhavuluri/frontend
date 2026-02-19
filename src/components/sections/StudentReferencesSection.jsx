@@ -25,6 +25,10 @@ const StudentReferencesSection = ({
                     <div className="reference-fields">
                         {renderTextField(`references[${index}].name`, "Name*", ref.name, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/4")}
                         {renderSelectField(`references[${index}].relationship`, "Relationship*", ref.relationship, (e) => handleNestedChange('references', e), referenceRelationships, "w-full sm:w-1/2 md:w-1/4")}
+                        {/* <div className="w-full sm:w-1/2 md:w-1/4">
+                            <label>Relationship *</label>
+                            <input type="text" value="Friend" disabled className="form-input" />
+                        </div> */}
                         {renderTextField(`references[${index}].address`, "Address*", ref.address, (e) => handleNestedChange('references', e), "w-full sm:w-1/2 md:w-1/2")}
                         <div className="phone-field md:w-1/4">
                             <label className="phone-label">Phone Number *</label>
@@ -60,9 +64,8 @@ const StudentReferencesSection = ({
             <div className="jtc-info-section">
                 <div className="jtc-step">
                   <h4>Step 1: JTC Introduction</h4>
-                  <p>1. Govt funded Initiative</p>
-                  <p>2. Best EduLoan suiting your profile</p>
-                  <p>3. No service charges</p>
+                  <p>1. Best EduLoan suiting your profile</p>
+                  <p>2. No service charges</p>
                 </div>
                 <div className="jtc-step">
                     <h4>Step 2: Benefits of JTC</h4>

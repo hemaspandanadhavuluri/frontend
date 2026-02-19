@@ -185,8 +185,32 @@ const FurtherEducationSection = ({
   return (
     <div className="section-block">
       <h1 className="ed-details-section-title">🎓 Further Education Details</h1>
-
       <div className="further-education-fields">
+         {lead._id ? (
+                    <>
+                        <div style={{ display: 'inline-block', marginLeft: '20px', fontSize: '16px', fontWeight: 'normal' }}>
+                            <label htmlFor="loanType" style={{ marginRight: '8px', color: '#512967' }}>Loan Type:</label>
+                            <select
+                                id="loanType"
+                                name="loanType"
+                                value={lead.loanType || ''}
+                                onChange={handleChange}
+                                style={{
+                                    padding: '4px 8px',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    backgroundColor: 'white',
+                                    fontSize: '14px',
+                                    minWidth: '120px'
+                                }}
+                            >
+                                <option value="">Select Loan Type</option>
+                                <option value="Balance Transfer">Balance Transfer</option>
+                                <option value="New Loan">New Loan</option>
+                            </select>
+                        </div>
+                    </>
+                ) : 'Create New Lead'}
         {renderSelectField("courseStartMonth", "Course Start Month", lead.courseStartMonth, handleChange, courseStartQuarters)}
         {renderSelectField("courseStartYear", "Course Start Year", lead.courseStartYear, handleChange, courseStartYears)}
         {renderSelectField("degree", "Degree", lead.degree, handleChange, degrees)}
@@ -370,7 +394,110 @@ const FurtherEducationSection = ({
 
           {bank.loanSanctioned === true && (
             <div className="sanction-box_ed">
-              <h4>Sanction Details</h4>
+              <h4 style={{fontWeight: 'bold'}}>Sanction Details</h4>
+                 <fieldset>
+                <legend style={{paddingTop: '10px',fontWeight: 'bold',fontStyle:'italic'}}>Type of Loan</legend>
+                <div className="radio-group_ed">
+                  <label>
+                    <input
+                    style={{fontWeight: 'bold',fontStyle:'italic'}}
+                      type="radio"
+                      name={`typeOfLoan-${index}`}
+                      value="secured"
+                      checked={bank.sanctionDetails?.typeOfLoan === 'secured'}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, typeOfLoan: e.target.value };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks })); 
+                      }}
+                    />
+                    Secured Loan
+                  </label>
+                  <label>
+                    <input
+                    style={{fontWeight: 'bold',fontStyle:'italic'}}
+                      type="radio"
+                      name={`typeOfLoan-${index}`}
+                      value="unsecured"
+                      checked={bank.sanctionDetails?.typeOfLoan === 'unsecured'}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, typeOfLoan: e.target.value };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
+                      }}
+                    />
+                    Unsecured Loan
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend style={{paddingTop: '10px',fontWeight: 'bold',fontStyle:'italic'}}>PF Paid?</legend>
+                <div className="radio-group_ed">
+                  <label>
+                    <input
+                      type="radio"
+                      name={`pfPaid-${index}`}
+                      value="true"
+                      checked={bank.sanctionDetails?.pfPaid === true}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, pfPaid: e.target.value === 'true' };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
+                      }}
+                    />
+                    Yes
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name={`pfPaid-${index}`}
+                      value="false"
+                      checked={bank.sanctionDetails?.pfPaid === false}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, pfPaid: e.target.value === 'true' };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
+                      }}
+                    />
+                    No
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend style={{paddingTop: '10px',fontWeight: 'bold',fontStyle:'italic'}}>Disbursement Done?</legend>
+                <div className="radio-group_ed">
+                  <label>
+                    <input
+                      type="radio"
+                      name={`disbursementDone-${index}`}
+                      value="true"
+                      checked={bank.sanctionDetails?.disbursementDone === true}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, disbursementDone: e.target.value === 'true' };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
+                      }}
+                    />
+                    Yes
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name={`disbursementDone-${index}`}
+                      value="false"
+                      checked={bank.sanctionDetails?.disbursementDone === false}
+                      onChange={(e) => {
+                        const newBanks = [...lead.approachedBanks];
+                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, disbursementDone: e.target.value === 'true' };
+                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
+                      }}
+                    />
+                    No
+                  </label>
+                </div>
+              </fieldset>
 
               <div className="form-grid_ed">
                 <input
@@ -436,107 +563,7 @@ const FurtherEducationSection = ({
                 />
               </div>
 
-              <fieldset>
-                <legend style={{paddingTop: '10px'}}>Type of Loan</legend>
-                <div className="radio-group_ed">
-                  <label>
-                    <input
-                      type="radio"
-                      name={`typeOfLoan-${index}`}
-                      value="secured"
-                      checked={bank.sanctionDetails?.typeOfLoan === 'secured'}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, typeOfLoan: e.target.value };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    Secured Loan
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name={`typeOfLoan-${index}`}
-                      value="unsecured"
-                      checked={bank.sanctionDetails?.typeOfLoan === 'unsecured'}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, typeOfLoan: e.target.value };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    Unsecured Loan
-                  </label>
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend style={{paddingTop: '10px'}}>PF Paid?</legend>
-                <div className="radio-group_ed">
-                  <label>
-                    <input
-                      type="radio"
-                      name={`pfPaid-${index}`}
-                      value="true"
-                      checked={bank.sanctionDetails?.pfPaid === true}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, pfPaid: e.target.value === 'true' };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    Yes
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name={`pfPaid-${index}`}
-                      value="false"
-                      checked={bank.sanctionDetails?.pfPaid === false}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, pfPaid: e.target.value === 'true' };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    No
-                  </label>
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend style={{paddingTop: '10px'}}>Disbursement Done?</legend>
-                <div className="radio-group_ed">
-                  <label>
-                    <input
-                      type="radio"
-                      name={`disbursementDone-${index}`}
-                      value="true"
-                      checked={bank.sanctionDetails?.disbursementDone === true}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, disbursementDone: e.target.value === 'true' };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    Yes
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name={`disbursementDone-${index}`}
-                      value="false"
-                      checked={bank.sanctionDetails?.disbursementDone === false}
-                      onChange={(e) => {
-                        const newBanks = [...lead.approachedBanks];
-                        newBanks[index].sanctionDetails = { ...newBanks[index].sanctionDetails, disbursementDone: e.target.value === 'true' };
-                        setLead(prev => ({ ...prev, approachedBanks: newBanks }));
-                      }}
-                    />
-                    No
-                  </label>
-                </div>
-              </fieldset>
+             
             </div>
           )}
 

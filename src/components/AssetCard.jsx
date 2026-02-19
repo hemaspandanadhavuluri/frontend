@@ -65,6 +65,7 @@ const AssetCard = ({
                 {asset.assetType === 'Physical Property' && (
                     <>
                         {renderTextField(`pendingLoan`, "Pending Loan (if any)", asset.pendingLoan, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+                        {renderTextField(`bankName`, "Bank Name", asset.bankName, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
 
                         <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
                             <FormControl component="fieldset">
@@ -84,6 +85,15 @@ const AssetCard = ({
                 {asset.assetType === 'Fixed Deposit' && (
                     <>
                         {renderTextField(`bankName`, "Bank Name", asset.bankName, handleAssetChange, { xs: '100%', sm: '50%', md: '33.33%' })}
+                        <Box sx={{ p: 1.5, width: { xs: '100%', sm: '50%', md: '33.33%' }, boxSizing: 'border-box' }}>
+                            <FormControl component="fieldset">
+                                <FormLabel component="legend" sx={{ fontSize: '0.875rem' }}>Documents Available?</FormLabel>
+                                <RadioGroup row name="documentsAvailable" value={String(asset.documentsAvailable)} onChange={handleAssetChange}>
+                                    <FormControlLabel value="true" control={<Radio size="small" />} label="Yes" />
+                                    <FormControlLabel value="false" control={<Radio size="small" />} label="No" />
+                                </RadioGroup>
+                            </FormControl>
+                        </Box>
                     </>
                 )}
 

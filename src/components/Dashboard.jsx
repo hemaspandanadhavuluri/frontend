@@ -41,8 +41,9 @@ const Dashboard = ({ leads, setLeads }) => {
 
   /* ---------------- FETCH ALL LEADS ---------------- */
   const fetchAllLeads = useCallback(async (user) => {
+    console.log("Fetching leads for user:", user);
     if (!user) return;
-
+     
     setLoading(true);
     try {
       const res = await axios.get(API_URL, {

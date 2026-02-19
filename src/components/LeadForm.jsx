@@ -739,7 +739,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         const handleAddItem = (newValue) => {
             if (!newValue.trim()) return;
             const currentArray = isMultiSelect ? value : [];
-            if (!currentArray.includes(newValue) && options.includes(newValue)) {
+            if (!currentArray.includes(newValue)) {
                 onChange({ target: { name, value: [...currentArray, newValue] } });
             }
             setAutocompleteStates(prev => ({
@@ -1417,32 +1417,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         {/* --- Header with Create Task Button --- */}
         <div className="lead-form-header">
             <h1 className="lead-form-title">
-                {lead._id ? (
-                    <>
-                        Lead: {lead.fullName}
-                        <div style={{ display: 'inline-block', marginLeft: '20px', fontSize: '16px', fontWeight: 'normal' }}>
-                            <label htmlFor="loanType" style={{ marginRight: '8px', color: '#512967' }}>Loan Type:</label>
-                            <select
-                                id="loanType"
-                                name="loanType"
-                                value={lead.loanType || ''}
-                                onChange={handleChange}
-                                style={{
-                                    padding: '4px 8px',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    backgroundColor: 'white',
-                                    fontSize: '14px',
-                                    minWidth: '120px'
-                                }}
-                            >
-                                <option value="">Select Loan Type</option>
-                                <option value="Balance Transfer">Balance Transfer</option>
-                                <option value="New Loan">New Loan</option>
-                            </select>
-                        </div>
-                    </>
-                ) : 'Create New Lead'}
+               Lead: {lead.fullName}
             </h1>
             {lead._id && (
                 <div className="header-buttons">
@@ -1569,9 +1544,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                                 <button type="button" onClick={() => setActiveTab('referFriends')} className={`tab-button ${activeTab==='referFriends' ? 'active' : ''}`}>👥Refer Applicant's Friends</button>
                                 <button type="button" onClick={() => setActiveTab('emailTemplates')} className={`tab-button ${activeTab==='emailTemplates' ? 'active' : ''}`}>🛠️Email Templates</button>
                                 <button type="button" onClick={() => setActiveTab('recommendedBanks')} className={`tab-button ${activeTab==='recommendedBanks' ? 'active' : ''}`}>💳Recommended Banks</button>
+                                <button type="button" onClick={() => setActiveTab('taskHistory')} className={`tab-button ${activeTab==='taskHistory' ? 'active' : ''}`}>🕘Task History</button>
                                 <button type="button" onClick={() => setActiveTab('reminders')} className={`tab-button ${activeTab==='reminders' ? 'active' : ''}`}>🗓️Reminders & Final Status</button>
                                 <button type="button" onClick={() => setActiveTab('callNotes')} className={`tab-button ${activeTab==='callNotes' ? 'active' : ''}`}>📞Call Notes & History</button>
-                                <button type="button" onClick={() => setActiveTab('taskHistory')} className={`tab-button ${activeTab==='taskHistory' ? 'active' : ''}`}>🕘Task History</button>
+
                             </div>
                         </div>
                     </div>
@@ -1815,28 +1791,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 </main>
             </div> 
 
-            {/* Main Submit Button - SUBMIT LEAD DATA Button moved to CallNotesSection */}
-            <div className="form-submit-section">
-                <button
-                    type="submit"
-                    className="submit-button"
-                    style={{
-                        background: '#512967',
-                        color: 'white',
-                        padding: '12px 24px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        marginTop: '20px',
-                        width: '100%',
-                        maxWidth: '200px'
-                    }}
-                >
-                    Save Lead
-                </button>
-            </div>
+            
             </div>
             </div>
         </form>
