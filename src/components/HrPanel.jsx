@@ -703,7 +703,7 @@ const HrPanel = () => {
 
             // Role is already in formData from RoleForm
 
-            const response = await fetch('http://localhost:5000/api/users/register', {
+            const response = await fetch('http://16.112.180.35:5000/api/users/register', {
                 method: 'POST',
                 body: formDataToSend,
             });

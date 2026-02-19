@@ -24,7 +24,7 @@ const documentTypes = [
     "Student Test Score Cards", "Student Admission Letter", "Student Work Experience Letter", "Student Visa"
 ];
 
-const API_BASE_URL = 'http://localhost:5000'; // The base URL of your backend
+const API_BASE_URL = 'http://16.112.180.35:5000'; // The base URL of your backend
 
 const DocumentCenter = ({ lead, onUpdate, isReadOnly = false }) => {
     const [open, setOpen] = useState(false);
