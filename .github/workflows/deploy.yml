@@ -31,14 +31,10 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Navigate to the app directory
             cd /home/${{ secrets.EC2_USER }}/app
-            
-            # Pull the new image from Docker Hub using the modern V2 command
+            # Pull the new frontend image you just pushed to Docker Hub
             docker compose -f docker-compose.prod.yml pull frontend
-            
-            # Restart the service with the updated image
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            
-            # Clean up old, unused images to prevent the disk from filling up
+            # Restart only the frontend service
+            docker compose -f docker-compose.prod.yml up -d frontend
+            # Clean up old images
             docker image prune -f
