@@ -381,7 +381,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     // --- Handlers ---
 
     // Helper for text fields (updated to handle both flat and nested state)
-    const renderTextField = (name, label, value, onChange, widthClass = "field-container", placeholder = "") => (
+    const renderTextField = (name, label, value, onChange, widthClass = "field-container", placeholder = "", disabled = false) => (
         <div className={`field-wrapper ${widthClass}`}>
             <label htmlFor={name} className="field-label">{label}</label>
             <input
@@ -389,7 +389,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 id={name}
                 name={name}
                 placeholder={placeholder}
-                disabled={isReadOnly}
+                disabled={disabled || isReadOnly}
                 value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
                 onChange={onChange}
                 className="field-input"
@@ -398,14 +398,14 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     );
 
     // Helper for select/dropdown fields
-    const renderSelectField = (name, label, value, onChange, options, widthClass = "field-container") => (
+    const renderSelectField = (name, label, value, onChange, options, widthClass = "field-container", disabled = false) => (
         <div className={`field-wrapper ${widthClass}`}>
             <label htmlFor={name} className="field-label">{label}</label>
             <select
                 id={name}
                 name={name}
                 value={value || ''}
-                disabled={isReadOnly}
+                disabled={disabled || isReadOnly}
                 onChange={onChange}
                 className="field-input"
             >
@@ -1303,7 +1303,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `https://justtapcapital.com/leads/${lead._id}/documents`;
+const uploadLink = `https://justtapcapital.com/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1311,7 +1311,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'https://justtapcapital.com/api/emi/calculate';
+const emiApiLink = 'https://justtapcapital.com/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }

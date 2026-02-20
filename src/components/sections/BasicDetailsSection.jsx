@@ -13,8 +13,25 @@ const BasicDetailsSection = ({
     renderSelectField,
     renderAutocompleteField,
     indianStates,
-    indianCities
+    indianCities,
+    disabled = false,
+    enableOnlyEmptyFields = false
 }) => {
+
+    // Helper function to determine if a field should be disabled
+    // If enableOnlyEmptyFields is true:
+    //   - If field has value → disabled (read-only)
+    //   - If field is empty → enabled (can edit)
+    // If enableOnlyEmptyFields is false:
+    //   - Use the disabled prop value
+    const isFieldDisabled = (fieldValue) => {
+        if (!enableOnlyEmptyFields) {
+            return disabled;
+        }
+        // If field has value, disable it; if empty, enable it
+        const hasValue = fieldValue !== undefined && fieldValue !== null && fieldValue !== '';
+        return hasValue;
+    };
 
     const handleMobileNumberChange = (index, value) => {
         const newMobileNumbers = [...lead.mobileNumbers];
@@ -36,8 +53,8 @@ const BasicDetailsSection = ({
             <h2 className="basic-details-section-title">👤 Basic Details</h2>
 
             <div className="form-row">
-                {renderTextField("fullName", "Full Name *", lead.fullName, handleChange)}
-                {renderTextField("email", "Email id *", lead.email, handleChange)}
+                {renderTextField("fullName", "Full Name *", lead.fullName, handleChange, "field-container", "", isFieldDisabled(lead.fullName))}
+                {renderTextField("email", "Email id *", lead.email, handleChange, "field-container", "", isFieldDisabled(lead.email))}
 
                 {!lead._id && (
                     <div className="field-wrapper">
@@ -54,11 +71,12 @@ const BasicDetailsSection = ({
                                 }));
                             }}
                             className="field-input"
+                            disabled={isFieldDisabled(lead.source?.source)}
                         />
                     </div>
                 )}
 
-                {/* Mobile Numbers */}
+                {/* Mobile Numbers - Each number is disabled if it has a value, Add button always enabled */}
                 <div className="mobile-wrapper">
                     <label className="mobile-title">Mobile Numbers</label>
 
@@ -67,6 +85,9 @@ const BasicDetailsSection = ({
                             const parts = mobile.split('-');
                             const code = parts.length > 1 ? parts[0] : '+91';
                             const num = parts.length > 1 ? parts[1] : mobile;
+                            
+                            // For mobile numbers: if enableOnlyEmptyFields is true, disable if has value
+                            const isMobileDisabled = enableOnlyEmptyFields ? (!!num && num.trim() !== '') : disabled;
 
                             return (
                                 <div key={index} className="mobile-row">
@@ -77,6 +98,7 @@ const BasicDetailsSection = ({
                                             onChange={(e) =>
                                                 handleMobileNumberChange(index, `${e.target.value}-${num || ''}`)
                                             }
+                                            disabled={isMobileDisabled}
                                         >
                                             {countryPhoneCodes.map(country => (
                                                 <option key={country.code} value={country.code}>
@@ -92,6 +114,7 @@ const BasicDetailsSection = ({
                                             onChange={(e) =>
                                                 handleMobileNumberChange(index, `${code}-${e.target.value}`)
                                             }
+                                            disabled={isMobileDisabled}
                                         />
                                     </div>
 
@@ -121,11 +144,11 @@ const BasicDetailsSection = ({
                 </div>
             </div>
 
-            {renderAutocompleteField("permanentLocation", "Permanent Location in INDIA", lead.permanentLocation, handleChange, indianCities, "w-full")}
-            {renderSelectField("state", "State", lead.state, handleChange, indianStates)}
-            {renderTextField("regionalHead", "Regional Head Name", lead.regionalHead, handleChange)}
-            {renderTextField("region", "Region Name", lead.region, handleChange)}
-            {renderSelectField("planningToStudy", "Planning to Study in", lead.planningToStudy, handleChange, ['India', 'Abroad'])}
+            {renderAutocompleteField("permanentLocation", "Permanent Location in INDIA", lead.permanentLocation, handleChange, indianCities, "w-full", isFieldDisabled(lead.permanentLocation))}
+            {renderSelectField("state", "State", lead.state, handleChange, indianStates, "field-container", isFieldDisabled(lead.state))}
+            {renderTextField("regionalHead", "Regional Head Name", lead.regionalHead, handleChange, "field-container", "", isFieldDisabled(lead.regionalHead))}
+            {renderTextField("region", "Region Name", lead.region, handleChange, "field-container", "", isFieldDisabled(lead.region))}
+            {renderSelectField("planningToStudy", "Planning to Study in", lead.planningToStudy, handleChange, ['India', 'Abroad'], "field-container", isFieldDisabled(lead.planningToStudy))}
         </>
     );
 };

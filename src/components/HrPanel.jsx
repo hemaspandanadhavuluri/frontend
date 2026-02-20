@@ -703,7 +703,7 @@ const HrPanel = () => {
 
             // Role is already in formData from RoleForm
 
-            const response = await fetch('https://justtapcapital.com/api/users/register', {
+const response = await fetch('https://justtapcapital.com/api/users/register', {
                 method: 'POST',
                 body: formDataToSend,
             });
