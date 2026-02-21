@@ -95,7 +95,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [userId, setUserId] = useState(null);
 
-    const API_URL = 'http://16.112.180.35/api/users';
+    const API_URL = 'https://justtapcapital.com/api/users';
 
     const showMessage = (text, type = 'error') => {
         setMessage({ text, type });
