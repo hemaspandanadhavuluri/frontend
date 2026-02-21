@@ -65,7 +65,7 @@ const BankLogin = ({ onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    const API_URL = 'http://16.112.180.35/api/users';
+    const API_URL = 'http://localhost:5000/api/users';
 
     const showMessage = (text, type = 'error') => {
         setMessage({ text, type });

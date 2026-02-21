@@ -23,7 +23,7 @@ import {
     indianStates, indianCitiesWithState, courseStartQuarters, courseStartYears, degrees, EMAIL_TEMPLATE_CONTENT,
     fieldsOfInterest, admissionStatuses, universities, employmentTypes, courseDurations, referenceRelationships, currencies, countryPhoneCodes, leadStatusOptions, priorityReasons, closeReasons,
     allCountries, API_URL, MOCK_USER_FULLNAME,
-    NLTemplates,
+    NLTemplates, bankStates,
 } from "../constants";
 import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
 
@@ -1089,14 +1089,16 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
         const rmDetails = JSON.parse(assignmentRM);
 
-        try {
+    try {
             const response = await axios.post(`${API_URL}/${lead._id}/assign-bank`, {
                 bankId: selectedBankForAssignment._id,
                 bankName: selectedBankForAssignment.name,
                 assignedRMName: rmDetails.name,
-                assignedRMEmail: rmDetails.email
+                assignedRMEmail: rmDetails.email,
+                state: assignmentState
             });
-            onUpdate(response.data.lead); // Pass the updated lead object to the parent
+            // Update the local lead state instead of calling onUpdate to stay on the same page
+            setLead(prev => ({ ...prev, ...response.data.lead }));
             alert(response.data.message); // Show the specific success message from the backend
             handleCloseAssignModal();
         } catch (error) {
@@ -1303,7 +1305,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://16.112.180.35/leads/${lead._id}/documents`;
+                const uploadLink = `http://localhost:5000/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1311,7 +1313,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'http://16.112.180.35/api/emi/calculate';
+                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }
@@ -1566,6 +1568,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                                 renderAutocompleteField={renderAutocompleteField}
                                 indianStates={indianStates}
                                 indianCities={indianCitiesWithState}
+                                enableOnlyEmptyFields={true}
                             />
                         </div>
                         )}
@@ -1862,39 +1865,43 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                         </button>
                     </div>
                     <div className="modal-body bank-modal-body">
-                        <div className="bank-modal-form-group">
-                            <label htmlFor="state-select" className="form-label">1. Select State</label>
-                            <select
-                                id="state-select"
-                                className="form-select"
-                                value={assignmentState}
-                                onChange={(e) => {
-                                    setAssignmentState(e.target.value);
-                                    setAssignmentRM(''); // Reset RM selection when state changes
-                                }}
-                            >
-                                <option value="">Select State</option>
-                                {/* Get unique states from the bank's RMs */}
-                                {[...new Set(selectedBankForAssignment?.relationshipManagers.map(rm => rm.state))].map(state => (
-                                    <option key={state} value={state}>{state}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <div className="bank-modal-split-container">
+                            {/* Left Side: State Selection */}
+                            <div className="bank-modal-left">
+                                <label htmlFor="state-select" className="form-label">1. Select State</label>
+                                <select
+                                    id="state-select"
+                                    className="form-select"
+                                    value={assignmentState}
+                                    onChange={(e) => {
+                                        setAssignmentState(e.target.value);
+                                        setAssignmentRM(''); // Reset RM selection when state changes
+                                    }}
+                                >
+                                    <option value="">Select State</option>
+                                    {/* Use bankStates constant for complete list of states */}
+                                    {bankStates.map(state => (
+                                        <option key={state} value={state}>{state}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        <div className="bank-modal-form-group">
-                            <label htmlFor="rm-select" className="form-label">2. Select Relationship Manager</label>
-                            <select
-                                id="rm-select"
-                                className="form-select"
-                                value={assignmentRM}
-                                disabled={!assignmentState}
-                                onChange={(e) => setAssignmentRM(e.target.value)}
-                            >
-                                <option value="">Select Relationship Manager</option>
-                                {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.state === assignmentState).map(rm => (
-                                    <option key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.email})</option>
-                                ))}
-                            </select>
+                            {/* Right Side: Executive Selection */}
+                            <div className="bank-modal-right">
+                                <label htmlFor="rm-select" className="form-label">2. Select Executive</label>
+                                <select
+                                    id="rm-select"
+                                    className="form-select"
+                                    value={assignmentRM}
+                                    disabled={!assignmentState}
+                                    onChange={(e) => setAssignmentRM(e.target.value)}
+                                >
+                                    <option value="">Select Executive</option>
+                                    {selectedBankForAssignment?.relationshipManagers.filter(rm => rm.region === assignmentState).map(rm => (
+                                        <option key={rm.email} value={JSON.stringify({ name: rm.name, email: rm.email })}>{rm.name} ({rm.phoneNumber})</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         {assignmentError && <div className="error-message">{assignmentError}</div>}
                     </div>

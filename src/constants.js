@@ -323,7 +323,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
                 <li>Choose your preferred repayment tenure.</li>
                 <li>Click 'Calculate' to see your estimated monthly EMI.</li>
             </ul>
-            <p>You can access our EMI Calculator here: <a href="http://16.112.180.35/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
+            <p>You can access our EMI Calculator here: <a href="http://localhost:5000/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
             <p>Using this calculator will give you a clear idea of your monthly financial commitment, helping you make informed decisions about your education loan.</p>
             <p>Best regards,<br/>The Justap Team</p>`
 
@@ -588,7 +588,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
             <p>We apologize for any inconvenience and look forward to connecting with you soon.</p>
             <p>Best regards,<br/>The Justap Team</p>`
     },
-    'About DHL': {
+'About DHL': {
         subject: "Information Regarding Document Submission via DHL",
         body: `
             <p>Dear [Student Name],</p>
@@ -601,6 +601,23 @@ export const EMAIL_TEMPLATE_CONTENT = {
             </ul>
             <p>Please wait for confirmation from your Justap advisor before sending any documents.</p>
             <p>Best regards,<br/>The Justap Team</p>`
+    },
+'FO Contact Card': {
+        subject: "Your Financial Officer Contact Details - Just Tap Capital",
+        body: `
+            <p>Dear [Student Name],</p>
+            <p>Greetings from Just Tap Capital! Here are your Financial Officer's contact details for any assistance regarding your education loan:</p>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #512967; margin-top: 0;">📋 FO Contact Card</h3>
+                <p><strong>Financial Officer Name:</strong> [FO Name]</p>
+                <p><strong>Mobile Number:</strong> [FO Phone Number]</p>
+                <p><strong>Email ID:</strong> [FO Email]</p>
+            </div>
+            
+            <p>Feel free to reach out to your Financial Officer for any queries related to your education loan process. We are here to help you every step of the way!</p>
+            
+            <p>Best regards,<br/>The Just Tap Capital Team</p>`
     },
 };
 
@@ -718,7 +735,8 @@ export const miscSituations = [
     "Drawback of Self Funds",
     "Referal Program",
     "Non-Indian / Wrong Number",
-    "About DHL"
+    "About DHL",
+    "FO Contact Card"
 ];
 
 export const emailTemplates = [
@@ -951,7 +969,7 @@ export const allCountries = [
     "UK", "USA", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-export const API_URL = 'http://16.112.180.35/api/leads';
+export const API_URL = 'http://localhost:5000/api/leads';
 
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
 

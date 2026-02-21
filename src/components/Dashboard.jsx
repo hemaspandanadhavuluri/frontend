@@ -218,7 +218,7 @@ const Dashboard = ({ leads, setLeads }) => {
                         <td>{reminderDate ? moment(reminderDate).format('DD MMM YYYY') : 'SET DATE'}</td>
                         <td>{lead.assignedFO || 'Unassigned'}</td>
                         <td>{lead.permanentLocation || 'N/A'}</td>
-                        <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-view-fo">View</a></td>
+<td><button onClick={() => openLeadInTab(lead._id)} className="btn-fo btn-view-fo">View</button></td>
                       </tr>
                     )
                   })}
@@ -236,7 +236,7 @@ const Dashboard = ({ leads, setLeads }) => {
                         <td>{reminderDate ? moment(reminderDate).format('DD MMM YYYY') : 'N/A'}</td>
                         <td>{lead.assignedFO}</td>
                         <td>{lead.permanentLocation || 'N/A'}</td>
-                        <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-primary-fo">View</a></td>
+<td><button onClick={() => openLeadInTab(lead._id)} className="btn-fo btn-primary-fo">View</button></td>
                       </tr>
                     );
                   })}
@@ -247,7 +247,7 @@ const Dashboard = ({ leads, setLeads }) => {
                       <td>{task.createdByName}</td>
                       <td>{moment(task.createdAt).format('DD MMM YYYY')}</td>
                       <td><span className="chip-fo status-info">{task.status}</span></td>
-                      <td><a href={`/leads/${task.leadId}`} target="_blank" className="btn-fo btn-warning-fo">Open Lead</a></td>
+<td><button onClick={() => openLeadInTab(task.leadId)} className="btn-fo btn-warning-fo">Open Lead</button></td>
                     </tr>
                   ))}
 
@@ -260,7 +260,7 @@ const Dashboard = ({ leads, setLeads }) => {
                       <td>{moment(lead.createdAt).format('DD MMM YYYY')}</td>
                       <td>{lead.assignedFO}</td>
                       <td>{lead.zone} / {lead.region}</td>
-                      <td><a href={`/leads/${lead._id}`} target="_blank" className="btn-fo btn-secondary-fo">Open</a></td>
+<td><button onClick={() => openLeadInTab(lead._id)} className="btn-fo btn-secondary-fo">Open</button></td>
                     </tr>
                   ))}
                 </tbody>

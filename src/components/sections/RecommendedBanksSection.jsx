@@ -6,11 +6,45 @@ const RecommendedBanksSection = ({ lead, tiedUpBanks, handleOpenAssignModal }) =
     const assignedBanks = tiedUpBanks.filter(bank => lead.assignedBanks?.some(b => b.bankId === bank._id));
     const unassignedBanks = tiedUpBanks.filter(bank => !lead.assignedBanks?.some(b => b.bankId === bank._id));
 
+    // Group unassigned banks by type
+    const publicBanks = unassignedBanks.filter(bank => bank.type === 'public');
+    const privateBanks = unassignedBanks.filter(bank => bank.type === 'private');
+    const nbfcBanks = unassignedBanks.filter(bank => bank.type === 'nbfc');
+
     const [changeExecutiveStates, setChangeExecutiveStates] = useState({});
     
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('en-GB');
+    };
+
+    // Render bank card
+    const renderBankCard = (bank) => (
+        <div key={bank._id} className="available-bank-card">
+            <div>
+                <p className="available-bank-name">{bank.name}</p>
+            </div>
+            <button 
+                type="button" 
+                onClick={() => handleOpenAssignModal(bank)} 
+                className="assign-button"
+            >
+                Assign to this Bank
+            </button>
+        </div>
+    );
+
+    // Render bank group with heading
+    const renderBankGroup = (banks, heading) => {
+        if (banks.length === 0) return null;
+        return (
+            <div className="bank-group mb-6">
+                <h4 className="font-bold mb-4 text-gray-800">{heading}</h4>
+                <div className="available-banks-grid">
+                    {banks.map(bank => renderBankCard(bank))}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -109,26 +143,19 @@ const RecommendedBanksSection = ({ lead, tiedUpBanks, handleOpenAssignModal }) =
                     </div>
                 )}
 
-                {/* Unassigned Banks in Grid */}
+                {/* Unassigned Banks - Grouped by Type */}
                 {unassignedBanks.length > 0 && (
                     <div>
                         <h4 className="font-bold mb-4 text-gray-800">Available Banks</h4>
-                        <div className="available-banks-grid">
-                            {unassignedBanks.map((bank) => (
-                                <div key={bank._id} className="available-bank-card">
-                                    <div>
-                                        <p className="available-bank-name">{bank.name}</p>
-                                    </div>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => handleOpenAssignModal(bank)} 
-                                        className="assign-button"
-                                    >
-                                        Assign to this Bank
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                        
+                        {/* Public Banks */}
+                        {renderBankGroup(publicBanks, 'Public Banks')}
+                        
+                        {/* Private Banks */}
+                        {renderBankGroup(privateBanks, 'Private Banks')}
+                        
+                        {/* NBFCs */}
+                        {renderBankGroup(nbfcBanks, 'NBFCs')}
                     </div>
                 )}
 

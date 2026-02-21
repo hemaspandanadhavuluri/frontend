@@ -144,3 +144,20 @@
 .icon-btn:hover {
   transform: scale(1.1);
 }
+
+/* Disabled field styles */
+.field-input:disabled,
+.field-input.disabled,
+select:disabled,
+.country-code:disabled,
+.mobile-input:disabled {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #d1d5db;
+}
+
+/* Disabled select styling */
+.field-input:disabled + * {
+  background-color: #e5e7eb;
+}
