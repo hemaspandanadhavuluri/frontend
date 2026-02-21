@@ -381,7 +381,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     // --- Handlers ---
 
     // Helper for text fields (updated to handle both flat and nested state)
-    const renderTextField = (name, label, value, onChange, widthClass = "field-container", placeholder = "") => (
+    const renderTextField = (name, label, value, onChange, widthClass = "field-container", placeholder = "", disabled = false) => (
         <div className={`field-wrapper ${widthClass}`}>
             <label htmlFor={name} className="field-label">{label}</label>
             <input
@@ -389,7 +389,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 id={name}
                 name={name}
                 placeholder={placeholder}
-                disabled={isReadOnly}
+                disabled={disabled || isReadOnly}
                 value={value !== undefined && value !== null ? (Array.isArray(value) ? value.join(', ') : value.toString()) : ''}
                 onChange={onChange}
                 className="field-input"
@@ -398,14 +398,14 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     );
 
     // Helper for select/dropdown fields
-    const renderSelectField = (name, label, value, onChange, options, widthClass = "field-container") => (
+    const renderSelectField = (name, label, value, onChange, options, widthClass = "field-container", disabled = false) => (
         <div className={`field-wrapper ${widthClass}`}>
             <label htmlFor={name} className="field-label">{label}</label>
             <select
                 id={name}
                 name={name}
                 value={value || ''}
-                disabled={isReadOnly}
+                disabled={disabled || isReadOnly}
                 onChange={onChange}
                 className="field-input"
             >
