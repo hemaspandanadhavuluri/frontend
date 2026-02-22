@@ -1301,11 +1301,24 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const handleOpenEmailModal = async (templateName) => {
         const template = EMAIL_TEMPLATE_CONTENT[templateName];
         if (template) {
-            let finalBody = template.body.replace(/\[Student Name\]/g, lead.fullName || 'Student').replace(/\[FO Name\]/g, lead.assignedFO || 'FO');
+            // Get FO email - first try from lead, then fallback to current user's email from localStorage
+            let foEmail = '';
+            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+            if (lead.assignedFOEmail) {
+                foEmail = lead.assignedFOEmail;
+            } else if (currentUser && currentUser.email) {
+                foEmail = currentUser.email;
+            }
+
+            let finalBody = template.body
+                .replace(/\[Student Name\]/g, lead.fullName || 'Student')
+                .replace(/\[FO Name\]/g, lead.assignedFO || 'FO')
+                .replace(/\[FO Phone Number\]/g, lead.assignedFOPhone || 'N/A')
+                .replace(/\[FO Email\]/g, foEmail || 'N/A');
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://localhost:5000/leads/${lead._id}/documents`;
+                const uploadLink = `https://justtapcapital.com/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1313,7 +1326,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
+                const emiApiLink = 'https://justtapcapital.com/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }
@@ -1707,6 +1720,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                         {activeTab==='recommendedBanks' && (
                             <RecommendedBanksSection
                                 lead={lead}
+                                setLead={setLead}
                                 tiedUpBanks={tiedUpBanks}
                                 handleOpenAssignModal={handleOpenAssignModal}
                             />

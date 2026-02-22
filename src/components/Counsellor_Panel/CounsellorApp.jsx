@@ -4,11 +4,13 @@ import Leads from "./LeadDetails_Counsellor";
 import Home_Counsellor from "./Home_Counsellor";
 import Messages from "./MyNotes_Counsellor";
 import CounsellorLogin from "./CounsellorLogin";
+import CounsellorProfile from "./CounsellorProfile";
 
 
 const CounsellorApp = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentUser, setCurrentUser] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('counsellorUser');
@@ -65,7 +67,13 @@ const CounsellorApp = () => {
         </nav>
 
         <div className="user-info">
-          <span>Welcome, {currentUser?.fullName || 'Counsellor'}</span>
+          <span 
+            onClick={() => setShowProfile(true)} 
+            style={{cursor: 'pointer', fontWeight: 'bold'}}
+            title="Click to view profile"
+          >
+            Welcome, {currentUser?.fullName || 'Counsellor'}
+          </span>
           <button onClick={handleLogout} className="logout-btn">Logout</button>
         </div>
       </header>
@@ -75,6 +83,13 @@ const CounsellorApp = () => {
         {activeTab === "leads" && <Leads currentUser={currentUser} />}
         {activeTab === "messages" && <Messages currentUser={currentUser} />}
       </main>
+
+      {showProfile && (
+        <CounsellorProfile 
+          currentUser={currentUser} 
+          onClose={() => setShowProfile(false)} 
+        />
+      )}
     </div>
   );
 };

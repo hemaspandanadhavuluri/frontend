@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../constants';
 
-const BANK_API_URL = 'http://localhost:5000/api/banks';
+const BANK_API_URL = 'https://justtapcapital.com/api/banks';
 
 const BanksPage = () => {
     const [banks, setBanks] = useState([]);

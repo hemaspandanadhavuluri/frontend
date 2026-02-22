@@ -63,6 +63,7 @@ export const EMPTY_LEAD_STATE = {
         SAT: "", PTE: "", ACT: "", DUOLINGO: "",
     },
     callHistory: [],
+    externalCallHistory: [],
 };
 
 export const EMAIL_TEMPLATE_CONTENT = {
@@ -212,20 +213,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
             [UPLOAD_LINK_PLACEHOLDER]
             <p>Best regards,<br/>The Justap Team</p>`
     },
-    // NOTE: A generic template for Private Lenders. You can create more specific ones.
-    'Only Priavte Lender Connection Mail': {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
+   
     "Public and  Private Lender connection 1st Mail ": {
         subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
         body: `
@@ -240,76 +228,8 @@ export const EMAIL_TEMPLATE_CONTENT = {
             <p>Best regards,<br/>The Justap Team</p>`
     },
 
-    // NOTE: A generic template for Private Lenders. You can create more specific ones.
-    'Only Priavte Lender Connection Mail': {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
-    "Public and  Private Lender connection 1st Mail ": {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
-    // NOTE: A generic template for Private Lenders. You can create more specific ones.
-    'Only Priavte Lender Connection Mail': {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
-    // NOTE: A generic template for Private Lenders. You can create more specific ones.
-    'Only Priavte Lender Connection Mail': {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Private Banking and NBFC partners (like HDFC Credila, Avanse, etc.)</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
-    "Public and  Private Lender connection 1st Mail ": {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
-        body: `
-            <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
-            <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
-                <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
-            </ul>
-            [UPLOAD_LINK_PLACEHOLDER]
-            <p>Best regards,<br/>The Justap Team</p>`
-    },
+ 
+    
 
     'EDUCATION LOAN EMI CALCULATOR':{
         subject: "Calculate Your Education Loan EMI with Justap's Easy-to-Use Calculator",
@@ -323,7 +243,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
                 <li>Choose your preferred repayment tenure.</li>
                 <li>Click 'Calculate' to see your estimated monthly EMI.</li>
             </ul>
-            <p>You can access our EMI Calculator here: <a href="http://localhost:5000/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
+            <p>You can access our EMI Calculator here: <a href="https://justtapcapital.com/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
             <p>Using this calculator will give you a clear idea of your monthly financial commitment, helping you make informed decisions about your education loan.</p>
             <p>Best regards,<br/>The Justap Team</p>`
 
@@ -969,7 +889,7 @@ export const allCountries = [
     "UK", "USA", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-export const API_URL = 'http://localhost:5000/api/leads';
+export const API_URL = 'https://justtapcapital.com/api/leads';
 
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
 
@@ -1056,4 +976,56 @@ export const privateBanksIndia = [
     'NSDL Payments Bank',
     'Paytm Payments Bank',
     'Airtel Payments Bank'
+];
+
+export const BANK_EMAIL_TEMPLATE_CONTENT = {
+    'FIRST_CONTACT_EMAIL': {
+        subject: "Greetings from [Bank Name]",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>Your education loan application has been assigned to our team through [Company/DSA Name]. We will be assisting you with the loan process for your higher education.</p><p>Our executive will contact you shortly to discuss your profile and required documents.</p><p>In case you have any queries, feel free to reply to this email.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]<br/>[Contact Number]</p>`
+    },
+    'DOCUMENTS_REQUIRED_EMAIL': {
+        subject: "Documents Required for Education Loan",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>To proceed with your education loan application, we request you to kindly share the following documents:</p><ul><li>KYC documents</li><li>Academic documents</li><li>Admission letter</li><li>Income documents of co-applicant</li><li>Bank statements</li></ul><p>You may reply to this email with the required documents or share them via WhatsApp on [number].</p><p>Early submission will help us process your loan faster.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'DOCUMENTS_RECEIVED_EMAIL': {
+        subject: "Documents Received",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>This is to confirm that we have received your documents successfully.</p><p>Your profile is currently under review, and we will update you shortly regarding the next steps in the loan process.</p><p>Thank you for your cooperation.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'APPLICATION_LOGGED_IN_EMAIL': {
+        subject: "Application Logged In",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>We are pleased to inform you that your education loan application has been successfully logged in with our bank.</p><p>Application ID: [App ID]</p><p>Your application is now under process. We will keep you informed about further updates.</p><p>For any queries, feel free to contact us anytime.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'QUERY_ADDITIONAL_DOCUMENT_EMAIL': {
+        subject: "Query/Additional Document Required",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>During the review of your education loan application, we require some additional information/documents:</p><p>[Write required documents or query]</p><p>Kindly share the above at the earliest to avoid any delay in processing your application.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'LOAN_SANCTIONED_EMAIL': {
+        subject: "Loan Sanctioned",
+        body: `<p>Dear [Student Name],</p><p>Congratulations!</p><p>We are happy to inform you that your education loan has been approved by [Bank Name].</p><p>Sanction Amount: [Amount]<br/>Next step: Agreement signing and disbursement process.</p><p>Our team will guide you through the remaining formalities.</p><p>Please feel free to contact us for any assistance.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'LOAN_REJECTED_EMAIL': {
+        subject: "Loan Rejected",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>We regret to inform you that after careful review, your education loan application could not be approved as per current bank policies.</p><p>You may contact us for further clarification if required.</p><p>We wish you all the best for your future plans.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    },
+    'DISBURSEMENT_DONE_EMAIL': {
+        subject: "Disbursement Done",
+        body: `<p>Dear [Student Name],</p><p>Greetings from [Bank Name].</p><p>We are pleased to inform you that your education loan amount has been successfully disbursed as per the agreed terms.</p><p>We wish you all the best for your studies and future success.</p><p>For any further assistance, please feel free to contact us.</p><p>Best Regards,<br/>[Executive Name]<br/>[Bank Name]</p>`
+    }
+};
+
+export const contactAsapOptions = [
+    'Student waiting for call',
+    'Urgent processing',
+    'Offer deadline',
+    'Visa deadline',
+    'Student requested call'
+];
+
+export const negotiationOptions = [
+    'Reduce ROI',
+    'Increase loan amount',
+    'Remove collateral',
+    'Processing fee waiver',
+    'Faster sanction',
+    'Special approval'
 ];

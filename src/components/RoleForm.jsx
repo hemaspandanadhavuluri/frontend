@@ -27,13 +27,17 @@ const RoleForm = ({ formData, handleChange }) => {
     { value: 'RegionalHead', label: 'Regional Head' },
     { value: 'ZonalHead', label: 'Zonal Head' },
     { value: 'CEO', label: 'CEO (Top Level)' },
+    { value: 'HR', label: 'HR' },
+    { value: 'Assigner', label: 'Assigner' },
+    { value: 'BankExecutive', label: 'Bank Executive' },
+    { value: 'Counsellor', label: 'Counsellor' },
   ];
 
   // Fetch managers on component mount
   useEffect(() => {
     const fetchManagers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/users/managers');
+        const response = await fetch('https://justtapcapital.com/api/users/managers');
         const data = await response.json();
         setManagers(data);
       } catch (error) {
@@ -70,6 +74,22 @@ const RoleForm = ({ formData, handleChange }) => {
       case 'CEO':
         // CEO (Top Level) requires no reports
         summaryText += `<span style="font-weight: 700; color: ${theme.palette.primary.main};">CEO</span>. No reporting managers are required.`;
+        break;
+      case 'HR':
+        // HR reports to CEO
+        summaryText += `<span style="font-weight: 700; color: ${theme.palette.primary.main};">HR</span>. Reports directly to the CEO.`;
+        break;
+      case 'Assigner':
+        // Assigner reports to CEO
+        summaryText += `<span style="font-weight: 700; color: ${theme.palette.primary.main};">Assigner</span>. Reports directly to the CEO.`;
+        break;
+      case 'BankExecutive':
+        // BankExecutive reports to CEO
+        summaryText += `<span style="font-weight: 700; color: ${theme.palette.primary.main};">Bank Executive</span>. Reports directly to the CEO.`;
+        break;
+      case 'Counsellor':
+        // Counsellor reports to CEO
+        summaryText += `<span style="font-weight: 700; color: ${theme.palette.primary.main};">Counsellor</span>. Reports directly to the CEO.`;
         break;
       default:
         summaryText = 'Select an employee type to see the required hierarchy fields.';
@@ -168,6 +188,9 @@ const RoleForm = ({ formData, handleChange }) => {
           {regionalHeadField}
         </Stack>
       );
+    } else if (employeeType === 'HR' || employeeType === 'Assigner' || employeeType === 'BankExecutive' || employeeType === 'Counsellor') {
+      // These roles report directly to CEO
+      return ceoField;
     }
 
     return null;

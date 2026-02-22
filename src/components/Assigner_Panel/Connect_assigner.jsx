@@ -13,7 +13,8 @@ const ConnectAssigner = () => {
     const [formData, setFormData] = useState({
         consultancy: '',
         fullName: '',
-        email: ''
+        email: '',
+        phoneNumber: ''
     });
     const [bankExecutiveFormData, setBankExecutiveFormData] = useState({
         bankName: '',
@@ -77,7 +78,7 @@ const ConnectAssigner = () => {
     };
 
     // Bank API URL - banks are at /api/banks not /api/leads/banks
-    const BANK_API_URL = 'http://localhost:5000/api/banks';
+    const BANK_API_URL = 'https://justtapcapital.com/api/banks';
 
     const fetchBanks = async () => {
         setLoading(true);
@@ -140,7 +141,7 @@ const ConnectAssigner = () => {
         try {
             await axios.post(`${API_URL.replace('/leads', '/users')}/counsellors`, formData);
             alert('Counsellor added successfully.');
-            setFormData({ consultancy: '', fullName: '', email: '', region: '' });
+            setFormData({ consultancy: '', fullName: '', email: '', phoneNumber: '', region: '' });
             setShowForm(false);
             fetchCounsellors();
         } catch (err) {
@@ -198,17 +199,18 @@ const ConnectAssigner = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="min-h-screen" style={{ backgroundColor: '#360d4c' }}>
+            <main className="w-4/5 mx-auto py-8">
                 {/* Tabs */}
-                <div className="flex border-b border-gray-200 mb-6">
+                <div className="flex border-b mb-X" style={{borderColor:'#512967'}}>
                     <button
-                        onClick={() => { setActiveTab('counsellor'); setShowForm(false); setError(''); }}
-                        className={`px-4 py-2 font-medium text-sm rounded-t-lg ${
-                            activeTab === 'counsellor'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                         onClick={() => { setActiveTab('counsellor'); setShowForm(false); setError(''); }}
+                         style={{
+                             backgroundColor:activeTab==='counsellor'?'#bd6a4c':'#512967',
+                             color:'white',
+                             marginRight:'X'}
+                         }
+                         className={` px-X py-X font-medium text-sm rounded-t-lg`}
                     >
                         Counsellors
                     </button>
@@ -287,6 +289,17 @@ const ConnectAssigner = () => {
                                         />
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-medium text-gray-700">Mobile Number</label>
+                                        <input
+                                            type="tel"
+                                            name="phoneNumber"
+                                            value={formData.phoneNumber}
+                                            onChange={handleInputChange}
+                                            required
+                                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                        />
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-700">Region</label>
                                         <select
                                             name="region"
@@ -319,6 +332,7 @@ const ConnectAssigner = () => {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consultancy</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Counsellor Name</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Counsellor Email</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Number</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. of Leads</th>
                                         </tr>
                                     </thead>
@@ -328,11 +342,12 @@ const ConnectAssigner = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{counsellor.consultancy}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{counsellor.fullName}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{counsellor.email}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{counsellor.phoneNumber || '-'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{counsellor.leadCount}</td>
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan="4" className="px-6 py-4 text-center text-gray-500">No counsellors found.</td>
+                                                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No counsellors found.</td>
                                             </tr>
                                         )}
                                     </tbody>
