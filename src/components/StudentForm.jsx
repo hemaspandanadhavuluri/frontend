@@ -49,7 +49,7 @@ const TextInput = ({ label, name, value, onChange, type = 'text', placeholder = 
     </div>
 );
 
-const StudentForm = () => {
+const StudentForm = ({ isEmbedded = false, isModal = false }) => {
     const [step, setStep] = useState(1); // 1: Form Step 1, 2: Form Step 2, 3: OTP, 4: Success
     const [formData, setFormData] = useState({
         fullName: '',
@@ -135,7 +135,7 @@ const StudentForm = () => {
                 return (
                     <form onSubmit={goToNextStep} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <TextInput label="Full Name" name="name" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="John Doe" />
+                            <TextInput label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="John Doe" />
                             <TextInput label="Email Address" name="email" value={formData.email} onChange={handleChange} type="email" placeholder="you@example.com" required={false} />
                         </div>
                         <SelectInput label="Nationality" name="nationality" options={NATIONALITIES} value={formData.nationality} onChange={handleChange} />
@@ -176,7 +176,7 @@ const StudentForm = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className={`${isEmbedded ? 'py-20' : 'min-h-screen'} bg-gray-100 flex items-center justify-center p-4`}>
             <div className="max-w-lg w-full bg-white p-8 rounded-xl shadow-lg">
                 <h1 className="text-3xl font-bold text-gray-800 text-center mb-2">Apply for an Education Loan</h1>
                 <p className="text-gray-600 text-center mb-6">Fill out the form below and we'll get in touch with you.</p>

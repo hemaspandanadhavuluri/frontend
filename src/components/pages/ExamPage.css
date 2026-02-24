@@ -1,0 +1,213 @@
+.exam-page {
+    padding-top: 80px;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(90, 45, 130, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(255, 159, 28, 0.05) 0px, transparent 50%);
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    color: var(--dark-text);
+    font-family: var(--font-body);
+}
+
+.exam-hero {
+    position: relative;
+    padding: 100px 20px 60px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.exam-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(90, 45, 130, 0.03) 0%, transparent 70%);
+    z-index: 0;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    animation: slideUpFade 0.8s ease-out;
+}
+
+.exam-badge {
+    background: rgba(90, 45, 130, 0.1);
+    color: var(--primary-purple);
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 25px;
+    display: inline-block;
+    letter-spacing: 1px;
+    border: 1px solid rgba(90, 45, 130, 0.2);
+}
+
+.exam-hero h1 {
+    font-size: 4rem;
+    margin-bottom: 25px;
+    font-family: var(--font-display);
+    background: linear-gradient(135deg, var(--primary-purple) 0%, #2a0a4e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    letter-spacing: -1px;
+}
+
+.exam-hero p {
+    font-size: 1.25rem;
+    max-width: 700px;
+    margin: 0 auto 40px;
+    color: var(--dark-text);
+    opacity: 0.8;
+    line-height: 1.7;
+}
+
+.content-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 80px;
+}
+
+.exam-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-bottom: 80px;
+}
+
+.exam-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.exam-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-purple), var(--highlight-orange));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.exam-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(90, 45, 130, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.exam-card:hover::after {
+    opacity: 1;
+}
+
+.exam-card h2 {
+    color: var(--primary-purple);
+    margin-bottom: 25px;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.exam-card p {
+    color: #555;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.mt-2 {
+    margin-top: 15px;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 25px;
+}
+
+.feature-list li {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 12px;
+    color: #444;
+    font-weight: 500;
+    font-size: 1.05rem;
+}
+
+.feature-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--highlight-orange);
+    font-weight: 900;
+    font-size: 1.1rem;
+}
+
+.booking-section {
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary-purple), #3e1b5e);
+    padding: 80px 40px;
+    border-radius: 30px;
+    box-shadow: var(--floating-shadow);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.booking-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.booking-section h2 {
+    color: white;
+    font-size: 2.8rem;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.booking-section p {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .exam-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .booking-section {
+        padding: 60px 20px;
+    }
+
+    .booking-section h2 {
+        font-size: 2rem;
+    }
+}

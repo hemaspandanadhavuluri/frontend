@@ -1,0 +1,141 @@
+.intro-section {
+    padding: 150px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.intro-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 80px;
+}
+
+.intro-content {
+    flex: 1;
+}
+
+.intro-title {
+    font-size: 4.5rem;
+    /* Huge Typography */
+    line-height: 1;
+    color: var(--primary-purple);
+    margin-bottom: 30px;
+    letter-spacing: -2px;
+}
+
+.title-bar {
+    width: 100px;
+    height: 6px;
+    background: linear-gradient(90deg, var(--highlight-orange), var(--primary-purple));
+    margin-bottom: 40px;
+    border-radius: 4px;
+}
+
+.intro-text {
+    font-size: 1.25rem;
+    color: var(--dark-text);
+    line-height: 1.8;
+    margin-bottom: 30px;
+    font-weight: 300;
+}
+
+.intro-btn {
+    margin-top: 30px;
+    padding: 18px 45px;
+    background: transparent;
+    color: var(--primary-purple);
+    border: 1px solid var(--primary-purple);
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1rem;
+}
+
+.intro-btn:hover {
+    background: var(--primary-purple);
+    color: var(--white);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(90, 45, 130, 0.2);
+}
+
+.intro-image-wrapper {
+    flex: 1;
+    position: relative;
+}
+
+.intro-image {
+    width: 100%;
+    height: 500px;
+    border-radius: 40px;
+    /* High radius for modern feel */
+    overflow: hidden;
+    position: relative;
+    /* Fancy border radius shape */
+    border-top-right-radius: 100px;
+    border-bottom-left-radius: 100px;
+    box-shadow: var(--floating-shadow);
+}
+
+.intro-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s ease;
+}
+
+.intro-image:hover img {
+    transform: scale(1.1);
+}
+
+.experience-badge {
+    position: absolute;
+    bottom: 40px;
+    left: -40px;
+    background: var(--white);
+    color: var(--dark-text);
+    padding: 30px;
+    border-radius: 30px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-width: 160px;
+    animation: float 6s ease-in-out infinite;
+}
+
+.experience-badge .years {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--highlight-orange);
+    display: block;
+    margin-bottom: 5px;
+    font-family: var(--font-display);
+}
+
+.experience-badge .text {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 968px) {
+    .intro-container {
+        flex-direction: column;
+        gap: 60px;
+    }
+
+    .intro-title {
+        font-size: 3rem;
+    }
+
+    .experience-badge {
+        left: 20px;
+        bottom: -20px;
+    }
+}

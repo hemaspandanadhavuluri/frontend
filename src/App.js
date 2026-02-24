@@ -10,7 +10,6 @@ import HrPanel from './components/HrPanel';
 import EmployeeLogin from './components/EmployeeLogin';
 import BankLogin from './components/BankLogin';
 import BankExecutivePanel from './components/BankExecutivePanel';
-import StudentForm from './components/StudentForm';
 import LeadDocumentPage from './components/LeadDocumentPage'; // Import the new document page
 import './components/leadForm.css'; // Import LeadForm styles globally
 import AssignerApp from './components/Assigner_Panel/AssignerApp'; // Import the new component
@@ -18,6 +17,7 @@ import AssignerLogin from './components/Assigner_Panel/AssignerLogin'; // Import
 import FoApp from './components/FoApp'; // Import the FoApp component
 import CounsellorApp from './components/Counsellor_Panel/CounsellorApp';
 import LeadDetailPage from './components/LeadDetailPage';
+import StudentLoanPage from './components/StudentLoanPage';
 
 
 const App = () => {
@@ -88,7 +88,6 @@ const App = () => {
                 <Route path="/bank-login" element={<BankLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/assigner-login" element={<AssignerLogin onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/leads/:id/documents" element={<LeadDocumentPage />} />
-                <Route path = '/studentForm' element = {<StudentForm />} />
                 <Route path= '/counsellor/*' element={<CounsellorApp />} />
 
                 {/* Protected Routes */}
@@ -110,7 +109,10 @@ const App = () => {
                     </>
                 ) : (
                     // If not logged in, default to the employee login page
-                    <Route path="*" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
+                    <>
+                    <Route path="/login*" element={<EmployeeLogin onLoginSuccess={handleLoginSuccess} />} />
+                       <Route path="*" element={<StudentLoanPage />} />
+                    </>
                     
                 )}
                 <Route path="/hr-panel" element={<HrPanel />} />

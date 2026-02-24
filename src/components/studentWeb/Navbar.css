@@ -1,0 +1,203 @@
+.navbar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    height: 80px;
+    /* Slightly taller for logo */
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    padding: 0 30px;
+}
+
+.navbar.scrolled {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    top: 10px;
+    width: 95%;
+    height: 70px;
+}
+
+.navbar-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-img {
+    height: 50px;
+    width: auto;
+    border-radius: 8px;
+    /* Slight roundness if needed */
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled .logo-img {
+    height: 40px;
+}
+
+.navbar-logo .logo-text {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--dark-text);
+    /* Use dark text default */
+    background: linear-gradient(135deg, var(--primary-purple), var(--highlight-orange));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
+}
+
+.navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar-links li a {
+    text-decoration: none;
+    color: var(--dark-text);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
+    opacity: 0.8;
+}
+
+.navbar-links li a:hover {
+    opacity: 1;
+    color: var(--primary-purple);
+}
+
+.navbar-links li a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, var(--primary-purple), var(--highlight-orange));
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.dropdown {
+    position: relative;
+    cursor: pointer;
+}
+
+.dropdown-trigger {
+    color: var(--dark-text);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.dropdown:hover .dropdown-trigger {
+    opacity: 1;
+    color: var(--primary-purple);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 10px 0;
+    list-style: none;
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    z-index: 1001;
+}
+
+.dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-menu li {
+    padding: 0;
+    display: block;
+}
+
+.dropdown-menu li a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.dropdown-menu li a:hover {
+    background: #f8f9fa;
+    color: var(--primary-purple);
+}
+
+.dropdown-menu li a::after {
+    display: none;
+}
+
+.navbar-links li a:hover::after {
+    width: 100%;
+}
+
+.cta-button {
+    background: linear-gradient(135deg, var(--highlight-orange), #ff8a00);
+    padding: 10px 24px;
+    border-radius: 50px;
+    color: white !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 159, 28, 0.3);
+    opacity: 1 !important;
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 159, 28, 0.5);
+    filter: brightness(1.1);
+}
+
+.cta-button::after {
+    display: none;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .navbar-links {
+        display: none;
+    }
+}
