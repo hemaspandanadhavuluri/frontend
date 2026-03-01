@@ -52,6 +52,8 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
     const [notificationSubType, setNotificationSubType] = useState('');
     const [notificationNote, setNotificationNote] = useState('');
     const [isSubmittingNotification, setIsSubmittingNotification] = useState(false);
+    const [copiedWrongUpdate, setCopiedWrongUpdate] = useState(false);
+    const [copiedNotification, setCopiedNotification] = useState(false);
 
     // --------- Separate assigned & unassigned ----------
     const assignedBanks = tiedUpBanks.filter(bank =>
@@ -102,7 +104,9 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                 subType: wrongUpdateSubType,
                 notes: wrongUpdateNote,
                 fromName: currentUser?.fullName || 'FO',
-                fromRole: currentUser?.role || 'FO'
+                fromRole: currentUser?.role || 'FO',
+                createdById: currentUser?._id,
+                createdByName: currentUser?.fullName
             });
 
             // Update local lead state with the response (which contains the new history note)
@@ -116,6 +120,30 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
         } finally {
             setIsSubmittingUpdate(false);
         }
+    };
+
+    // --- Handlers for Copy Functions ---
+    const handleCopyWrongUpdate = () => {
+        let content = `WRONG UPDATE\n`;
+        content += `=============================================\n\n`;
+        content += `Type: ${wrongUpdateType}\n`;
+        content += `Sub Type: ${wrongUpdateSubType}\n`;
+        content += `Notes: ${wrongUpdateNote}\n`;
+        navigator.clipboard.writeText(content).then(() => {
+            setCopiedWrongUpdate(true);
+            setTimeout(() => setCopiedWrongUpdate(false), 2000);
+        });
+    };
+
+    const handleCopyNotification = () => {
+        let content = `${notificationModalType.toUpperCase()}\n`;
+        content += `=============================================\n\n`;
+        content += `Type: ${notificationSubType}\n`;
+        content += `Notes: ${notificationNote}\n`;
+        navigator.clipboard.writeText(content).then(() => {
+            setCopiedNotification(true);
+            setTimeout(() => setCopiedNotification(false), 2000);
+        });
     };
 
     // --- Handlers for Notification Modals (Contact ASAP / Negotiate) ---
@@ -149,7 +177,9 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                 subType: notificationSubType,
                 notes: notificationNote,
                 fromName: currentUser?.fullName || 'FO',
-                fromRole: currentUser?.role || 'FO'
+                fromRole: currentUser?.role || 'FO',
+                createdById: currentUser?._id,
+                createdByName: currentUser?.fullName
             });
 
             // Update local lead state with the response (which contains the new history note)
@@ -281,18 +311,21 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                                     {/* ===== ACTION BUTTONS ===== */}
                                     <div className="action-buttons">
                                         <button 
+                                            type="button"
                                             className="action-button contact-asap"
                                             onClick={() => handleOpenNotificationModal(bank._id, bank.name, 'Contact ASAP')}
                                         >
                                             Contact ASAP
                                         </button>
                                         <button 
+                                            type="button"
                                             className="action-button wrong-update"
                                             onClick={() => handleOpenWrongUpdateModal(bank._id, bank.name)}
                                         >
                                             Wrong Update
                                         </button>
                                         <button 
+                                            type="button"
                                             className="action-button negotiate"
                                             onClick={() => handleOpenNotificationModal(bank._id, bank.name, 'Negotiate')}
                                         >
@@ -338,7 +371,7 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                     <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
                             <h2 className="modal-title">Wrong Update - {selectedBankForUpdate?.bankName}</h2>
-                            <button className="modal-close-btn" onClick={handleCloseWrongUpdateModal}>
+                            <button type="button" className="modal-close-btn" onClick={handleCloseWrongUpdateModal}>
                                 <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -391,12 +424,21 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px', borderTop: '1px solid #eee' }}>
                             <button
+                                type="button"
                                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                                 onClick={handleCloseWrongUpdateModal}
                             >
                                 Cancel
                             </button>
                             <button
+                                type="button"
+                                className={`px-4 py-2 rounded-md text-white ${copiedWrongUpdate ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
+                                onClick={handleCopyWrongUpdate}
+                            >
+                                {copiedWrongUpdate ? '✓ Copied' : 'Copy'}
+                            </button>
+                            <button
+                                type="button"
                                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                                 onClick={handleSubmitWrongUpdate}
                                 disabled={isSubmittingUpdate}
@@ -414,7 +456,7 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                     <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
                             <h2 className="modal-title">{notificationModalType} - {selectedBankForNotification?.bankName}</h2>
-                            <button className="modal-close-btn" onClick={handleCloseNotificationModal}>
+                            <button type="button" className="modal-close-btn" onClick={handleCloseNotificationModal}>
                                 <svg className="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
@@ -451,12 +493,21 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
                         </div>
                         <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '16px', borderTop: '1px solid #eee' }}>
                             <button
+                                type="button"
                                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                                 onClick={handleCloseNotificationModal}
                             >
                                 Cancel
                             </button>
                             <button
+                                type="button"
+                                className={`px-4 py-2 rounded-md text-white ${copiedNotification ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
+                                onClick={handleCopyNotification}
+                            >
+                                {copiedNotification ? '✓ Copied' : 'Copy'}
+                            </button>
+                            <button
+                                type="button"
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                 onClick={handleSubmitNotification}
                                 disabled={isSubmittingNotification}

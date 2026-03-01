@@ -1,6 +1,6 @@
 import React from 'react';
 import RelationCard from '../RelationCard';
-import { EMPTY_LEAD_STATE, employmentTypes, referenceRelationships, countryPhoneCodes } from '../../constants';
+import { EMPTY_LEAD_STATE, employmentTypes, referenceRelationships, countryPhoneCodes, ohgRelationTypes } from '../../constants';
 import './StudentRelationsSection.css';
 
 const StudentRelationsSection = ({

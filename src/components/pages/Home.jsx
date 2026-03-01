@@ -12,9 +12,9 @@ const Home = () => {
     return (
         <main>
             <Hero />
-            <div id="student-form">
+            {/* <div id="student-form">
                 <StudentForm isEmbedded={true} />
-            </div>
+            </div> */}
             <GlobalConnected />
             <Intro />
             <VisionMission />

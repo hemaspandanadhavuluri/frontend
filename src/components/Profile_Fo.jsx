@@ -43,18 +43,30 @@ const Profile_Fo = () => {
         <div className="profile-container">
             {userDetails && (
                 <>
-                    <div className="profile-name-role">
-                        <h2>{userDetails.fullName}</h2>
-                        <p className="profile-role">{userDetails.role}</p>
-                    </div>
                     <div className="profile-header">
-                        {userDetails.profilePictureUrl ? (
-                            <img src={`https://justtapcapital.com/${userDetails.profilePictureUrl}`} alt="Profile" className="profile-picture" />
-                        ) : (
-                            <div className="profile-picture-placeholder">
-                                <span>{userDetails.fullName.charAt(0).toUpperCase()}</span>
+                        <div className="profile-image-container">
+                            {userDetails.profilePictureUrl ? (
+                                <img 
+                                    src={`http://localhost:5000/${userDetails.profilePictureUrl}`} 
+                                    alt="Profile" 
+                                    className="profile-picture" 
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                />
+                            ) : null}
+                            <div 
+                                className="profile-picture-placeholder"
+                                style={{ display: userDetails.profilePictureUrl ? 'none' : 'flex' }}
+                            >
+                                <span>{userDetails.fullName ? userDetails.fullName.charAt(0).toUpperCase() : '?'}</span>
                             </div>
-                        )}
+                        </div>
+                        <div className="profile-name-role">
+                            <h2>{userDetails.fullName}</h2>
+                            <p className="profile-role">{userDetails.role}</p>
+                        </div>
                     </div>
                     <div className="profile-details">
                         <div className="profile-row">

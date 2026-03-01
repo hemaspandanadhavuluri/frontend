@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import AssignerPanel from './AssignerPanel';
 import ConnectAssigner from './Connect_assigner';
 import AssignerProfile from './AssignerProfile';
+
+const API_URL = 'http://localhost:5000/api/leads';
 
 const AssignerApp = ({ onLogout }) => {
     const [activeTab, setActiveTab] = useState('home');

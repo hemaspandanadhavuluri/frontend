@@ -14,17 +14,17 @@ const Intro = () => {
                     <p className="intro-text">
                         Our team of expert counselors and financial advisors work in parallel to provide you with a seamless experience, from choosing the right university to securing the best centralized loan options.
                     </p>
-                    <button className="intro-btn">Read Our Story</button>
+                    {/* <button className="intro-btn">Read Our Story</button> */}
                 </div>
                 <div className="intro-image-wrapper">
                     <div className="intro-image">
                         {/* Placeholder for Intro Image */}
                         <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1769&auto=format&fit=crop" alt="Consultation" />
                     </div>
-                    <div className="experience-badge">
+                    {/* <div className="experience-badge">
                         <span className="years">10+</span>
                         <span className="text">Years of <br />Excellence</span>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </section>

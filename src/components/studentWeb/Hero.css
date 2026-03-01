@@ -3,6 +3,7 @@
     height: 100vh;
     overflow: hidden;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
@@ -76,14 +77,27 @@
     line-height: 1;
     margin-bottom: 30px;
     letter-spacing: -2px;
-    color: #222222 !important;
+   
+}
+
+.solid-text {
+    background: linear-gradient(135deg, rgb(95, 63, 4), orange);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .gradient-text {
-    background: linear-gradient(135deg, var(--primary-purple), var(--highlight-orange));
-    background-clip: text;
+    background: linear-gradient(135deg, #360d4c, #6a2c91, #360d4c);
+    background-size: 200% 200%;
+    animation: gradientMove 5s ease infinite;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .hero-subtitle {
@@ -180,4 +194,26 @@
         width: 250px;
         height: 250px;
     }
+
+    /* responsively adjust layout when form shown inline */
+    /* nothing needed specifically here for mobile */
 }
+
+/* styling for the embedded form container */
+.hero-form-container {
+    width: 100%;
+    background: #fff;
+    padding: 40px 20px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border-radius: 12px;
+}
+
+@media (min-width: 768px) {
+    .hero-form-container {
+        /* keep full width even on desktop, since it's below hero */
+        width: 100%;
+        margin-top: 0;
+    }
+}
+/* overlay rules removed; form is now part of layout */

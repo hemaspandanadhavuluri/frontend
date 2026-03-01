@@ -107,7 +107,3 @@
     position: relative;
     z-index: 1;
 }
-
-.vision-card.highlight-card p {
-    color: rgba(255, 255, 255, 0.8);
-}

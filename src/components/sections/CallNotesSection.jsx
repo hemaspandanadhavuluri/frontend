@@ -384,6 +384,7 @@ const CallNotesSection = ({
                     type="button"
                     className={`submit-lead-data-btn ${isSubmitDisabled ? 'disabled' : 'enabled'}`}
                     onClick={onSubmitLeadData}
+                    disabled={isSubmitDisabled}
                 >
                     <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '16px', height: '16px', marginRight: '8px' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>

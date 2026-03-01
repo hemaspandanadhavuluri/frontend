@@ -37,6 +37,7 @@ const Dashboard = ({ leads, setLeads }) => {
   const [upcomingReminders, setUpcomingReminders] = useState([]);
 
   const [tasks, setTasks] = useState([]);
+  const [assignedByMeTasks, setAssignedByMeTasks] = useState([]);
   const [activeView, setActiveView] = useState("all");
 
   /* ---------------- FETCH ALL LEADS ---------------- */
@@ -78,11 +79,24 @@ const Dashboard = ({ leads, setLeads }) => {
   useEffect(() => {
     if (!currentUser) return;
 
+    // Fetch tasks assigned to the current user
     axios
       .get(API_URL.replace("/leads", "/tasks"), {
         params: { assignedToId: currentUser._id },
       })
-      .then((res) => setTasks(res.data))
+      .then((res) => {
+          // exclude any tasks that were created by this user; those belong in "assigned by me"
+          const filtered = res.data.filter(t => t.createdById !== currentUser._id);
+          setTasks(filtered);
+      })
+      .catch(console.error);
+
+    // Fetch tasks assigned by the current user
+    axios
+      .get(API_URL.replace("/leads", "/tasks"), {
+        params: { createdById: currentUser._id },
+      })
+      .then((res) => setAssignedByMeTasks(res.data))
       .catch(console.error);
   }, [currentUser]);
 
@@ -121,7 +135,7 @@ const Dashboard = ({ leads, setLeads }) => {
     } finally { setIsSearching(false); }
   };
 
-  const openTasksCount = tasks.filter(task => task.status === 'Open').length;
+  const openTasksCount = tasks.filter(task => task.status === 'Open').length + assignedByMeTasks.filter(task => task.status === 'Open').length;
 
   const openLeadInTab = (leadId) => {
     // Use a specific window name to ensure only one lead tab is open at a time
@@ -273,11 +287,21 @@ const Dashboard = ({ leads, setLeads }) => {
             <div className="tasks-sidebar">
               <h3>My Tasks</h3>
               <div>
-                <h4>Priority Action Items ({openTasksCount})</h4>
+                <h4>Assigned to me ({tasks.filter(t => t.status === 'Open').length})</h4>
                 {tasks.filter(t => t.status === 'Open').map(task => (
                   <div key={task._id} className="task-item">
                     <div className="task-subject">{task.subject}</div>
                     <div className="task-body">{task.body}</div>
+                    <div className="task-time">{moment(task.createdAt).fromNow()}</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <h4>Assigned by me ({assignedByMeTasks.filter(t => t.status === 'Open').length})</h4>
+                {assignedByMeTasks.filter(t => t.status === 'Open').map(task => (
+                  <div key={task._id} className="task-item">
+                    <div className="task-subject">{task.subject}</div>
+                    <div className="task-body">To {task.assignedToName}: {task.body}</div>
                     <div className="task-time">{moment(task.createdAt).fromNow()}</div>
                   </div>
                 ))}

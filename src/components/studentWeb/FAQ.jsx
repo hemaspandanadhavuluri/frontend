@@ -31,11 +31,11 @@ const FAQ = () => {
         <section className="faq-section">
             <div className="faq-container">
                 <div className="section-header text-center">
-                    <h2 className="section-title">Common <span className="highlight-text">Queries</span></h2>
-                    <p className="section-subtitle">Clarifying your path to global education.</p>
+                    <h2 className="section-title"><span style={{color:'#fff'}}>Common</span> <span className="highlight-text">Queries</span></h2>
+                    <p className="section-subtitle" style={{color:'#fff'}}>Clarifying your path to global education.</p>
                 </div>
 
-                <div className="faq-grid">
+                <div className="faq-grid" style={{color: '#fff'}}>
                     {faqs.map((faq, index) => (
                         <div
                             key={index}

@@ -149,7 +149,7 @@ const PersonalInfo = ({ formData, handleChange }) => {
             <Grid item xs={12} sm={6}>
                 <TextField
                     fullWidth
-                    label="Personal Phone Number"
+                    label="Phone Number"
                     name="personalNumber"
                     value={formData.personalNumber}
                     onChange={handleChange}
@@ -703,7 +703,7 @@ const HrPanel = () => {
 
             // Role is already in formData from RoleForm
 
-            const response = await fetch('https://justtapcapital.com/api/users/register', {
+            const response = await fetch('http://localhost:5000/api/users/register', {
                 method: 'POST',
                 body: formDataToSend,
             });

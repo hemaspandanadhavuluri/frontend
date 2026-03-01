@@ -17,7 +17,7 @@ const BankExecutiveProfile = ({ currentUser, onClose }) => {
                         <div className="profile-header-user">
                             {user.profilePictureUrl ? (
                                 <img 
-                                    src={`https://justtapcapital.com/${user.profilePictureUrl}`} 
+                                    src={`http://localhost:5000/${user.profilePictureUrl}`} 
                                     alt="Profile" 
                                     className="profile-picture-user" 
                                 />

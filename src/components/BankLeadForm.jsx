@@ -36,6 +36,7 @@ const Accordion = ({ title, icon, children, defaultExpanded = true }) => {
 
 const bankLeadStatusOptions = [
     "In Progress",
+    "On Priority",
     "Logged In",
     "Sanctioned",
     "Rejected",

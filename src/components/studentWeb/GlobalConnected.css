@@ -19,9 +19,16 @@
 }
 
 .highlight-text {
-    background: linear-gradient(135deg, var(--primary-purple), var(--highlight-orange));
+    background: linear-gradient(135deg, #360d4c, #6a2c91, #360d4c);
+    background-size: 200% 200%;
+    animation: gradientMove 5s ease infinite;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .section-desc {

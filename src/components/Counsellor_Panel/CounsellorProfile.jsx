@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../profile_user.css';
 
-const API_URL = 'https://justtapcapital.com/api/leads';
+const API_URL = 'http://localhost:5000/api/leads';
 
 const CounsellorProfile = ({ currentUser, onClose }) => {
     const user = currentUser;
@@ -42,7 +42,7 @@ const CounsellorProfile = ({ currentUser, onClose }) => {
                         <div className="profile-header-user">
                             {user.profilePictureUrl ? (
                                 <img 
-                                    src={`https://justtapcapital.com/${user.profilePictureUrl}`} 
+                                    src={`http://localhost:5000/${user.profilePictureUrl}`} 
                                     alt="Profile" 
                                     className="profile-picture-user" 
                                 />

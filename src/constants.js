@@ -243,7 +243,7 @@ export const EMAIL_TEMPLATE_CONTENT = {
                 <li>Choose your preferred repayment tenure.</li>
                 <li>Click 'Calculate' to see your estimated monthly EMI.</li>
             </ul>
-            <p>You can access our EMI Calculator here: <a href="https://justtapcapital.com/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
+            <p>You can access our EMI Calculator here: <a href="http://localhost:5000/emi-calculator" target="_blank" style="color: blue; text-decoration: underline;">EMI Calculator</a></p>
             <p>Using this calculator will give you a clear idea of your monthly financial commitment, helping you make informed decisions about your education loan.</p>
             <p>Best regards,<br/>The Justap Team</p>`
 
@@ -548,7 +548,13 @@ export const bankStates = ['Ap', 'Ts', 'Ap/Ts', 'Tamilnadu', 'Karnataka', 'Keral
 
  export const referenceRelationships = ['Friend']//['Uncle', 'Aunt', 'Friend', 'Any other relatives']; // This is used for references
 
-export const assetOwnerRelationships = ['Father', 'Mother', 'Uncle', 'Aunt', 'Cousin', 'Friend', 'Self'];
+export const assetOwnerRelationships = ['Father', 'Mother', 'Uncle', 'Aunt', 'First Cousin', 'Cousin', 'Friend', 'Self'];
+
+// Relation types for student relations (used in RelationCard)
+export const relationTypes = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Uncle', 'Aunt', 'First Cousin', 'Guardian'];
+
+// Relation types for Own House Guarantor
+export const ohgRelationTypes = ['Father', 'Mother', 'Spouse', 'Brother', 'Uncle', 'Aunt', 'First Cousin'];
 
 export const countryPhoneCodes = [
     { code: '+91', name: 'India' },
@@ -853,7 +859,7 @@ export const degrees = ['Masters', 'Graduation', 'PhD', 'MBBS', 'UG Certificate'
 
 export const fieldsOfInterest = [
     'Computer Science', 'Data Science & Analytics', 'Business Administration (MBA)', 'Engineering (Mechanical, Electrical, etc.)',
-    'Medicine & Healthcare', 'Arts & Humanities', 'Law', 'Finance & Accounting', 'Hospitality & Tourism'
+    'Medicine & Healthcare', 'Arts & Humanities', 'Law', 'Finance & Accounting', 'Hospitality & Tourism', 'Management'
 ];
 
 export const admissionStatuses = ['Received Admission', 'Applied - No Admit Yet', 'Not Yet Applied'];
@@ -889,7 +895,7 @@ export const allCountries = [
     "UK", "USA", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
-export const API_URL = 'https://justtapcapital.com/api/leads';
+export const API_URL = 'http://localhost:5000/api/leads';
 
 export const MOCK_USER_FULLNAME = 'FO 1 (Mock)';
 

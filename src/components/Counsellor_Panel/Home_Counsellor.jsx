@@ -93,7 +93,7 @@ const Home_Counsellor = ({ switchToLeads, currentUser }) => {
       const leadData = {
         fullName: formData.fullName,
         email: formData.email,
-        mobileNumbers: [`${formData.mobileCountryCode} ${formData.mobileNumber}`],
+        mobileNumbers: [`${formData.mobileCountryCode}-${formData.mobileNumber}`],
         interestedCountries: formData.interestedCountries,
         permanentLocation: formData.permanentLocation,
         source: {

@@ -29,10 +29,9 @@ const features = [
 ];
 
 const team = [
-    { name: 'Dr. Sarah Johnson', role: 'Head of Finance', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1888&auto=format&fit=crop' },
-    { name: 'Mr. David Lee', role: 'Visa Strategist', img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1887&auto=format&fit=crop' },
-    { name: 'Ms. Priya Patel', role: 'Senior Counselor', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop' },
+    
     { name: 'James Wilson', role: 'Admissions Lead', img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1887&auto=format&fit=crop' },
+    { name: 'Mr. Bhaskar Davuluri', role: 'Chief Executive Officer', img: process.env.PUBLIC_URL + '/ceo.jpeg' },
 ];
 
 const WhyChooseUs = () => {
@@ -63,7 +62,7 @@ const WhyChooseUs = () => {
             {/* Meet Our Team - Expanding Accordion (Kept as is) */}
             <div className="team-wrapper" id="team">
                 <div className="section-header text-center">
-                    <h2 className="section-title">The <span className="highlight-text">Architects</span></h2>
+                    <h2 className="section-title"><span style={{color:'#fff'}}>The</span> <span className="highlight-text">Architects</span></h2>
                     <p className="section-subtitle">Meet the minds behind your success.</p>
                 </div>
 

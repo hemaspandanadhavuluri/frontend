@@ -11,7 +11,7 @@
     align-items: center;
     z-index: 1000;
     transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    background: rgba(255, 255, 255, 0.1);
+    background : #360d4c;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -21,7 +21,7 @@
 }
 
 .navbar.scrolled {
-    background: rgba(255, 255, 255, 0.8);
+    background : #360d4c;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -33,12 +33,14 @@
 .navbar-container {
     width: 100%;
     display: flex;
+    background : #360d4c;
     justify-content: space-between;
     align-items: center;
 }
 
 .navbar-logo {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 12px;
 }
@@ -50,24 +52,17 @@
     /* Slight roundness if needed */
     transition: all 0.3s ease;
 }
+.web-logo-text{
+    color : white;
+    font-weight : bold;
+    font-size : 1.5rem;
+}
 
 .navbar.scrolled .logo-img {
     height: 40px;
 }
 
-.navbar-logo .logo-text {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--dark-text);
-    /* Use dark text default */
-    background: linear-gradient(135deg, var(--primary-purple), var(--highlight-orange));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    transition: all 0.3s ease;
-}
+
 
 .navbar-links {
     list-style: none;
@@ -80,7 +75,7 @@
 
 .navbar-links li a {
     text-decoration: none;
-    color: var(--dark-text);
+    color: white;
     font-weight: 500;
     font-size: 0.95rem;
     transition: all 0.3s ease;
@@ -112,7 +107,7 @@
 }
 
 .dropdown-trigger {
-    color: var(--dark-text);
+    color:white;
     font-weight: 500;
     font-size: 0.95rem;
     transition: all 0.3s ease;
@@ -174,10 +169,10 @@
 }
 
 .cta-button {
-    background: linear-gradient(135deg, var(--highlight-orange), #ff8a00);
+    background: white;
     padding: 10px 24px;
     border-radius: 50px;
-    color: white !important;
+    color: #512967 !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
     border: none;

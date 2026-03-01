@@ -32,6 +32,26 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+/* Lead created state - orange border */
+.referFriendsSection__referral-card.lead-created {
+    border: 2px solid #f97316;
+    background-color: #fff7ed;
+}
+
+/* Violet text for lead created state */
+.referFriendsSection__referral-card.lead-created .referFriendsSection__referral-title {
+    color: #7c3aed;
+}
+
+.referFriendsSection__referral-card.lead-created .referFriendsSection__lead-created-text {
+    display: block;
+    color: #7c3aed;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
 }
 
 .referFriendsSection__referral-title {

@@ -15,7 +15,8 @@ import { API_URL } from '../constants';
 const FoApp = ({ onLogout }) => {
     const [leads, setLeads] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
-    const [tasks, setTasks] = useState([]);
+    const [myTasks, setMyTasks] = useState([]);
+    const [assignedByMeTasks, setAssignedByMeTasks] = useState([]);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('employeeUser');
@@ -27,14 +28,31 @@ const FoApp = ({ onLogout }) => {
 
     useEffect(() => {
         if (currentUser) {
+            // Fetch tasks assigned to the current user
             axios.get(API_URL.replace('/leads', '/tasks'), { params: { assignedToId: currentUser._id } })
-                .then(res => setTasks(res.data)).catch(console.error);
+                .then(res => setMyTasks(res.data)).catch(console.error);
+
+            // Fetch tasks assigned by the current user
+            axios.get(API_URL.replace('/leads', '/tasks'), { params: { createdById: currentUser._id } })
+                .then(res => {
+                    // remove tasks that were also assigned to me so they don't show in both boxes
+                    const filtered = res.data.filter(t => t.assignedToId !== currentUser._id);
+                    setAssignedByMeTasks(filtered);
+                }).catch(console.error);
         }
     }, [currentUser]);
 
+    const myTasksPendingCount = myTasks.filter(t => t.status === 'Open').length;
+    const assignedByMePendingCount = assignedByMeTasks.filter(t => t.status === 'Open' && t.assignedToId !== currentUser._id).length;
+    // compute union to avoid double counting tasks self‑assigned
+    const totalIds = new Set();
+    myTasks.filter(t => t.status === 'Open').forEach(t => totalIds.add(t._id));
+    assignedByMeTasks.filter(t => t.status === 'Open' && t.assignedToId !== currentUser._id).forEach(t => totalIds.add(t._id));
+    const totalPendingCount = totalIds.size;
+
     return (
         <div className="dashboard-container-fo">
-            <Sidebar onLogout={onLogout} currentUser={currentUser} activePage={window.location.pathname === '/' ? 'home' : window.location.pathname === '/tasks' ? 'tasks' : ''} tasksCount={tasks.filter(t => t.status === 'Open').length} />
+            <Sidebar onLogout={onLogout} currentUser={currentUser} activePage={window.location.pathname === '/' ? 'home' : window.location.pathname === '/tasks' ? 'tasks' : ''} tasksCount={totalPendingCount} />
             <main className="main-content-fo">
                 <Routes>
                     <Route

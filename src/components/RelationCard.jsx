@@ -18,7 +18,7 @@ import {
     InputAdornment
 } from "@mui/material";
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { countryPhoneCodes } from '../constants';
+import { countryPhoneCodes, relationTypes } from '../constants';
 
 const RelationCard = ({
     relation,
@@ -35,6 +35,12 @@ const RelationCard = ({
         'Self-employed': ['MSME Certificate', 'Business Certificate', 'GST', 'IT Returns'],
         'Agriculture': ['Agriculture Income Certificate'],
         'Not Employed': ['Income Certificate'],
+    };
+
+    // Handler for checking if relation is expired
+    const handleExpiredChange = (e) => {
+        const { checked } = e.target;
+        onUpdate(index, { target: { name: 'isExpired', value: checked } });
     };
 
     const handleDocumentChange = (e) => {
@@ -72,13 +78,28 @@ const RelationCard = ({
             </IconButton>
 
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: '#360d4c' }}>
-                {relation.relationshipType || `Relation ${index + 1}`}
+                {relation.relationshipType ? `${relation.relationshipType}${relation.isExpired ? ' (Expired)' : ''}` : `Relation ${index + 1}`}
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
-                {renderSelectField(`relationshipType`, "Relationship Type", relation.relationshipType, handleRelationChange, ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Guardian'], { xs: '100%', sm: '50%', md: '25%' })}
+                {renderSelectField(`relationshipType`, "Relationship Type", relation.relationshipType, handleRelationChange, relationTypes, { xs: '100%', sm: '50%', md: '25%' })}
                 {renderTextField(`name`, "Name", relation.name, handleRelationChange, { xs: '100%', sm: '50%', md: '25%' })}
                 {renderSelectField(`employmentType`, "Employment Type", relation.employmentType, handleRelationChange, employmentTypes, { xs: '100%', sm: '50%', md: '25%' })}
                 
+                {/* --- Expired Checkbox --- */}
+                <Box sx={{ width: '100%', p: 1.5, display: 'flex', alignItems: 'center' }}>
+                    <FormControlLabel
+                        control={
+                            <Checkbox 
+                                checked={relation.isExpired || false} 
+                                onChange={handleExpiredChange} 
+                                name="isExpired" 
+                                color="error"
+                            />
+                        }
+                        label={<Typography variant="body2" color="error">Relation Expired (No longer alive)</Typography>}
+                    />
+                </Box>
+
                 {/* --- NEW: Conditional Document Checkboxes --- */}
                 {relation.employmentType && documentOptions[relation.employmentType] && (
                     <Box sx={{ width: '100%', p: 1.5, mt: 2, borderTop: '1px solid #eee' }}>

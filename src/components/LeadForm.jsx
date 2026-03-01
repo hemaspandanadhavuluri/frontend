@@ -125,6 +125,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     // Calculate pending reminders count
     const pendingRemindersCount = (lead.reminders ? lead.reminders.filter(reminder => !reminder.done).length : 0) + (lead.reminderCallDate ? 1 : 0);
 
+    // --- NEW: State for participant image loading ---
+    const [participantImageLoading, setParticipantImageLoading] = useState(true);
+    const participantImageRef = useRef(null);
+
     // Initialize autocomplete states for all possible fields
     useEffect(() => {
         const initialStates = {
@@ -135,6 +139,71 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         };
         setAutocompleteStates(initialStates);
     }, []);
+
+    // Effect to handle image loading
+    useEffect(() => {
+        // Reset loading state when lead data changes (e.g., new participant image)
+        setParticipantImageLoading(true);
+
+        const img = participantImageRef.current;
+        if (img) {
+            // Check if image is already loaded (cached)
+            if (img.complete && img.naturalHeight !== 0) {
+                setParticipantImageLoading(false);
+                return;
+            }
+
+            // Set up event listeners
+            const handleLoad = () => {
+                setParticipantImageLoading(false);
+            };
+
+            const handleError = () => {
+                setParticipantImageLoading(false);
+            };
+
+            img.addEventListener('load', handleLoad);
+            img.addEventListener('error', handleError);
+
+            // Fallback timeout
+            const timer = setTimeout(() => {
+                setParticipantImageLoading(false);
+            }, 5000); // Increased to 5 seconds for reliability
+
+            return () => {
+                img.removeEventListener('load', handleLoad);
+                img.removeEventListener('error', handleError);
+                clearTimeout(timer);
+            };
+        } else {
+            // If no image ref, set loading to false after a short delay
+            const timer = setTimeout(() => {
+                setParticipantImageLoading(false);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [lead._id]); // Depend on lead._id to reset when lead changes
+
+    // Sync autocomplete states with lead data when lead data is loaded
+    useEffect(() => {
+        if (lead && lead._id) {
+            setAutocompleteStates(prev => ({
+                ...prev,
+                permanentLocation: { 
+                    ...prev.permanentLocation, 
+                    inputValue: lead.permanentLocation || '' 
+                },
+                interestedCountries: { 
+                    ...prev.interestedCountries, 
+                    inputValue: Array.isArray(lead.interestedCountries) ? '' : (lead.interestedCountries || '')
+                },
+                admittedUniversities: { 
+                    ...prev.admittedUniversities, 
+                    inputValue: Array.isArray(lead.admittedUniversities) ? '' : (lead.admittedUniversities || '')
+                }
+            }));
+        }
+    }, [lead._id, lead.permanentLocation]);
 
     // Effect to handle click outside to close dropdown
     useEffect(() => {
@@ -650,18 +719,19 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
 
     // Helper for Autocomplete fields (supports multi-select for arrays)
-    const renderAutocompleteField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3") => {
+    const renderAutocompleteField = (name, label, value, onChange, options, widthClass = "w-full md:w-1/3", disabled = false) => {
         const isMultiSelect = Array.isArray(value);
 
         // Initialize state for this field if not exists
+        // Also initialize the input value with the current lead value if available
         if (!autocompleteStates[name]) {
             setAutocompleteStates(prev => ({
                 ...prev,
-                [name]: { inputValue: '', showDropdown: false, filteredOptions: [], optionClicked: false }
+                [name]: { inputValue: value && !isMultiSelect ? value : '', showDropdown: false, filteredOptions: [], optionClicked: false }
             }));
         }
 
-        const state = autocompleteStates[name] || { inputValue: '', showDropdown: false, filteredOptions: [] };
+        const state = autocompleteStates[name] || { inputValue: value && !isMultiSelect ? value : '', showDropdown: false, filteredOptions: [] };
 
         const handleInputChange = (e) => {
             const newValue = e.target.value;
@@ -795,6 +865,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                         onClick={handleFocus}
                         onBlur={handleBlur}
                         onKeyDown={handleInputKeyDown}
+                        disabled={disabled || isReadOnly}
                         className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                         placeholder={isMultiSelect ? "Type to add..." : "Select or type..."}
                     />
@@ -832,20 +903,38 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             return;
         }
 
+        // Validation for notes and reminders - mandatory for lead submission
+        if (!newNote.notes.trim()) {
+            alert('Please add a note before submitting the lead.');
+            return;
+        }
+        if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
+            alert('Please set a reminder before submitting the lead.');
+            return;
+        }
+
         // If there's no lead._id, this is a create operation (for new leads, create silently without navigation)
         if (!lead._id) {
             // CREATE logic here (POST /api/leads)
             try {
                 const createPayload = {
                     ...lead,
+                    callHistory: [{
+                        notes: newNote.notes,
+                        callStatus: newNote.callStatus,
+                        loggedById: currentUser._id,
+                        loggedByName: currentUser.fullName,
+                        createdAt: new Date().toISOString()
+                    }]
                 };
 
                 const response = await axios.post(API_URL, createPayload);
                 // Update local state with the created lead, but don't navigate
                 setLead({ ...EMPTY_LEAD_STATE, ...response.data });
                 setNewNote({ notes: '', callStatus: 'Connected' });
-                // Optionally show a success message
-                alert('Lead created and note added successfully!');
+                // Show success message and navigate
+                alert('Lead submitted successfully!');
+                navigate('/');
             } catch (error) {
                 console.error('Failed to create lead:', error);
                 alert('Failed to create lead. Check console for details.');
@@ -869,7 +958,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             // Update local state with the new, updated lead data (including the new callHistory entry)
             setLead({ ...lead, ...response.data });
             setNewNote({ notes: '', callStatus: 'Connected' }); // Clear the note field
-            // No navigation, just update the history
+            
+            // Show success message and navigate to home
+            alert('Lead submitted successfully!');
+            navigate('/');
 
         } catch (error) {
             console.error('Failed to save note:', error);
@@ -1318,7 +1410,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `https://justtapcapital.com/leads/${lead._id}/documents`;
+                const uploadLink = `http://localhost:5000/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1326,7 +1418,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'https://justtapcapital.com/api/emi/calculate';
+                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }
@@ -1426,6 +1518,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
     // Calculate total expenses (Unchanged)
     const totalFee = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);
+
+    // Determine whether the lead has at least one non-counsellor note and a reminder set
+    const hasReminder = !!(lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0));
+    const hasNote = !!(lead.callHistory && lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note').length > 0);
 
     return (
     <div className="lead-form-container">
@@ -1748,30 +1844,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                                 handleCounsellorNoteChange={handleCounsellorNoteChange}
                                 onSendNote={handleSaveNote}
                                 onSendCounsellorNote={handleSendCounsellorNote}
-                                onSubmitLeadData={() => {
-                                    // Check for mandatory notes if reminder exists
-                                    const hasReminder = lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0);
-                                    const hasNormalNote = lead.callHistory && lead.callHistory.some(note => note.callStatus !== 'Counsellor Note');
-                                    const hasCounsellorNote = lead.callHistory && lead.callHistory.some(note => note.callStatus === 'Counsellor Note');
-
-                                    if (hasReminder && (!hasNormalNote || !hasCounsellorNote)) {
-                                        alert('Since there is a reminder for this counsellor lead, you must submit both a normal note and a counsellor note.');
-                                        return;
-                                    }
-
-                                    if (!lead.callHistory || lead.callHistory.length === 0) {
-                                        alert('Please add at least one note before submitting the lead data.');
-                                        return;
-                                    }
-                                    if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
-                                        alert('Please set a reminder before submitting the lead data.');
-                                        return;
-                                    }
-                                    // Trigger form submission
-                                    const form = document.querySelector('form');
-                                    if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
-                                }}
-                                isSubmitDisabled={false}
+                                onSubmitLeadData={handleSubmitLeadData}
+                                isSubmitDisabled={!(hasNote && hasReminder)}
                             />
                         )}
 

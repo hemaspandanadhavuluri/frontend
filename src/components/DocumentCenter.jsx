@@ -24,7 +24,7 @@ const documentTypes = [
     "Student Test Score Cards", "Student Admission Letter", "Student Work Experience Letter", "Student Visa"
 ];
 
-const API_BASE_URL = 'https://justtapcapital.com';
+const API_BASE_URL = 'http://localhost:5000';
 // The base URL of your backend
 
 const DocumentCenter = ({ lead, onUpdate, isReadOnly = false }) => {

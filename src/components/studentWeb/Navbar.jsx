@@ -18,7 +18,7 @@ const Navbar = () => {
       <div className="navbar-container">
         <div className="navbar-logo">
           <img src="/logo2.png" alt="Just Tap Capital Logo" className="logo-img" />
-          <span className="logo-text">Just Tap Capital</span>
+          <span className="web-logo-text">Just Tap <span style={{color:'#ee8926'}}>Capital</span></span>
         </div>
         <ul className="navbar-links">
           <li><Link to="/">Home</Link></li>

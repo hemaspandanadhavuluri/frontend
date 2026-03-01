@@ -94,12 +94,18 @@ const AssignerPanel = ({ onLogout }) => {
         }
 
         try {
+            // Find the lead from the unassignedLeads array
+            const lead = unassignedLeads.find(l => l._id === leadId);
+            
             const payload = {
                 assignedFOId: selectedFo._id,
                 assignedFO: selectedFo.fullName,
                 assignedFOPhone: selectedFo.phoneNumber, // Assuming FO has a phone number
                 region: selectedFo.region,
                 zone: selectedFo.zone, // Assuming FO has a zone
+                // Include location fields from the original lead
+                permanentLocation: lead?.permanentLocation || '',
+                state: lead?.state || '',
             };
 
             await axios.put(`${API_URL}/${leadId}`, payload);

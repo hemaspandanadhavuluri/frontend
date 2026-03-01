@@ -6,7 +6,7 @@
 /* Why Choose Us - Luxury Editorial */
 .why-us-wrapper {
     padding: 120px 20px;
-    background: radial-gradient(circle at 50% 50%, #2a1b3d 0%, #120e16 100%);
+    background: radial-gradient(circle at 50% 50%, #35224f 0%, #201a25 100%);
     /* Deep luxurious purple/black */
     position: relative;
     overflow: hidden;
@@ -145,7 +145,7 @@
 
 .accordion-container {
     display: flex;
-    max-width: 1200px;
+    max-width:800px;
     height: 500px;
     margin: 60px auto 0;
     gap: 15px;
@@ -168,7 +168,7 @@
 }
 
 .accordion-item:hover {
-    flex: 3.5;
+    flex: 2.5;
     filter: grayscale(0%) brightness(1);
     border-color: var(--highlight-orange);
 }
@@ -196,13 +196,13 @@
 
 .member-info h3 {
     font-size: 1.8rem;
-    color: var(--white);
+    color: white;
     margin-bottom: 5px;
     font-family: var(--font-display);
 }
 
 .member-info span {
-    color: var(--highlight-orange);
+    color: rgb(203, 136, 13);
     font-weight: 500;
     text-transform: uppercase;
     font-size: 0.85rem;

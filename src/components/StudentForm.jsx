@@ -49,7 +49,7 @@ const TextInput = ({ label, name, value, onChange, type = 'text', placeholder = 
     </div>
 );
 
-const StudentForm = ({ isEmbedded = false, isModal = false }) => {
+const StudentForm = ({ isEmbedded = false, isModal = false, isCallback = false, onSuccess }) => {
     const [step, setStep] = useState(1); // 1: Form Step 1, 2: Form Step 2, 3: OTP, 4: Success
     const [formData, setFormData] = useState({
         fullName: '',
@@ -103,13 +103,13 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
                 admissionStatus: formData.admissionStatus,
                 courseStartMonth: formData.courseStartMonth,
                 approachedAnyBank: formData.approachedBankForLoan === 'Yes',
-                source: { source: 'Website Form', name: 'Student Self-service' },
+                source: isCallback ? { source: 'Website Hero', name: 'Request Call Back' } : { source: 'Website Form', name: 'Student Self-service' },
                 leadStatus: 'New',
             };
             const response = await axios.post(API_URL, leadPayload);
 
             if (response.status === 201) {
-                setMessage('Thank you! Your information has been submitted successfully. Our team will contact you shortly.');
+                setMessage(isCallback ? 'Request submitted! We will call you back.' : 'Thank you! Your information has been submitted successfully. Our team will contact you shortly.');
                 // Reset form to initial state and go back to the first step
                 setFormData({ // Reset form
                     fullName: '', email: '', nationality: NATIONALITIES[0], countryCode: countryPhoneCodes[0].code,
@@ -118,6 +118,7 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
                     approachedBankForLoan: LOAN_OPTIONS[0],
                 });
                 setStep(1);
+                if (onSuccess) setTimeout(onSuccess, 2000);
             } else {
                 setError('There was an issue submitting your form. Please try again.');
             }
@@ -130,6 +131,27 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
     };
 
     const renderFormStep = () => {
+        if (isCallback) {
+            return (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <TextInput label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="John Doe" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1">
+                            <SelectInput 
+                                label="Country Code" 
+                                name="countryCode" 
+                                options={countryPhoneCodes.map(c => ({ value: c.code, label: `${c.name} (${c.code})` }))}
+                                value={formData.countryCode} onChange={handleChange} />
+                        </div>
+                        <div className="md:col-span-2"><TextInput label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} type="tel" placeholder="9876543210" /></div>
+                    </div>
+                    <SelectInput label="Permanent Location (City)" name="permanentCity" options={CITIES} value={formData.permanentCity} onChange={handleChange} />
+                    <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400">
+                        {loading ? 'Submitting...' : 'Request Call Back'}
+                    </button>
+                </form>
+            );
+        }
         switch (step) {
             case 1:
                 return (
@@ -150,7 +172,7 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
                             <div className="md:col-span-2"><TextInput label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} type="tel" placeholder="9876543210" /></div>
                         </div>
                         <SelectInput label="Permanent Location (City)" name="permanentCity" options={CITIES} value={formData.permanentCity} onChange={handleChange} />
-                        <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <button type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
                             Next: Study Details
                         </button>
                     </form>
@@ -164,7 +186,7 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
                         <SelectInput label="Have you approached any bank for an education loan?" name="approachedBankForLoan" options={LOAN_OPTIONS} value={formData.approachedBankForLoan} onChange={handleChange} />
                         <div className="flex items-center justify-between">
                             <button type="button" onClick={() => setStep(1)} className="text-gray-600 hover:text-gray-800">Back</button>
-                            <button type="submit" disabled={loading} className="w-1/2 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400">
+                            <button type="submit" disabled={loading} className="w-1/2 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-gray-400">
                                 {loading ? 'Submitting...' : 'Submit Application'}
                             </button>
                         </div>
@@ -176,10 +198,10 @@ const StudentForm = ({ isEmbedded = false, isModal = false }) => {
     };
 
     return (
-        <div className={`${isEmbedded ? 'py-20' : 'min-h-screen'} bg-gray-100 flex items-center justify-center p-4`}>
-            <div className="max-w-lg w-full bg-white p-8 rounded-xl shadow-lg">
-                <h1 className="text-3xl font-bold text-gray-800 text-center mb-2">Apply for an Education Loan</h1>
-                <p className="text-gray-600 text-center mb-6">Fill out the form below and we'll get in touch with you.</p>
+        <div className={`${isEmbedded || isModal ? '' : 'min-h-screen'} ${isModal ? '' : 'bg-gray-100'} flex items-center justify-center p-4`}>
+            <div className={`max-w-lg w-full bg-white ${isModal ? '' : 'p-8 rounded-xl shadow-lg'}`}>
+                <h1 className="text-3xl font-bold text-gray-800 text-center mb-2">{isCallback ? 'Request a Call Back' : 'Apply for an Education Loan'}</h1>
+                <p className="text-gray-600 text-center mb-6">{isCallback ? 'Enter your details and we will contact you.' : "Fill out the form below and we'll get in touch with you."}</p>
                 
                 {/* Updated message display logic */}
                 {message && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded-md">{message}</div>}
