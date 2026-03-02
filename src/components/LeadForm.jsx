@@ -369,8 +369,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 // Add other basic fields as needed
             });
         }
-    // This effect now runs whenever the selected lead object changes.
-    }, [leadData]);
+    // This effect now runs whenever the selected lead id changes (leadData may be a new object but _id unifies)
+    }, [leadData?._id]);
 
     // --- EFFECT: Pre-populate fields from Sanction Details ---
     useEffect(() => {
@@ -903,19 +903,18 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             return;
         }
 
-        // Validation for notes and reminders - mandatory for lead submission
+        // We only require the note text when saving; reminders and full lead
+        // validation happen when the user uses "Submit Lead Data".
         if (!newNote.notes.trim()) {
-            alert('Please add a note before submitting the lead.');
-            return;
-        }
-        if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
-            alert('Please set a reminder before submitting the lead.');
+            alert('Please add a note before saving.');
             return;
         }
 
-        // If there's no lead._id, this is a create operation (for new leads, create silently without navigation)
+        // If there's no lead._id, this is the first time we're saving anything for
+        // the lead.  We still need to create the record so the note has somewhere
+        // to live, but we do *not* want to treat this as the final submission or
+        // navigate away.  The user should remain on the form and continue editing.
         if (!lead._id) {
-            // CREATE logic here (POST /api/leads)
             try {
                 const createPayload = {
                     ...lead,
@@ -929,20 +928,18 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 };
 
                 const response = await axios.post(API_URL, createPayload);
-                // Update local state with the created lead, but don't navigate
+                // Update local state with the created lead (keep it editable)
                 setLead({ ...EMPTY_LEAD_STATE, ...response.data });
                 setNewNote({ notes: '', callStatus: 'Connected' });
-                // Show success message and navigate
-                alert('Lead submitted successfully!');
-                navigate('/');
+                alert('Note added and lead created successfully!');
             } catch (error) {
                 console.error('Failed to create lead:', error);
-                alert('Failed to create lead. Check console for details.');
+                alert('Failed to save note. Check console for details.');
             }
             return;
         }
 
-        // For existing leads, only send the note, not the entire lead
+        // Existing lead: append a new note without doing a full form submit
         try {
             const updatePayload = {
                 newNote: {
@@ -955,14 +952,13 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
 
-            // Update local state with the new, updated lead data (including the new callHistory entry)
-            setLead({ ...lead, ...response.data });
-            setNewNote({ notes: '', callStatus: 'Connected' }); // Clear the note field
-            
-            // Show success message and navigate to home
-            alert('Lead submitted successfully!');
-            navigate('/');
-
+            // only update callHistory to avoid overwriting other unsaved fields
+            setLead(prev => ({
+                ...prev,
+                callHistory: response.data.callHistory
+            }));
+            setNewNote({ notes: '', callStatus: 'Connected' });
+            alert('Note added successfully!');
         } catch (error) {
             console.error('Failed to save note:', error);
             alert('Failed to save note. Check console for details.');
@@ -993,8 +989,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
 
-            // Update local state with the new, updated lead data (including the new callHistory entry)
-            setLead({ ...lead, ...response.data });
+            // merge only call history to preserve any other unsaved changes
+            setLead(prev => ({
+                ...prev,
+                callHistory: response.data.callHistory
+            }));
             setCounsellorNote({ notes: '' }); // Clear the counsellor note field
 
         } catch (error) {
@@ -1221,7 +1220,12 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 reminderCallDate: null // Clear the current reminder date after setting
             };
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
-            setLead(response.data);
+            // merge reminder data to avoid clobbering other edits
+            setLead(prev => ({
+                ...prev,
+                reminders: response.data.reminders,
+                reminderCallDate: response.data.reminderCallDate
+            }));
             alert(`Reminder set for ${new Date(lead.reminderCallDate).toLocaleString()}`);
         } catch (error) {
             console.error('Failed to set reminder:', error);
@@ -1240,7 +1244,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 reminders: updatedReminders
             };
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
-            setLead(response.data);
+            setLead(prev => ({
+                ...prev,
+                reminders: response.data.reminders
+            }));
         } catch (error) {
             console.error('Failed to mark reminder as done:', error);
             alert('Failed to mark reminder as done. Please try again.');
@@ -1255,7 +1262,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 reminderCallDate: null
             };
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
-            setLead(response.data);
+            setLead(prev => ({
+                ...prev,
+                reminderCallDate: response.data.reminderCallDate
+            }));
         } catch (error) {
             console.error('Failed to mark current reminder as done:', error);
             alert('Failed to mark current reminder as done. Please try again.');
@@ -1302,10 +1312,62 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         }
     };
 
+    // --- New helper: save or update the full lead object ---
+    const handleFullLeadSave = async () => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) {
+            alert('You must be logged in to save lead data.');
+            return;
+        }
+
+        try {
+            // incorporate any unsaved note into the lead's callHistory
+            let leadToSave = { ...lead };
+            if (newNote.notes.trim()) {
+                const noteEntry = {
+                    notes: newNote.notes,
+                    callStatus: newNote.callStatus,
+                    loggedById: currentUser._id,
+                    loggedByName: currentUser.fullName,
+                    createdAt: new Date().toISOString()
+                };
+                leadToSave.callHistory = Array.isArray(leadToSave.callHistory)
+                    ? [...leadToSave.callHistory, noteEntry]
+                    : [noteEntry];
+            }
+
+            if (!leadToSave._id) {
+                // create new lead
+                const response = await axios.post(API_URL, leadToSave);
+                console.log('create lead response', response.data);
+                setLead(response.data);
+                alert('Lead created successfully!');
+                const newId = response.data._id || response.data.leadID;
+                if (newId) {
+                    // navigate to the freshly created lead so that further edits load from server
+                    navigate(`/leads/${newId}`);
+                } else {
+                    navigate('/');
+                }
+            } else {
+                // update existing lead
+                const response = await axios.put(`${API_URL}/${leadToSave._id}`, leadToSave);
+                console.log('update lead response', response.data);
+                setLead(response.data);
+                alert('Lead updated successfully!');
+                // force a reload of the route to ensure the component refetches data
+                navigate(`/leads/${response.data._id}`);
+            }
+            setNewNote({ notes: '', callStatus: 'Connected' });
+        } catch (error) {
+            console.error('Failed to save lead data:', error);
+            alert('Failed to save lead data. Check console for details.');
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Since the lead form is large, the main submit should trigger the full update
-        handleSaveNote();
+        handleFullLeadSave();
     };
 
     const handleSubmitLeadData = async () => {
@@ -1317,9 +1379,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             alert('Please set a reminder before submitting the lead data.');
             return;
         }
-        // Trigger form submission
-        const form = document.querySelector('form');
-        if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
+        handleFullLeadSave();
     };
 
     const handleUpdateTaskStatus = async (taskId, newStatus) => {
@@ -1521,7 +1581,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
     // Determine whether the lead has at least one non-counsellor note and a reminder set
     const hasReminder = !!(lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0));
-    const hasNote = !!(lead.callHistory && lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note').length > 0);
+    const hasNote = !!(
+        (lead.callHistory && lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note').length > 0) ||
+        (newNote.notes && newNote.notes.trim().length > 0)
+    );
 
     return (
     <div className="lead-form-container">

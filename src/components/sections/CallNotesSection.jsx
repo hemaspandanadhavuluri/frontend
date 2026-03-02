@@ -67,12 +67,27 @@ const CallNotesSection = ({
             .filter(log => {
                 if (!searchMain) return true;
                 const searchTerm = searchMain.toLowerCase().trim();
-                if (log.notes.toLowerCase().trim().includes(searchTerm)) return true;
-                if (log.loggedByName && log.loggedByName.toLowerCase().trim().includes(searchTerm)) return true;
-                if (lead.approachedBanks && lead.approachedBanks.some(bank => bank.bankName && bank.bankName.toLowerCase().trim().includes(searchTerm))) return true;
-                if (lead.assignedBanks && lead.assignedBanks.some(bank => bank.bankName && bank.bankName.toLowerCase().trim().includes(searchTerm))) return true;
-                if (lead.assignedBanks && lead.assignedBanks.some(bank => bank.assignedRMName && bank.assignedRMName.toLowerCase().trim().includes(searchTerm))) return true;
-                if (lead.counsellorName && lead.counsellorName.toLowerCase().trim().includes(searchTerm)) return true;
+                const logNotes = (log.notes || '').toLowerCase();
+                const loggedByName = (log.loggedByName || '').toLowerCase();
+
+                if (logNotes.includes(searchTerm) || loggedByName.includes(searchTerm)) {
+                    return true;
+                }
+
+                const searchedBank = lead.approachedBanks?.some(bank =>
+                    (bank.bankName?.toLowerCase().includes(searchTerm) ||
+                     bank.assignedRMName?.toLowerCase().includes(searchTerm)) &&
+                    logNotes.includes(bank.bankName?.toLowerCase())
+                ) || lead.assignedBanks?.some(bank =>
+                    (bank.bankName?.toLowerCase().includes(searchTerm) ||
+                     bank.assignedRMName?.toLowerCase().includes(searchTerm)) &&
+                    logNotes.includes(bank.bankName?.toLowerCase())
+                );
+
+                if (searchedBank) {
+                    return true;
+                }
+
                 return false;
             })
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -104,7 +119,6 @@ const CallNotesSection = ({
                     if (!searchCounsellor) return true;
                     const searchTerm = searchCounsellor.toLowerCase().trim();
                     if (log.notes.toLowerCase().trim().includes(searchTerm)) return true;
-                    if (lead.counsellorName && lead.counsellorName.toLowerCase().trim().includes(searchTerm)) return true;
                     if (log.loggedByName && log.loggedByName.toLowerCase().trim().includes(searchTerm)) return true;
                     return false;
                 })

@@ -50,7 +50,7 @@ const WhyChooseUs = () => {
                             <span className="card-number">{feature.id}</span>
                             <div className="card-content">
                                 <div className="card-icon">{feature.icon}</div>
-                                <h3>{feature.title}</h3>
+                                <h3 style={{color:'#fff'}}>{feature.title}</h3>
                                 <p>{feature.desc}</p>
                             </div>
                             <div className="card-border"></div>

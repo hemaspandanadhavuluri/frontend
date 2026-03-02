@@ -17,12 +17,24 @@ import {
 import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
 
 const LeadDetailView_Counsellor = ({ lead, onBack, currentUser }) => {
-  const [fullLead, setFullLead] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // start with whatever we already have from the list (lead prop)
+  // so that loan requirement values are immediately visible even before the
+  // detailed fetch completes.  The FO panel populates these fields and the
+  // lead prop passed down from the list already contains them.
+  const [fullLead, setFullLead] = useState(lead || null);
+  const [loading, setLoading] = useState(!lead); // if we already had some data, avoid spinner
   const [newNote, setNewNote] = useState('');
   const [sendingNote, setSendingNote] = useState(false);
 
   useEffect(() => {
+    // whenever the selected lead changes we want to show any values that were
+    // already available (especially the loan requirement fields) and then
+    // re-fetch the full record in case additional fields were added by the FO.
+    if (lead) {
+      setFullLead(lead);
+      setLoading(!lead); // if lead prop was nullish we'll show loader
+    }
+
     const fetchFullLead = async () => {
       try {
         const response = await axios.get(`${API_URL}/${lead._id}`);
@@ -34,10 +46,10 @@ const LeadDetailView_Counsellor = ({ lead, onBack, currentUser }) => {
       }
     };
 
-    if (lead._id) {
+    if (lead && lead._id) {
       fetchFullLead();
     }
-  }, [lead._id]);
+  }, [lead]);
 
   const handleSendNote = async () => {
     if (!newNote.trim()) return;
@@ -105,10 +117,17 @@ const LeadDetailView_Counsellor = ({ lead, onBack, currentUser }) => {
     city: fullLead.permanentLocation || 'N/A',
     citizenship: 'Indian', // Assuming default
     amount: fullLead.loanAmountRequired ? `₹${fullLead.loanAmountRequired.toLocaleString('en-IN')}` : '₹0',
+    courseDuration: fullLead.courseDuration || 'N/A',
+    fee: fullLead.fee ? `₹${fullLead.fee.toLocaleString('en-IN')}` : '₹0',
+    living: fullLead.living ? `₹${fullLead.living.toLocaleString('en-IN')}` : '₹0',
+    otherExpenses: fullLead.otherExpenses ? `₹${fullLead.otherExpenses.toLocaleString('en-IN')}` : '₹0',
     lender: fullLead.approachedBanks && fullLead.approachedBanks.length > 0 ? fullLead.approachedBanks[0].bankName : 'N/A',
     university: fullLead.admittedUniversities && fullLead.admittedUniversities.length > 0 ? fullLead.admittedUniversities[0] : 'N/A',
     course: fullLead.degree || 'N/A',
     intake: fullLead.courseStartMonth && fullLead.courseStartYear ? `${fullLead.courseStartMonth} ${fullLead.courseStartYear}` : 'N/A',
+    // include any original tuition fee and conversion rate captured by FO panel
+    originalFee: fullLead.originalFee ? fullLead.originalFee : null,
+    conversionRate: fullLead.conversionRate ? fullLead.conversionRate : null,
     status: fullLead.leadStatus || 'No status',
     submittedDate: new Date(fullLead.createdAt).toLocaleDateString('en-GB', {
       year: 'numeric',
@@ -150,19 +169,6 @@ const LeadDetailView_Counsellor = ({ lead, onBack, currentUser }) => {
             <div className="info-row"><span>City</span><strong>{displayLead.city}</strong></div>
             <div className="info-row"><span>Citizenship</span><strong>{displayLead.citizenship}</strong></div>
           </div>
-
-
-          {/* Loan Requirements */}
-          <div className="ld-card">
-            <h3 className="card-title"><i className="icon-loan"></i> Loan Requirements</h3>
-            <div className="info-row"><span>Amount</span><strong className="amount">{displayLead.amount}</strong></div>
-            <div className="info-row"><span>Approached Lender</span><strong>{displayLead.lender}</strong></div>
-            <div className="info-row"><span>University</span><strong>{displayLead.university}</strong></div>
-            <div className="info-row"><span>Course</span><strong>{displayLead.course}</strong></div>
-            <div className="info-row"><span>Intake</span><strong>{displayLead.intake}</strong></div>
-          </div>
-
-          {/* Application Progress */}
 
         </div>
 

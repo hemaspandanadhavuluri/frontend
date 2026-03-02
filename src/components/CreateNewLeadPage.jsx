@@ -57,7 +57,14 @@ const CreateNewLeadPage = () => {
         try {
             const response = await axios.post(API_URL, lead);
             alert('Lead created successfully!');
-            navigate('/');
+            // Instead of just going back to dashboard, open the newly created lead
+            // so that when the user re-opens the form they will see the saved data.
+            const newId = response.data._id || response.data.leadID;
+            if (newId) {
+                navigate(`/leads/${newId}`);
+            } else {
+                navigate('/');
+            }
         } catch (error) {
             console.error('Error creating lead:', error);
             alert('Failed to create lead. Please try again.');
