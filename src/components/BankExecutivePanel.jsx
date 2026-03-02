@@ -71,7 +71,7 @@ const BankExecutivePanel = ({ onLogout }) => {
         const fetchBankExecutiveDetails = async () => {
             if (storedUser?.role === 'BankExecutive' && storedUser?.bank) {
                 try {
-                    const response = await axios.get('http://localhost:5000/api/banks');
+                    const response = await axios.get('https://justtapcapital.com/api/banks');
                     const banks = response.data;
 
                     // Find the bank and then find the relationship manager by email

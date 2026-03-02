@@ -47,7 +47,7 @@ const Profile_Fo = () => {
                         <div className="profile-image-container">
                             {userDetails.profilePictureUrl ? (
                                 <img 
-                                    src={`http://localhost:5000/${userDetails.profilePictureUrl}`} 
+                                    src={`https://justtapcapital.com/${userDetails.profilePictureUrl}`} 
                                     alt="Profile" 
                                     className="profile-picture" 
                                     onError={(e) => {

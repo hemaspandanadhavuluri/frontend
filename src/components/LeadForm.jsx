@@ -1470,7 +1470,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's a bank connection email, inject the document upload link
             if (banksDocs.includes(templateName) || documentStatus.includes(templateName)) { // Also check documentStatus templates
-                const uploadLink = `http://localhost:5000/leads/${lead._id}/documents`;
+                const uploadLink = `https://justtapcapital.com/leads/${lead._id}/documents`;
                 const uploadLinkHtml = `<p>To proceed, please upload your documents using the secure link below:</p><p><a href="${uploadLink}" style="color: #007bff; text-decoration: underline;">${uploadLink}</a></p>`;
                 // Replace a placeholder in the template with the actual link
                 finalBody = finalBody.replace('[UPLOAD_LINK_PLACEHOLDER]', uploadLinkHtml);
@@ -1478,7 +1478,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
             // If it's the EMI calculator email, inject the API link
             if (templateName === 'EDUCATION LOAN EMI CALCULATOR') {
-                const emiApiLink = 'http://localhost:5000/api/emi/calculate';
+                const emiApiLink = 'https://justtapcapital.com/api/emi/calculate';
                 const emiLinkHtml = `<a href="${emiApiLink}" target="_blank">${emiApiLink}</a>`;
                 finalBody = finalBody.replace('[EMI_CALCULATOR_LINK_PLACEHOLDER]', emiLinkHtml);
             }

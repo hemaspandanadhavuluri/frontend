@@ -17,7 +17,7 @@ const AssignerProfile = ({ currentUser, onClose }) => {
                         <div className="profile-header-user">
                             {user.profilePictureUrl ? (
                                 <img 
-                                    src={`http://localhost:5000/${user.profilePictureUrl}`} 
+                                    src={`https://justtapcapital.com/${user.profilePictureUrl}`} 
                                     alt="Profile" 
                                     className="profile-picture-user" 
                                 />

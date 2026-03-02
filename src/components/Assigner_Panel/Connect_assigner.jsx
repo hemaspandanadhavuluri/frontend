@@ -78,7 +78,7 @@ const ConnectAssigner = () => {
     };
 
     // Bank API URL - banks are at /api/banks not /api/leads/banks
-    const BANK_API_URL = 'http://localhost:5000/api/banks';
+    const BANK_API_URL = 'https://justtapcapital.com/api/banks';
 
     const fetchBanks = async () => {
         setLoading(true);
