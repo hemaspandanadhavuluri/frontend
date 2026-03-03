@@ -16,8 +16,8 @@ const GlobalConnected = () => {
     return (
         <section id="connected" className="global-section">
             <div className="section-container">
-                <h2 className="section-title">Globally <span className="highlight-text">Connected</span></h2>
-                <p className="section-desc">We have established strong partnerships with top universities across the globe.</p>
+                <h2 className="section-title">Worldwide <span className="highlight-text">Education Loan Support</span></h2>
+                <p className="section-desc">We assist students in securing education loans for study opportunities in any country across the globe.</p>
 
                 <div className="flags-grid">
                     {countries.map((country) => (

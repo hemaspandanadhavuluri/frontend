@@ -112,7 +112,8 @@ const Dashboard = ({ leads, setLeads }) => {
     });
     const upcomingRemindersFiltered = allReminders.filter(lead => {
       const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
-      return reminderDate && moment(reminderDate).isSame(moment(), 'day');
+      // show reminders for today or any past date; ignore future-only reminders
+      return reminderDate && moment(reminderDate).isSameOrBefore(moment(), 'day');
     });
     setReminderLeads(upcomingRemindersFiltered);
     setUpcomingReminders(upcomingRemindersFiltered);

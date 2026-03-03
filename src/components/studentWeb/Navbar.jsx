@@ -42,7 +42,7 @@ const Navbar = () => {
               <li><Link to="/exams/sat">SAT</Link></li>
             </ul>
           </li>
-          <li><Link to="/careers">Careers</Link></li>
+          {/* <li><Link to="/careers">Careers</Link></li> */}
           <li><a href="#contact" className="cta-button">Contact Us</a></li>
         </ul>
       </div>

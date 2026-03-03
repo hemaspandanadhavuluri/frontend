@@ -93,11 +93,16 @@ const TasksView = ({ onLogout }) => {
         </Box>
     );
 
-    // filter out tasks that the current user created themselves; those belong in "assigned by me" instead
-    const myTasksForDisplay = myTasks.filter(t => !(t.createdById === currentUser?._id));
+    // tasks assigned to the current user – only those created by others (true inbound tasks)
+    const myTasksForDisplay = myTasks.filter(
+        t => t.assignedToId === currentUser?._id && t.createdById !== currentUser?._id
+    );
+
     const myPendingCount = getPendingCount(myTasksForDisplay);
+    // for the "assigned by me" tab show every task the user created (including self‑assigned)
     const assignedByMePendingCount = getPendingCount(assignedByMeTasks);
-    // avoid double counting tasks that appear in both lists (e.g. self‑assigned or special cases)
+    // total pending count should union inbound and outbound (outbound includes self tasks too but
+    // they are not in the inbound list, so duplicates aren't an issue)
     const totalPendingCount = getUnionCount(myTasksForDisplay, assignedByMeTasks);
 
     return (
@@ -129,13 +134,13 @@ const TasksView = ({ onLogout }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {myTasksForDisplay.filter(t => t.status === 'Open').length > 0 ? (
-                                    myTasksForDisplay.filter(t => t.status === 'Open').map(task => (
+                                {myTasksForDisplay.length > 0 ? (
+                                    myTasksForDisplay.map(task => (
                                         <tr key={task._id} className="row-hover-fo">
                                             <td><div><strong>{task.subject}</strong><br /><small>{task.body}</small></div></td>
-                                            <td>{task.createdByName}</td>
+                                            <td>{task.createdByName || task.assignedToName}</td>
                                             <td>{moment(task.createdAt).format('DD MMM YYYY')}</td>
-                                            <td><span className="chip-fo status-info">{task.status}</span></td>
+                                            <td><span className={`chip-fo ${task.status === 'Open' ? 'status-info' : 'status-success'}`}>{task.status === 'Open' ? 'Pending' : 'Completed'}</span></td>
                                             <td>
                                                 <button onClick={() => openLeadInTab(task.leadId)} className="btn-fo btn-warning-fo">Open Lead</button>
                                             </td>
@@ -144,7 +149,7 @@ const TasksView = ({ onLogout }) => {
                                 ) : (
                                     <tr>
                                         <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-                                            No pending tasks assigned to you.
+                                            No tasks assigned to you.
                                         </td>
                                     </tr>
                                 )}
@@ -167,13 +172,13 @@ const TasksView = ({ onLogout }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {assignedByMeTasks.filter(t => t.status === 'Open').length > 0 ? (
-                                    assignedByMeTasks.filter(t => t.status === 'Open').map(task => (
+                                {assignedByMeTasks.length > 0 ? (
+                                    assignedByMeTasks.map(task => (
                                         <tr key={task._id} className="row-hover-fo">
                                             <td><div><strong>{task.subject}</strong><br /><small>{task.body}</small></div></td>
                                             <td>{task.assignedToName}</td>
                                             <td>{moment(task.createdAt).format('DD MMM YYYY')}</td>
-                                            <td><span className="chip-fo status-info">{task.status}</span></td>
+                                            <td><span className={`chip-fo ${task.status === 'Open' ? 'status-info' : 'status-success'}`}>{task.status === 'Open' ? 'Pending' : 'Completed'}</span></td>
                                             <td>
                                                 <button onClick={() => openLeadInTab(task.leadId)} className="btn-fo btn-warning-fo">Open Lead</button>
                                             </td>
@@ -182,7 +187,7 @@ const TasksView = ({ onLogout }) => {
                                 ) : (
                                     <tr>
                                         <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-                                            No pending tasks assigned by you.
+                                            No tasks assigned by you.
                                         </td>
                                     </tr>
                                 )}

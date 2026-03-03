@@ -122,8 +122,17 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const dropdownRefs = useRef({});
     const quickNoteTextareaRef = useRef(null);
 
-    // Calculate pending reminders count
-    const pendingRemindersCount = (lead.reminders ? lead.reminders.filter(reminder => !reminder.done).length : 0) + (lead.reminderCallDate ? 1 : 0);
+    // Calculate pending reminders count (only include today or past reminders)
+    const pendingRemindersCount = (() => {
+        let count = 0;
+        if (lead.reminders) {
+            count += lead.reminders.filter(reminder => !reminder.done && moment(reminder.date).isSameOrBefore(moment(), 'day')).length;
+        }
+        if (lead.reminderCallDate && moment(lead.reminderCallDate).isSameOrBefore(moment(), 'day')) {
+            count += 1;
+        }
+        return count;
+    })();
 
     // --- NEW: State for participant image loading ---
     const [participantImageLoading, setParticipantImageLoading] = useState(true);

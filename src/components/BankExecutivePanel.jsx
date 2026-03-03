@@ -180,7 +180,9 @@ const BankExecutivePanel = ({ onLogout }) => {
             // 2. Calculate counts based on the search-filtered list
             const reminderLeads = filtered.filter(lead => {
                 const nextCallDate = getNextCallDate(lead);
-                return nextCallDate && moment(nextCallDate).isSame(today, 'day');
+                // show any reminder that is today or in the past (pending reminders)
+                // future dates should not appear in the reminders tab
+                return nextCallDate && moment(nextCallDate).isSameOrBefore(today, 'day');
             });
 
             const newLeads = filtered.filter(lead => {
@@ -408,11 +410,16 @@ const BankExecutivePanel = ({ onLogout }) => {
         // Look for the assignment for the current user's bank
         const assignment = lead.assignedBanks?.find(b => b.bankName === currentUser?.bank);
         if (assignment) {
-            if (assignment.bankNextCallDate) return assignment.bankNextCallDate;
-            if (assignment.bankReminders && assignment.bankReminders.length > 0 && assignment.bankReminders.some(r => !r.done)) {
-                const pending = assignment.bankReminders.filter(r => !r.done).sort((a, b) => new Date(a.date) - new Date(b.date));
-                return pending[0]?.date;
+            // prefer any unresolved reminder date (past/today or future) by taking the earliest pending
+            if (assignment.bankReminders && assignment.bankReminders.length > 0) {
+                const pending = assignment.bankReminders.filter(r => !r.done);
+                if (pending.length) {
+                    pending.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    return pending[0]?.date;
+                }
             }
+            // fallback to the explicit bankNextCallDate if no pending reminders exist
+            if (assignment.bankNextCallDate) return assignment.bankNextCallDate;
         }
         return null;
     };

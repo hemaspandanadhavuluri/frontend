@@ -10,9 +10,9 @@ const features = [
     },
     {
         id: '02',
-        title: 'Visa Assurance',
-        desc: 'Our financial proofs are trusted globally, guaranteeing a 99.8% visa success rate for our students.',
-        icon: '📜'
+        title: 'Fast-Track Processing',
+        desc: 'Our streamlined documentation and approval system ensures quicker sanctions so you never miss university deadlines.',
+        icon: '⚡'
     },
     {
         id: '03',
@@ -22,16 +22,16 @@ const features = [
     },
     {
         id: '04',
-        title: 'Global Reach',
-        desc: 'Direct admissions access to 500+ Ivy League & Premium universities across 15+ countries.',
-        icon: '🌍'
+        title: 'Post-Sanction Support',
+        desc: 'Our support doesn’t stop at approval. We assist with disbursement, documentation, forex guidance, and continued assistance until you reach your destination.',
+        icon: '🤝'
     }
 ];
 
 const team = [
     
     { name: 'James Wilson', role: 'Admissions Lead', img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1887&auto=format&fit=crop' },
-    { name: 'Mr. Bhaskar Davuluri', role: 'Chief Executive Officer', img: process.env.PUBLIC_URL + '/ceo.jpeg' },
+    { name: 'Mr. Bhaskar Davuluri', role: 'Chief Executive Officer', img: process.env.PUBLIC_URL + '/CEO.jpeg' },
 ];
 
 const WhyChooseUs = () => {

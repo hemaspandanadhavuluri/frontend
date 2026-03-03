@@ -10,6 +10,7 @@ import moment from 'moment';
 import BasicDetailsSection from "./sections/BasicDetailsSection";
 import RelationCard from "./RelationCard";
 import AssetCard from "./AssetCard";
+import MyTasksSection from './MyTasksBankSection';
 import {
     EMPTY_LEAD_STATE,
     courseStartQuarters, courseStartYears, degrees,
@@ -493,6 +494,10 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
         return myAssignment?.bankLeadStatus === 'Closed';
     };
 
+    const handleTaskUpdate = (updatedTask) => {
+        setLeadTasks(leadTasks.map(task => task._id === updatedTask._id ? updatedTask : task));
+    };
+
     // --- NEW: Centralized Submit Handler ---
     // const handleSubmit = async () => {
     //     try {
@@ -662,6 +667,29 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
             <div className="flex flex-col gap-6">
                 {/* Main Content - Full Width */}
                 <div className="w-full">
+                    {/* --- MY TASKS SECTION --- */}
+                    {(() => {
+                        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+                        const currentBank = currentUser?.bank?.toLowerCase().trim();
+                        // STRICT FIX: Only show tasks with targetBank that exactly matches current user's bank
+                        // DO NOT show tasks without targetBank - they are not bank-specific
+                        const bankFilteredTasks = leadTasks.filter(task => {
+                            // If task has targetBank, it must match the current user's bank exactly
+                            if (task.targetBank) {
+                                return task.targetBank?.toLowerCase().trim() === currentBank;
+                            }
+                            // If task has NO targetBank, do NOT show it - this prevents cross-bank leakage
+                            // Only truly bank-specific tasks should have targetBank set
+                            return false;
+                        });
+                        return (
+                            <MyTasksSection
+                                tasks={bankFilteredTasks}
+                                leadId={lead._id}
+                                onTaskUpdate={handleTaskUpdate}
+                            />
+                        );
+                    })()}
                     {/* --- 1. BASIC DETAILS --- */}
                     <BasicDetailsSection
                         lead={lead}
@@ -880,21 +908,44 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         {/* --- 9. NOTES & HISTORY --- */}
                         <Accordion title="Notes & History" icon="💬" defaultExpanded>
                             <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
-                                {lead.externalCallHistory && lead.externalCallHistory.length > 0 ? (
-                                    lead.externalCallHistory.slice().reverse().map((log, index) => (
-                                        <div key={index} className={`p-3 rounded-lg border-l-4 bg-white ${log.callStatus === 'Email' ? 'border-green-400' : 'border-blue-400'} shadow-sm`}>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <p className="font-bold text-sm text-gray-800">
-                                                    {log.loggedByName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                                {(() => {
+                                    const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+                                    const currentBank = currentUser?.bank?.toLowerCase().trim();
+                                    
+                                    // STRICT FIX: Filter externalCallHistory by targetBank field for proper bank isolation
+                                    // Notes should only be visible to the specific bank they belong to
+                                    const filteredHistory = lead.externalCallHistory
+                                        ? lead.externalCallHistory.filter(log => {
+                                            // If the note has a targetBank field, only show if it matches current user's bank
+                                            if (log.targetBank) {
+                                                return log.targetBank?.toLowerCase().trim() === currentBank;
+                                            }
+                                            // For legacy notes without targetBank, fall back to name matching
+                                            // but this is less secure - only show notes that exactly match the current user
+                                            if (!currentUser || !currentUser.fullName || !currentUser.bank) {
+                                                return false;
+                                            }
+                                            const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
+                                            return log.loggedByName === executiveName;
+                                        })
+                                        : [];
+
+                                    if (filteredHistory.length > 0) {
+                                        return filteredHistory.slice().reverse().map((log, index) => (
+                                            <div key={index} className={`p-3 rounded-lg border-l-4 bg-white ${log.callStatus === 'Email' ? 'border-green-400' : 'border-blue-400'} shadow-sm`}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <p className="font-bold text-sm text-gray-800">
+                                                        {log.loggedByName}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                                                </div>
+                                                <p className="text-gray-700 text-sm">{log.notes}</p>
                                             </div>
-                                            <p className="text-gray-700 text-sm">{log.notes}</p>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-center text-gray-500 py-4">No notes recorded yet.</p>
-                                )}
+                                        ));
+                                    } else {
+                                        return <p className="text-center text-gray-500 py-4">No notes recorded by you for this lead.</p>;
+                                    }
+                                })()}
                             </div>
                             <div className="mt-4">
                                 <MuiTextField fullWidth multiline rows={3} label="Add a Note" placeholder="Enter your note here..." value={note} onChange={(e) => setNote(e.target.value)} variant="outlined" />
@@ -1017,7 +1068,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         </Accordion>
 
                         {/* --- 11. TASK HISTORY --- */}
-                        <Accordion title="Task History" icon="📝" defaultExpanded>
+                        {/* <Accordion title="Task History" icon="📝" defaultExpanded>
                             <div className="space-y-4">
                                 {leadTasks.length > 0 ? (
                                     leadTasks.slice().reverse().map((task) => {
@@ -1048,7 +1099,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     </Typography>
                                 )}
                             </div>
-                        </Accordion>
+                        </Accordion> */}
 
                         {/* Submit Button */}
                         <div className="mt-6 flex justify-end">
