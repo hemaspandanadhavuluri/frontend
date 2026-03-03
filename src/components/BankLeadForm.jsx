@@ -734,7 +734,12 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                 <div className="p-2 w-full md:w-1/2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Has the student already approached any bank?</label>
                                     <input type="text" disabled value={lead.approachedAnyBank ? "Yes" : "No"} className="w-full p-2 border border-gray-300 rounded-md bg-gray-50" />
-                                    {lead.approachedAnyBank && <input type="text" disabled value={lead.previousBankApproached} className="mt-2 w-full p-2 border border-gray-300 rounded-md bg-gray-50" />}
+                                    {lead.approachedAnyBank && (
+                                        <div className="mt-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name(s)</label>
+                                            <input type="text" disabled value={Array.isArray(lead.approachedBanks) ? lead.approachedBanks.map(b => b.bankName).filter(Boolean).join(', ') : (lead.previousBankApproached || '')} className="w-full p-2 border border-gray-300 rounded-md bg-gray-50" />
+                                        </div>
+                                    )}
 
                                     {lead.approachedAnyBank && (
                                         <div className="mt-4">

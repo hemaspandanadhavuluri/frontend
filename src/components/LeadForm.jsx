@@ -295,13 +295,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 }
             }
 
-            const dataToSet = { ...EMPTY_LEAD_STATE };
-            // Only override defaults with non-null values from data
-            Object.keys(data).forEach(key => {
-                if (data[key] != null) {
-                    dataToSet[key] = data[key];
-                }
-            });
+            // FIX: Use data directly instead of merging with EMPTY_LEAD_STATE
+            // This preserves all saved data including empty strings and arrays
+            const dataToSet = { ...data };
 
             // Special handling for panStatus: default to "Applied" for existing leads if not set or "Not Interested"
             if (!dataToSet.panStatus || dataToSet.panStatus === 'Not Interested') {
@@ -312,6 +308,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             if (!dataToSet.region && currentUser?.region) dataToSet.region = currentUser.region;
             if (!dataToSet.regionalHead && currentUser?.regionalHead) dataToSet.regionalHead = currentUser.regionalHead;
 
+            // Only add defaults for truly missing fields (undefined), not empty ones
             if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
             if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }]; }
             if (!dataToSet.references || dataToSet.references.length < 2) {
@@ -325,6 +322,12 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             // Ensure array fields are arrays to prevent errors in autocomplete
             dataToSet.interestedCountries = Array.isArray(dataToSet.interestedCountries) ? dataToSet.interestedCountries : [];
             dataToSet.admittedUniversities = Array.isArray(dataToSet.admittedUniversities) ? dataToSet.admittedUniversities : [];
+            // CRITICAL FIX: Ensure approachedBanks is always an array
+            dataToSet.approachedBanks = Array.isArray(dataToSet.approachedBanks) ? dataToSet.approachedBanks : [];
+            // CRITICAL FIX: Ensure testScores is always an object
+            if (!dataToSet.testScores || typeof dataToSet.testScores !== 'object') {
+                dataToSet.testScores = { GRE: '', IELTS: '', TOEFL: '', GMAT: '', SAT: '', PTE: '', ACT: '', DUOLINGO: '' };
+            }
             setLead(dataToSet);
 
             // Initialize local UI states based on loaded data
@@ -1190,12 +1193,16 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         const rmDetails = JSON.parse(assignmentRM);
 
     try {
+            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+            
             const response = await axios.post(`${API_URL}/${lead._id}/assign-bank`, {
                 bankId: selectedBankForAssignment._id,
                 bankName: selectedBankForAssignment.name,
                 assignedRMName: rmDetails.name,
                 assignedRMEmail: rmDetails.email,
-                state: assignmentState
+                state: assignmentState,
+                assignedByName: currentUser?.fullName,
+                assignedById: currentUser?._id
             });
             // Update the local lead state instead of calling onUpdate to stay on the same page
             setLead(prev => ({ ...prev, ...response.data.lead }));

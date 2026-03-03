@@ -100,6 +100,7 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
             
             const response = await axios.post(`${API_URL}/${lead._id}/wrong-update`, {
                 bankId: selectedBankForUpdate.bankId,
+                bankName: selectedBankForUpdate.bankName,
                 issueType: wrongUpdateType,
                 subType: wrongUpdateSubType,
                 notes: wrongUpdateNote,
@@ -173,6 +174,7 @@ const RecommendedBanksSection = ({ lead, setLead, tiedUpBanks, handleOpenAssignM
             
             const response = await axios.post(`${API_URL}/${lead._id}/notify-bank`, {
                 bankId: selectedBankForNotification.bankId,
+                bankName: selectedBankForNotification.bankName,
                 type: notificationModalType,
                 subType: notificationSubType,
                 notes: notificationNote,
