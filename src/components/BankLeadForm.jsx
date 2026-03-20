@@ -6,7 +6,6 @@ import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import { DatePicker } from '@mui/x-date-pickers';
 import { Phone as PhoneIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
 import moment from 'moment';
-
 import BasicDetailsSection from "./sections/BasicDetailsSection";
 import RelationCard from "./RelationCard";
 import AssetCard from "./AssetCard";
@@ -40,6 +39,7 @@ const bankLeadStatusOptions = [
     "On Priority",
     "Logged In",
     "Sanctioned",
+    "PF Paid",
     "Rejected",
     "Disbursed",
     "Closed"
@@ -56,7 +56,9 @@ const applicationStatusOptions = [
     "Doable",
     "Logged from Other Source",
     "Spoken – Under Discussion",
-    "Doable – Docs Reqested"
+    "Doable – Docs Reqested",
+    "Docs Submitted",
+    "Paid PF in Another Bank"
 ];
 
 const subStatusOptions = [
@@ -67,7 +69,8 @@ const subStatusOptions = [
     "Under Process",
     "Sanctioned",
     "Rejected",
-    "Disbursed"
+    "Disbursed",
+    "Closed"
 ];
 
 // Helper to generate a valid MongoDB ObjectId string
@@ -90,21 +93,23 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
     const [note, setNote] = useState('');
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [emailContent, setEmailContent] = useState('');
-
     // --- Email Modal State ---
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [currentEmailTemplate, setCurrentEmailTemplate] = useState({ name: '', subject: '', body: '' });
     const [emailModalStatus, setEmailModalStatus] = useState('');
-
     const [bankStatus, setBankStatus] = useState('In Progress');
     const [applicationStatus, setApplicationStatus] = useState('');
     const [subStatus, setSubStatus] = useState('');
     const [appId, setAppId] = useState('');
+    const [dsaCode, setDsaCode] = useState(''); // NEW: DSA code state
     const [newReminderDate, setNewReminderDate] = useState('');
     const [bankReminders, setBankReminders] = useState([]);
     const [actionPerformed, setActionPerformed] = useState(false);
-    const [bankLastCallDate, setBankLastCallDate] = useState(null);
-
+    const [bankLastCallDate, setBankLastCallDate] = useState(null);  
+    // --- NEW: Sanction Fields State ---
+    const [sanctionAcc, setSanctionAcc] = useState('');
+    const [sanctionRoi, setSanctionRoi] = useState('');
+    const [pfPaid, setPfPaid] = useState('');
     // --- EFFECT: Fetch Lead Data & Assignable Users ---
     useEffect(() => {
         const fetchAssignableUsers = async () => {
@@ -147,8 +152,13 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         setApplicationStatus(myAssignment.bankApplicationStatus || '');
                         setSubStatus(myAssignment.bankSubStatus || '');
                         setAppId(myAssignment.bankAppId || '');
+                        setDsaCode(myAssignment.bankDsaCode || ''); // NEW: Initialize DSA code
                         setBankReminders(myAssignment.bankReminders || []);
                         setBankLastCallDate(myAssignment.bankLastCallDate || null);
+                        // Initialize sanction fields
+                        setSanctionAcc(myAssignment.sanctionAcc || '');
+                        setSanctionRoi(myAssignment.sanctionRoi || '');
+                        setPfPaid(myAssignment.pfPaid || '');
                     }
                 }
 
@@ -269,7 +279,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
         body = body.replace(/\[Executive Name\]/g, currentUser?.fullName || '');
         
         // Replace company/DSA name
-        body = body.replace(/\[Company\/DSA Name\]/g, 'Just Tap Capital');
+        body = body.replace(/\[Company\/Logged IN Name\]/g, 'Just Tap Capital');
         
         // Replace contact number (from current user or use default)
         body = body.replace(/\[Contact Number\]/g, currentUser?.phoneNumber || '7013148402');
@@ -323,7 +333,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
         "Bank Name": bankName,
         "Bank": bankName,                // 🔥 This handles [Bank]
         "Executive Name": executiveName,
-        "Company/DSA Name": companyName,
+        "Company/Logged IN Name": companyName,
         "Contact Number": contactNumber
     };
 
@@ -468,6 +478,10 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
         setActionPerformed(true);
     };
 
+    const handleDsaCodeUpdate = () => {
+        setActionPerformed(true);
+    };
+
     const handleStatusChange = (e) => {
         setBankStatus(e.target.value);
         setActionPerformed(true);
@@ -592,6 +606,33 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
 
             const finalStatus = typeof statusOverride === 'string' ? statusOverride : (bankStatus || "In Progress");
 
+            // NEW: Validation for Logged In status
+            if (finalStatus === 'Logged In' || subStatus === 'Logged In') {
+                if (!appId.trim()) {
+                    alert("App ID is required when status is 'Logged In'. Please enter the App ID before submitting.");
+                    return;
+                }
+                if (!dsaCode.trim()) {
+                    alert("Logged IN Code is required when status is 'Logged In'. Please enter the Logged IN Code before submitting.");
+                    return;
+                }
+            }
+
+            // NEW: Validation for Sanctioned status
+            if (finalStatus === 'Sanctioned') {
+                const missingFields = [];
+                if (!appId.trim()) missingFields.push('App ID');
+                if (!dsaCode.trim()) missingFields.push('Logged IN');
+                if (!sanctionAcc.trim()) missingFields.push('Sanction Acc No');
+                if (!sanctionRoi.trim()) missingFields.push('Sanction ROI');
+                if (!pfPaid.trim()) missingFields.push('PF Paid');
+                
+                if (missingFields.length > 0) {
+                    alert(`All fields are required when status is 'Sanctioned':\n\n✓ ${missingFields.join('\n✓ ')}\n\nPlease fill in all fields before submitting.`);
+                    return;
+                }
+            }
+
             let updatedAssignedBanks = lead.assignedBanks || [];
 
             updatedAssignedBanks = updatedAssignedBanks.map((assignment) => {
@@ -622,9 +663,14 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                     bankApplicationStatus: applicationStatus || "",
                     bankSubStatus: subStatus || "",
                     bankAppId: appId || "",
+                    bankDsaCode: dsaCode || "", // NEW: Include DSA code in submission
                     bankLastCallDate: bankLastCallDate || null,
                     bankNextCallDate: nextCallDate,
-                    bankReminders: bankReminders || []
+                    bankReminders: bankReminders || [],
+                    // NEW: Include sanction fields when status is Sanctioned
+                    sanctionAcc: finalStatus === 'Sanctioned' ? sanctionAcc : assignment.sanctionAcc || '',
+                    sanctionRoi: finalStatus === 'Sanctioned' ? sanctionRoi : assignment.sanctionRoi || '',
+                    pfPaid: finalStatus === 'Sanctioned' ? pfPaid : assignment.pfPaid || ''
                 };
             });
 
@@ -652,14 +698,20 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
     if (loading) return <p className="text-center mt-5">Loading Lead Details...</p>;
 
     return (
-        <div className="p-4 md:p-8 w-full mx-auto my-8 bg-white rounded-lg shadow-xl">
+        <div className="p-2 sm:p-4 md:p-8 w-full mx-auto my-4 sm:my-8 bg-white rounded-lg shadow-xl">
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-                    Lead: {lead.fullName}
-                    <Chip label="View Only" color="warning" sx={{ ml: 2 }} />
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 4, gap: 2 }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <span>Lead: {lead.fullName}</span>
+                    <Chip label="View Only" color="warning" sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }} />
                 </h1>
-                <MuiButton variant="contained" color="primary" onClick={() => setShowTaskCreator(!showTaskCreator)}>
+                <MuiButton 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={() => setShowTaskCreator(!showTaskCreator)}
+                    fullWidth={false}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                >
                     {showTaskCreator ? 'Cancel Task' : 'Create Task'}
                 </MuiButton>
             </Box>
@@ -711,7 +763,15 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                 {renderSelectField("courseStartYear", "Course Start Year", lead.courseStartYear, null, [], "w-full sm:w-1/2 md:w-1/4")}
                                 {renderSelectField("degree", "Degree", lead.degree, null, [], "w-full sm:w-1/2 md:w-1/4")}
                                 {renderSelectField("fieldOfInterest", "Field of Interest", lead.fieldOfInterest, null, [])}
-                                {renderAutocompleteField("interestedCountries", "Interested Countries", lead.interestedCountries, null, [])}
+                                <div className="p-2 w-full md:w-1/2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Interested Countries</label>
+                                    <input
+                                        type="text"
+                                        disabled={true}
+                                        value={Array.isArray(lead.interestedCountries) ? lead.interestedCountries.join(', ') : (lead.interestedCountries || '')}
+                                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600"
+                                    />
+                                </div>
                                 {renderSelectField("admissionStatus", "Admission Status", lead.admissionStatus, null, [])}
 
                                 <LocalizationProvider dateAdapter={AdapterMoment}>
@@ -729,7 +789,15 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     )}
                                 </LocalizationProvider>
 
-                                {renderAutocompleteField("admittedUniversities", "Admitted Universities", lead.admittedUniversities, null, [], "w-full md:w-1/2")}
+                                <div className="p-2 w-full md:w-1/2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Admitted Universities</label>
+                                    <input
+                                        type="text"
+                                        disabled={true}
+                                        value={Array.isArray(lead.admittedUniversities) ? lead.admittedUniversities.join(', ') : (lead.admittedUniversities || '')}
+                                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600"
+                                    />
+                                </div>
 
                                 <div className="p-2 w-full md:w-1/2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Has the student already approached any bank?</label>
@@ -953,9 +1021,24 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                 })()}
                             </div>
                             <div className="mt-4">
-                                <MuiTextField fullWidth multiline rows={3} label="Add a Note" placeholder="Enter your note here..." value={note} onChange={(e) => setNote(e.target.value)} variant="outlined" />
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 2 }}>
-                                    <MuiButton variant="contained" onClick={handleSaveNote} disabled={!note.trim()}>
+                                <MuiTextField 
+                                    fullWidth 
+                                    multiline 
+                                    rows={3} 
+                                    label="Add a Note" 
+                                    placeholder="Enter your note here..." 
+                                    value={note} 
+                                    onChange={(e) => setNote(e.target.value)} 
+                                    variant="outlined" 
+                                />
+                                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'flex-end', mt: 2, gap: 2 }}>
+                                    <MuiButton 
+                                        variant="contained" 
+                                        onClick={handleSaveNote} 
+                                        disabled={!note.trim()}
+                                        fullWidth={false}
+                                        sx={{ width: { xs: '100%', sm: 'auto' } }}
+                                    >
                                         Save Note
                                     </MuiButton>
 
@@ -991,7 +1074,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                 </div>
                             )}
                             <div className="flex flex-wrap -mx-2 items-end">
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Last Call Date</label>
                                     <input
                                         type="date"
@@ -1001,7 +1084,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     />
                                 </div>
                                 {bankStatus !== 'Closed' && (
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                    <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Set New Reminder</label>
                                         <input
                                             type="datetime-local"
@@ -1011,7 +1094,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                         />
                                     </div>
                                 )}
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Lead Status</label>
                                     <select
                                         value={bankStatus}
@@ -1021,7 +1104,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                         {bankLeadStatusOptions.map(status => <option key={status} value={status}>{status}</option>)}
                                     </select>
                                 </div>
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Application Status</label>
                                     <select
                                         value={applicationStatus}
@@ -1035,7 +1118,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     </select>
                                 </div>
 
-                                <div className="p-2 w-full sm:w-1/2 md:w-1/4">
+                                <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Sub Status</label>
                                     <select
                                         value={subStatus}
@@ -1050,23 +1133,92 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                 </div>
 
                                 {(lead.leadStatus === 'Logged In' || subStatus === 'Logged In') && (
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">App ID <span className="text-red-500">*</span></label>
-                                        <input
-                                            type="text"
-                                            value={appId}
-                                            onChange={(e) => setAppId(e.target.value)}
-                                            onBlur={handleAppIdUpdate}
-                                            className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
-                                            placeholder="Enter App ID"
-                                            required
-                                        />
-                                    </div>
+                                    <>
+                                        <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">App ID <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                value={appId}
+                                                onChange={(e) => setAppId(e.target.value)}
+                                                onBlur={handleAppIdUpdate}
+                                                className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
+                                                placeholder="Enter App ID"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Logged IN as <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                value={dsaCode}
+                                                onChange={(e) => setDsaCode(e.target.value)}
+                                                onBlur={handleDsaCodeUpdate}
+                                                className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
+                                                placeholder="Enter Logged IN Code"
+                                                required
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* --- NEW: Sanction Fields - Show when status is Sanctioned --- */}
+                                {bankStatus === 'Sanctioned' && (
+                                    <>
+                                        <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Sanction Acc No <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                value={sanctionAcc}
+                                                onChange={(e) => {
+                                                    setSanctionAcc(e.target.value);
+                                                    setActionPerformed(true);
+                                                }}
+                                                className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
+                                                placeholder="Enter Sanction Account No"
+                                            />
+                                        </div>
+                                        <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Sanction ROI (%) <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text"
+                                                value={sanctionRoi}
+                                                onChange={(e) => {
+                                                    setSanctionRoi(e.target.value);
+                                                    setActionPerformed(true);
+                                                }}
+                                                className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
+                                                placeholder="Enter Sanction ROI"
+                                            />
+                                        </div>
+                                        <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">PF Paid <span className="text-red-500">*</span></label>
+                                            <select
+                                                value={pfPaid}
+                                                onChange={(e) => {
+                                                    setPfPaid(e.target.value);
+                                                    setActionPerformed(true);
+                                                }}
+                                                className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-600"
+                                            >
+                                                <option value="">Select</option>
+                                                <option value="Yes">Yes</option>
+                                                <option value="No">No</option>
+                                            </select>
+                                        </div>
+                                    </>
                                 )}
 
                                 {bankStatus !== 'Closed' && (
-                                    <div className="p-2 w-full sm:w-1/2 md:w-1/4">
-                                        <MuiButton variant="contained" color="primary" onClick={handleSetReminder} disabled={!newReminderDate}>Set Reminder</MuiButton>
+                                    <div className="p-2 w-full sm:w-1/2 lg:w-1/4">
+                                        <MuiButton 
+                                            variant="contained" 
+                                            color="primary" 
+                                            onClick={handleSetReminder} 
+                                            disabled={!newReminderDate}
+                                            fullWidth
+                                        >
+                                            Set Reminder
+                                        </MuiButton>
                                     </div>
                                 )}
                             </div>
@@ -1107,13 +1259,15 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         </Accordion> */}
 
                         {/* Submit Button */}
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-6 flex flex-col sm:flex-row justify-end gap-2">
                             {isLeadClosedInDB() && bankStatus === 'Closed' ? (
                                 <MuiButton
                                     variant="contained"
                                     color="warning"
                                     size="large"
                                     onClick={() => handleSubmit('In Progress')}
+                                    fullWidth={false}
+                                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Reopen Lead
                                 </MuiButton>
@@ -1122,8 +1276,10 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     variant="contained"
                                     color="success"
                                     size="large"
-                                    disabled={!actionPerformed}
+                                    disabled={!actionPerformed || (bankStatus === 'Logged In' && (!appId.trim() || !dsaCode.trim())) || (subStatus === 'Logged In' && (!appId.trim() || !dsaCode.trim())) || (bankStatus === 'Sanctioned' && (!sanctionAcc.trim() || !appId.trim() || !dsaCode.trim() || !sanctionRoi.trim() || !pfPaid.trim()))}
                                     onClick={() => handleSubmit()}
+                                    fullWidth={false}
+                                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Submit Lead Data
                                 </MuiButton>

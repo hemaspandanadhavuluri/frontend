@@ -59,11 +59,32 @@ const CallNotesSection = ({
 
     // Render main notes content
     const renderMainNotesContent = (isFullscreenView = false) => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        const currentBank = currentUser?.bank?.toLowerCase().trim();
+        const isCurrentUserBankExecutive = currentUser?.role === 'BankExecutive';
+
         const combinedHistory = [
             ...(lead.callHistory ? lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note') : []),
             ...(lead.externalCallHistory ? lead.externalCallHistory : [])
         ];
-        const filteredHistory = combinedHistory
+        
+        // CRITICAL FIX: Filter by targetBank for bank executives to ensure bank-specific note isolation
+        const bankFilteredHistory = isCurrentUserBankExecutive
+            ? combinedHistory.filter(log => {
+                // For bank executives, only show notes with targetBank matching their bank
+                if (log.targetBank) {
+                    return log.targetBank?.toLowerCase().trim() === currentBank;
+                }
+                // For legacy notes without targetBank, fall back to name matching
+                if (!currentUser || !currentUser.fullName || !currentUser.bank) {
+                    return false;
+                }
+                const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
+                return log.loggedByName === executiveName;
+              })
+            : combinedHistory;
+
+        const filteredHistory = bankFilteredHistory
             .filter(log => {
                 if (!searchMain) return true;
                 const searchTerm = searchMain.toLowerCase().trim();

@@ -34,11 +34,11 @@ const EmailTemplatesSection = ({ handleOpenEmailModal, emailMessage }) => {
                 </div>
                 <hr/>
                 <div>
-                    <h4 className="text-lg font-semibold mb-2">Banks Related - Issues</h4>
+                    <h4 className="section-title">Banks Related - Issues</h4>
                     <div className="flex flex-wrap gap-2">{loanIssues.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center loan-issues-btn"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.2-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                 </div>
                 <div>
-                    <h4 className="text-lg font-semibold mb-2">Miscellaneous Situations</h4>
+                    <h4 className="section-title">Miscellaneous Situations</h4>
                     <div className="flex flex-wrap gap-2">{miscSituations.map((item, index) => (<button type="button" onClick={() => handleOpenEmailModal(item)} key={index} className="px-3 py-1.5 text-sm font-medium text-white rounded-md hover:opacity-80 flex items-center misc-situations-btn"><svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>{item}</button>))}</div>
                 </div>
             </div>

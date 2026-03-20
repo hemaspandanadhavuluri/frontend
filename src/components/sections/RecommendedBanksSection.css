@@ -210,6 +210,15 @@
     background-color: #d97706;
 }
 
+.reopen {
+    background-color: #10b981;
+    color: white;
+}
+
+.reopen:hover {
+    background-color: #059669;
+}
+
 .negotiate {
     background-color: #8b5cf6;
     color: white;

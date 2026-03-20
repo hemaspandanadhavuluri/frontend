@@ -188,7 +188,7 @@ const EmployeeLogin = ({ onLoginSuccess }) => {
                     <Box sx={{ mb: 4 }}>
                         <Box component="img" src={logo} alt="Logo" sx={{ height: 80, mb: 2, objectFit: 'contain' }} />
                         <Typography variant="h4" component="h1" color="primary" sx={{ fontWeight: 700, mb: 1 }}>
-                            Employee Portal
+                            Portal Login
                         </Typography>
                         <Typography color="text.secondary" sx={{ mb: 3 }}>
                             {step === 'identifier' ? 'Enter your email or mobile number to receive OTP' : 'Enter the OTP sent to your device'}

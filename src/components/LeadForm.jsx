@@ -1395,7 +1395,45 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             alert('Please set a reminder before submitting the lead data.');
             return;
         }
-        handleFullLeadSave();
+        
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+            if (!currentUser) {
+                alert('You must be logged in to save lead data.');
+                return;
+            }
+
+            let leadToSave = { ...lead };
+            if (newNote.notes.trim()) {
+                const noteEntry = {
+                    notes: newNote.notes,
+                    callStatus: newNote.callStatus,
+                    loggedById: currentUser._id,
+                    loggedByName: currentUser.fullName,
+                    createdAt: new Date().toISOString()
+                };
+                leadToSave.callHistory = Array.isArray(leadToSave.callHistory)
+                    ? [...leadToSave.callHistory, noteEntry]
+                    : [noteEntry];
+            }
+
+            if (!leadToSave._id) {
+                const response = await axios.post(API_URL, leadToSave);
+                setLead(response.data);
+                setNewNote({ notes: '', callStatus: 'Connected' });
+                alert('Lead submitted successfully!');
+                navigate('/');
+            } else {
+                const response = await axios.put(`${API_URL}/${leadToSave._id}`, leadToSave);
+                setLead(response.data);
+                setNewNote({ notes: '', callStatus: 'Connected' });
+                alert('Lead submitted successfully!');
+                navigate('/');
+            }
+        } catch (error) {
+            console.error('Failed to submit lead data:', error);
+            alert('Failed to submit lead data. Check console for details.');
+        }
     };
 
     const handleUpdateTaskStatus = async (taskId, newStatus) => {
@@ -1500,30 +1538,73 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             }
 
             // If it's a bank connection email (public or private), fetch bank data and populate the list
-            if (templateName === 'Only Public Banks Connection Mail' || templateName === 'Only Priavte Lender Connection Mail') {
-                const type = templateName === 'Only Public Banks Connection Mail' ? 'public' : 'private';
-                try {
-                    const response = await axios.get(`${API_URL.replace('/leads', '/banks')}/connected/${type}`);
-                    const banks = response.data;
-
-                    // Build the list of banks and executives
+            if (templateName === 'Only Public Banks Connection Mail' || templateName === 'Only Priavte Lender Connection Mail' || templateName === 'Public and  Private Lender connection 1st Mail ') {
+                // 1st Mail First check if lead has assigned banks
+                const assignedBanks = lead.assignedBanks || [];
+                
+                if (assignedBanks.length === 0) {
+                    // No banks assigned yet - show message
+                    finalBody = finalBody.replace(
+                        /<ul id="connected-banks-list">[\s\S]*?<\/ul>/g, 
+                        '<p><em>No bank assigned yet. Please assign a bank to this lead first.</em></p>'
+                    );
+                    // Also try replacing just the opening tag if the above doesn't work
+                    if (!finalBody.includes('</ul>') || finalBody.includes('<ul id="connected-banks-list">')) {
+                        finalBody = finalBody.replace(
+                            /<ul id="connected-banks-list">[\s\S]*?$/m, 
+                            '<p><em>No bank assigned yet. Please assign a bank to this lead first.</em></p>'
+                        );
+                    }
+                } else {
+                    // Lead has assigned banks - show only those
+                    console.log('Lead has assigned banks:', assignedBanks);
+                    
                     let bankListHtml = '';
-                    banks.forEach(bank => {
-                        bankListHtml += `<li><strong>${bank.name}</strong>`;
-                        if (bank.relationshipManagers && bank.relationshipManagers.length > 0) {
-                            bank.relationshipManagers.forEach(rm => {
-                                bankListHtml += `<br/>- ${rm.name} (${rm.phoneNumber})`;
-                            });
+                    
+                    // Get unique bank names from assigned banks
+                    const assignedBankNames = [...new Set(assignedBanks.map(ab => ab.bankName))];
+                    
+                    // Create a map of assigned bank details for quick lookup
+                    const assignedBankDetails = {};
+                    assignedBanks.forEach(ab => {
+                        if (!assignedBankDetails[ab.bankName]) {
+                            assignedBankDetails[ab.bankName] = [];
                         }
-                        bankListHtml += `</li>`;
+                        assignedBankDetails[ab.bankName].push({
+                            name: ab.assignedRMName,
+                            email: ab.assignedRMEmail
+                        });
+                    });
+                    
+                    // For each assigned bank, show the details
+                    assignedBankNames.forEach(bankName => {
+                        const bankAssignments = assignedBankDetails[bankName];
+                        if (bankAssignments && bankAssignments.length > 0) {
+                            bankListHtml += `<li><strong>${bankName}</strong>`;
+                            bankAssignments.forEach(rm => {
+                                if (rm.name) {
+                                    bankListHtml += `<br/>- ${rm.name}<br/>📧 ${rm.email || 'N/A'}`;
+                                }
+                            });
+                            bankListHtml += `</li>`;
+                        } else {
+                            bankListHtml += `<li><strong>${bankName}</strong></li>`;
+                        }
                     });
 
                     // Replace the placeholder with the actual list
-                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', `<ul>${bankListHtml}</ul>`);
-                } catch (error) {
-                    console.error('Failed to fetch connected banks:', error);
-                    // Fallback: keep the placeholder or show an error message
-                    finalBody = finalBody.replace('<ul id="connected-banks-list"><!-- Dynamic list will be inserted here --></ul>', '<p>Unable to load bank information at this time.</p>');
+                    finalBody = finalBody.replace(
+                        /<ul id="connected-banks-list">[\s\S]*?<\/ul>/g, 
+                        `<ul>${bankListHtml}</ul>`
+                    );
+                    
+                    // Also try replacing just the opening tag if the above doesn't work
+                    if (!finalBody.includes('</ul>') || finalBody.includes('<ul id="connected-banks-list">')) {
+                        finalBody = finalBody.replace(
+                            /<ul id="connected-banks-list">[\s\S]*?$/m, 
+                            `<ul>${bankListHtml}</ul>`
+                        );
+                    }
                 }
             }
 

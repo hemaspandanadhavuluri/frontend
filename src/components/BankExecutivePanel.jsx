@@ -57,6 +57,10 @@ const BankExecutivePanel = ({ onLogout }) => {
     const [allLeadsCount, setAllLeadsCount] = useState(0);
     const [remindersCount, setRemindersCount] = useState(0);
     const [newLeadsCount, setNewLeadsCount] = useState(0);
+    const [sanctionedCount, setSanctionedCount] = useState(0);
+    const [paidPFCount, setPaidPFCount] = useState(0);
+    const [disbursedCount, setDisbursedCount] = useState(0);
+    const [closedCount, setClosedCount] = useState(0);
 
     const handleTabChange = (event, newValue) => {
         setCurrentTab(newValue);
@@ -190,9 +194,18 @@ const BankExecutivePanel = ({ onLogout }) => {
                 return assignment && (!lead.externalCallHistory || lead.externalCallHistory.length === 0);
             });
 
+            const sanctionedLeads = filtered.filter(lead => getBankStatus(lead) === 'Sanctioned');
+            const paidPFLeads = filtered.filter(lead => getBankStatus(lead) === 'Paid PF' || getBankStatus(lead) === 'PF Paid');
+            const disbursedLeads = filtered.filter(lead => getBankStatus(lead) === 'Disbursed');
+            const closedLeads = filtered.filter(lead => getBankStatus(lead) === 'Closed');
+
             setAllLeadsCount(filtered.length);
             setRemindersCount(reminderLeads.length);
             setNewLeadsCount(newLeads.length);
+            setSanctionedCount(sanctionedLeads.length);
+            setPaidPFCount(paidPFLeads.length);
+            setDisbursedCount(disbursedLeads.length);
+            setClosedCount(closedLeads.length);
 
             // 3. Set the final list for display based on the current tab
             if (currentTab === 1) { // Reminders
@@ -217,6 +230,14 @@ const BankExecutivePanel = ({ onLogout }) => {
                 setFilteredLeads(reminderLeads);
             } else if (currentTab === 2) { // New Leads
                 setFilteredLeads(newLeads);
+            } else if (currentTab === 3) { // Sanctioned
+                setFilteredLeads(sanctionedLeads);
+            } else if (currentTab === 4) { // Paid PF
+                setFilteredLeads(paidPFLeads);
+            } else if (currentTab === 5) { // Disbursed
+                setFilteredLeads(disbursedLeads);
+            } else if (currentTab === 6) { // Closed
+                setFilteredLeads(closedLeads);
             } else { // All Leads
                 setFilteredLeads(filtered);
             }
@@ -450,12 +471,12 @@ const BankExecutivePanel = ({ onLogout }) => {
             `}</style>
             <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
                 <AppBar position="static" sx={{ background: 'linear-gradient(45deg, #4f2b68  30%, #ec4c23 90%)' }}>
-                    <Toolbar>
-                        <Box component="img" src={logo} alt="Logo" sx={{ height: 40, mr: 2 }} />
-                        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                    <Toolbar sx={{ flexWrap: 'wrap', gap: 1 }}>
+                        <Box component="img" src={logo} alt="Logo" sx={{ height: { xs: 30, sm: 40 }, mr: 2 }} />
+                        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
                             {currentUser?.bank || 'Bank'} Executive Portal
                         </Typography>
-                        <Typography variant="body1" sx={{ mr: 2 }}>Welcome, {currentUser?.fullName}</Typography>
+                        <Typography variant="body1" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>Welcome, {currentUser?.fullName}</Typography>
                         {/* --- NEW: Notifications Icon --- */}
                         <IconButton
                     size="large"
@@ -552,9 +573,9 @@ const BankExecutivePanel = ({ onLogout }) => {
                     </List>
                 </Popover>
 
-                <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, sm: 4 } }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#4f2b68 ' }}>
+                <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 2, gap: 2 }}>
+                        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#4f2b68', fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
                             Assigned Leads
                         </Typography>
                         <TextField
@@ -563,21 +584,38 @@ const BankExecutivePanel = ({ onLogout }) => {
                             size="small"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            sx={{ width: '300px' }}
+                            sx={{ width: { xs: '100%', sm: '300px' } }}
                         />
                     </Box>
 
-                    <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider', marginBottom: 2 }}>
-                        <Tabs value={currentTab} onChange={handleTabChange} centered>
+                    <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider', marginBottom: 2, overflowX: 'auto' }}>
+                        <Tabs 
+                            value={currentTab} 
+                            onChange={handleTabChange} 
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            allowScrollButtonsMobile
+                            sx={{
+                                '& .MuiTab-root': {
+                                    minWidth: { xs: 'auto', sm: 120 },
+                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                    px: { xs: 1, sm: 2 }
+                                }
+                            }}
+                        >
                             <Tab label={`All Leads (${allLeadsCount})`} />
                             <Tab label={`Reminders (${remindersCount})`} />
                             <Tab label={`New Leads (${newLeadsCount})`} />
+                            <Tab label={`Sanctioned (${sanctionedCount})`} />
+                            <Tab label={`Paid PF (${paidPFCount})`} />
+                            <Tab label={`Disbursed (${disbursedCount})`} />
+                            <Tab label={`Closed (${closedCount})`} />
                         </Tabs>
                     </Box>
 
-                    <TableContainer component={Paper} elevation={3}>
-                        <Table>
-                            <TableHead sx={{ bgcolor: '#4f2b68 ', '& .MuiTableCell-root': { color: 'white' } }}>
+                    <TableContainer component={Paper} elevation={3} sx={{ overflowX: 'auto' }}>
+                        <Table sx={{ minWidth: { xs: 800, md: 'auto' } }}>
+                            <TableHead sx={{ bgcolor: '#4f2b68 ', '& .MuiTableCell-root': { color: 'white', fontSize: { xs: '0.75rem', sm: '0.875rem' }, py: { xs: 1.5, sm: 2 } } }}>
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Lead ID</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Student Name</TableCell>
@@ -593,10 +631,10 @@ const BankExecutivePanel = ({ onLogout }) => {
                                 {filteredLeads.length > 0 ? (
                                     filteredLeads.map((lead) => (
                                         <TableRow key={lead._id} hover>
-                                            <TableCell>{lead.leadID}</TableCell>
-                                            <TableCell>{lead.fullName}</TableCell>
-                                            <TableCell>{lead.loanType || 'N/A'}</TableCell>
-                                            <TableCell>
+                                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{lead.leadID}</TableCell>
+                                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{lead.fullName}</TableCell>
+                                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{lead.loanType || 'N/A'}</TableCell>
+                                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                                 {moment(lead.assignedBanks.find(b => b.bankName === currentUser.bank)?.assignedAt).format('DD MMM YYYY')}
                                             </TableCell>
                                             <TableCell>
@@ -605,6 +643,7 @@ const BankExecutivePanel = ({ onLogout }) => {
                                                     size="small"
                                                     color={getBankStatus(lead) === 'Closed' || getBankStatus(lead) === 'Rejected' ? 'error' : getBankStatus(lead) === 'Sanctioned' ? 'success' : 'primary'}
                                                     variant="outlined"
+                                                    sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -615,9 +654,10 @@ const BankExecutivePanel = ({ onLogout }) => {
                                                         size="small"
                                                         color="default"
                                                         variant="outlined"
+                                                        sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                                                     />
                                                 ) : (
-                                                    <Typography variant="body2" color="text.secondary">No calls</Typography>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>No calls</Typography>
                                                 )}
                                             </TableCell>
                                             <TableCell>
@@ -628,23 +668,32 @@ const BankExecutivePanel = ({ onLogout }) => {
                                                         size="small"
                                                         color={moment(getNextCallDate(lead)).isBefore(moment(), 'day') ? 'error' : 'primary'}
                                                         variant="filled"
+                                                        sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                                                     />
                                                 ) : (
-                                                    <Typography variant="body2" color="text.secondary">Not set</Typography>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Not set</Typography>
                                                 )}
                                             </TableCell>
                                             <TableCell align="center">
-                                                <Button variant="outlined" size="small" href={`/leads/${lead._id}/view`} target="_blank">
-                                                    View
-                                                </Button>
-                                                <Button
-                                                    variant="contained"
-                                                    size="small"
-                                                    sx={{ ml: 1 }}
-                                                    onClick={() => handleOpenOtpDialog(lead)}
-                                                >
-                                                    Access Documents
-                                                </Button>
+                                                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                                                    <Button 
+                                                        variant="outlined" 
+                                                        size="small" 
+                                                        href={`/leads/${lead._id}/view`} 
+                                                        target="_blank"
+                                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' }, px: { xs: 1, sm: 2 } }}
+                                                    >
+                                                        View
+                                                    </Button>
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        onClick={() => handleOpenOtpDialog(lead)}
+                                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' }, px: { xs: 1, sm: 2 } }}
+                                                    >
+                                                        Access Docs
+                                                    </Button>
+                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -182,16 +182,16 @@ const Dashboard = ({ leads, setLeads }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px' }}>
-          {/* Left Side: Leads and Table */}
-          <div style={{ flex: 2 }}>
+        <div className="dashboard-content-wrapper" style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+          {/* Center: Leads and Table */}
+          <div className="dashboard-main-content" style={{ flex: 1, minWidth: 0 }}>
             {/* Navigation and View Toggles */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-              <div>
-                <button className={`btn-fo ${activeView === 'all' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('all')} style={{ marginRight: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <button className={`btn-fo ${activeView === 'all' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('all')}>
                   All Leads ({leads.length})
                 </button>
-                <button className={`btn-fo ${activeView === 'reminders' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('reminders')} style={{ marginRight: '10px' }}>
+                <button className={`btn-fo ${activeView === 'reminders' ? 'btn-primary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('reminders')}>
                   Reminders ({reminderLeads.length})
                 </button>
                 <button className={`btn-fo ${activeView === 'newLeads' ? 'btn-secondary-fo' : 'btn-outlined-fo'}`} onClick={() => setActiveView('newLeads')}>
@@ -284,7 +284,7 @@ const Dashboard = ({ leads, setLeads }) => {
           </div>
 
           {/* Right Side: My Tasks and Reminders */}
-          <div style={{ flex: 1 }}>
+          <div className="dashboard-sidebar-content" style={{ flex: '0 0 320px', minWidth: '300px' }}>
             <div className="tasks-sidebar">
               <h3>My Tasks</h3>
               <div>

@@ -209,20 +209,27 @@ export const EMAIL_TEMPLATE_CONTENT = {
                 <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
                 <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
             </ul>
-            <p>Your assigned bank executive is [Executive Name] from [Bank Name], reachable at [Executive Mobile Number].</p>
+            <p><strong>Connected Private Banks and Executives:</strong></p>
+            <ul id="connected-banks-list">
+                <!-- Dynamic list will be inserted here -->
+            </ul>
             [UPLOAD_LINK_PLACEHOLDER]
             <p>Best regards,<br/>The Justap Team</p>`
     },
    
     "Public and  Private Lender connection 1st Mail ": {
-        subject: "Exploring Fast & Flexible Education Loan Options with Private Lenders",
+        subject: "Comprehensive Education Loan Options - Public & Private Banks",
         body: `
             <p>Dear [Student Name],</p>
-            <p>To provide you with a wide range of options, we are also exploring education loan opportunities with our esteemed <strong>Public Banking Services</strong>.</p>
-            <p>Private lenders often provide faster processing times and flexible criteria. With Justap, you benefit from:</p>
+            <p>To provide you with a wide range of options, we are exploring education loan opportunities with our esteemed <strong>Public and Private Banking partners</strong>.</p>
+            <p>We work with both public sector banks and private lenders to ensure you get the best possible loan terms. With Justap, you benefit from:</p>
             <ul>
-                <li><strong>Curated Options:</strong> We match your profile to the private lenders most likely to approve your loan.</li>
+                <li><strong>Curated Options:</strong> We match your profile to the lenders most likely to approve your loan.</li>
                 <li><strong>Hassle-Free Coordination:</strong> We manage the communication, so you don't have to deal with multiple follow-ups.</li>
+            </ul>
+            <p><strong>Connected Banks and Executives:</strong></p>
+            <ul id="connected-banks-list">
+                <!-- Dynamic list will be inserted here -->
             </ul>
             [UPLOAD_LINK_PLACEHOLDER]
             <p>Best regards,<br/>The Justap Team</p>`
@@ -1035,3 +1042,31 @@ export const negotiationOptions = [
     'Faster sanction',
     'Special approval'
 ];
+
+export const reopenOptions = [
+    'Student requested to reopen',
+    'New documents available',
+    'Profile improved',
+    'Student wants to proceed',
+    'Wrong closure',
+    'Other reason'
+];
+
+// Bank Connection APIs for Email Templates
+export const BANK_CONNECTION_API = {
+    PRIVATE_LENDERS: 'https://justtapcapital.com/api/banks/private-lenders',
+    PUBLIC_BANKS: 'https://justtapcapital.com/api/banks/public-banks',
+    ALL_CONNECTED: 'https://justtapcapital.com/api/banks/all-connected'
+};
+
+// Email Template Placeholders
+export const EMAIL_TEMPLATE_PLACEHOLDERS = {
+    STUDENT_NAME: '[Student Name]',
+    BANK_NAME: '[Bank Name]',
+    EXECUTIVE_NAME: '[Executive Name]',
+    EXECUTIVE_EMAIL: '[Executive Email]',
+    EXECUTIVE_MOBILE: '[Executive Mobile]',
+    COMPANY_NAME: '[Company/DSA Name]',
+    APPLICATION_ID: '[App ID]',
+    SANCTION_AMOUNT: '[Amount]'
+};

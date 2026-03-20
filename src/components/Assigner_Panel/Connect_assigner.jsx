@@ -174,7 +174,7 @@ const ConnectAssigner = () => {
         
         return (
             <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">{title} ({bankList.length})</h3>
+                <h3 className="text-lg font-semibold mb-3 border-b pb-2" style={{color:'white'}}>{title} ({bankList.length})</h3>
                 <div className="space-y-3">
                     {bankList.map(bank => (
                         <div key={bank._id} className="bg-white border rounded-lg p-4 shadow-sm">
