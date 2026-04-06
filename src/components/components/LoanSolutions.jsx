@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 
-export default function LoanSolutions() {
+export default function LoanSolutions({ onCheckEligibility }) {
   return (
     <section className="section-padding bg-slate-50 relative overflow-hidden">
       <div className="absolute inset-0 bg-brand/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none w-[800px] h-[800px]" />
@@ -79,7 +79,10 @@ export default function LoanSolutions() {
               Ideal for top ranked universities
             </li>
           </ul>
-          <button className="relative z-10 flex items-center gap-2 bg-white text-brand px-6 py-3 rounded-full font-bold hover:bg-slate-50 transition-colors shadow-lg shadow-white/10 group">
+          <button 
+            onClick={onCheckEligibility}
+            className="relative z-10 flex items-center gap-2 bg-white text-brand px-6 py-3 rounded-full font-bold hover:bg-slate-50 transition-colors shadow-lg shadow-white/10 group"
+          >
             Check Eligibility
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>

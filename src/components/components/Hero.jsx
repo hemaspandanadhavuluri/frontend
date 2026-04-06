@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { BadgeCheck, Building2, Earth, Clock, ArrowRight } from 'lucide-react';
 
-export default function Hero() {
+export default function Hero({ onCheckEligibility }) {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -52,7 +52,10 @@ export default function Hero() {
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-wrap gap-4 mb-14">
-              <button className="flex items-center gap-2 bg-brand text-white px-8 py-4 rounded-full font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-brand/50 hover:-translate-y-1">
+              <button 
+                onClick={onCheckEligibility}
+                className="flex items-center gap-2 bg-brand text-white px-8 py-4 rounded-full font-semibold hover:bg-brand-dark transition-all shadow-lg hover:shadow-brand/50 hover:-translate-y-1"
+              >
                 Check Loan Eligibility
                 <ArrowRight size={20} />
               </button>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
-export default function Calculators() {
+export default function Calculators({ onCheckEligibility }) {
   const [loanAmount, setLoanAmount] = useState(2500000);
   const [interestRate, setInterestRate] = useState(10.5);
   const [tenure, setTenure] = useState(10);
@@ -28,7 +28,10 @@ export default function Calculators() {
             <button className="w-full text-left px-6 py-4 bg-white rounded-xl border border-brand text-brand font-bold shadow-sm shadow-brand/10">
               Education Loan EMI Calculator
             </button>
-            <button className="w-full text-left px-6 py-4 bg-white rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-brand hover:text-brand transition-colors">
+            <button 
+              onClick={onCheckEligibility}
+              className="w-full text-left px-6 py-4 bg-white rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-brand hover:text-brand transition-colors"
+            >
               Loan Eligibility Checker
             </button>
             <button className="w-full text-left px-6 py-4 bg-white rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-brand hover:text-brand transition-colors">

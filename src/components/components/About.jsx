@@ -3,21 +3,21 @@ import { Target, Globe, Award, Users, ArrowRight } from 'lucide-react';
 
 const teamMembers = [
   {
-    name: "Rahul Sharma",
+    name: "Nagendra Dhavuluri",
     designation: "Founder & CEO",
     image: "/NagendraannaPNG.PNG",
-    bio: "Visionary leader with 15+ years in international education finance, dedicated to making global study accessible."
+    bio: "Visionary leader in international education finance, dedicated to making global study accessible."
   },
   {
-    name: "Priya Patel",
+    name: "Hema Spandna Sirasani ",
     designation: "Co-Founder & COO",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    bio: "Ex-investment banker passionate about structuring student-friendly loan products and seamless operations."
+    image: "/spandana.jpeg",
+    bio: "Technological leader managing technical support, internal web portals, and company systems to ensure seamless operational management." 
   },
   {
-    name: "Dr. Ananya Reddy",
+    name: "Bhaskar Dhavuluri",
     designation: "Head of Global Admissions",
-    image: "/Bhaskar anna.JPG.jpeg",
+    image: "/bhaskar-anna.jpeg",
     bio: "PhD holder with a track record of guiding 5000+ students into Ivy League and top-tier universities."
   }
 ];

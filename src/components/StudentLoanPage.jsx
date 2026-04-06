@@ -16,6 +16,7 @@ import Careers from './components/Careers'
 import FAQ from './components/FAQ'
 import Scholarships from './components/Scholarships'
 import About from './components/About'
+import StudentForm from './StudentForm'
 import { useState, useEffect } from 'react'
 
 // Custom SVG Icon Components to replace missing Lucide brand icons
@@ -43,6 +44,7 @@ const Facebook = (props) => (
 
 function StudentLoanPage() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -61,20 +63,20 @@ function StudentLoanPage() {
     }
     return (
       <>
-        <Hero />
+        <Hero onCheckEligibility={() => setIsApplyModalOpen(true)} />
         <UniversityMarquee />
         <WhyChooseUs />
         <Ecosystem />
         <Partners />
-        <LoanSolutions />
+        <LoanSolutions onCheckEligibility={() => setIsApplyModalOpen(true)} />
         <LoanBenefits />
-        <Calculators />
+        <Calculators onCheckEligibility={() => setIsApplyModalOpen(true)} />
         <TestSupport />
         <Services />
         <Process />
         <Testimonials />
         <Destinations />
-        <FinalCTA />
+        <FinalCTA onCheckEligibility={() => setIsApplyModalOpen(true)} />
         <FAQ />
       </>
     );
@@ -96,8 +98,7 @@ function StudentLoanPage() {
 
           <nav className="hidden lg:flex gap-8">
             <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('home'); }} className={`font-semibold transition-colors uppercase tracking-wider text-xs ${currentPage === 'home' ? 'text-brand' : 'text-slate-600 hover:text-brand'}`}>Study Abroad</a>
-            <a href="#" className="font-semibold text-slate-600 hover:text-brand transition-colors uppercase tracking-wider text-xs">Education Loans</a>
-            <a href="#" className="font-semibold text-slate-600 hover:text-brand transition-colors uppercase tracking-wider text-xs">Test Prep</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); setIsApplyModalOpen(true); }} className={`font-semibold transition-colors uppercase tracking-wider text-xs ${isApplyModalOpen ? 'text-brand' : 'text-slate-600 hover:text-brand'}`}>Education Loans</a>
             <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('scholarships'); }} className={`font-semibold transition-colors uppercase tracking-wider text-xs ${currentPage === 'scholarships' ? 'text-brand' : 'text-slate-600 hover:text-brand'}`}>Scholarships</a>
             <a href="#" onClick={(e) => { e.preventDefault(); setCurrentPage('about'); }} className={`font-semibold transition-colors uppercase tracking-wider text-xs ${currentPage === 'about' ? 'text-brand' : 'text-slate-600 hover:text-brand'}`}>About Us</a>
           </nav>
@@ -106,7 +107,10 @@ function StudentLoanPage() {
             <button className="hidden md:block text-sm font-bold text-slate-600 hover:text-brand transition-colors">
               Log In
             </button>
-            <button className="bg-brand hover:bg-brand-dark text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-brand/25">
+            <button 
+              onClick={() => setIsApplyModalOpen(true)}
+              className="bg-brand hover:bg-brand-dark text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-brand/25"
+            >
               Get Started
             </button>
           </div>
@@ -119,6 +123,28 @@ function StudentLoanPage() {
       <main className="flex-grow">
         {renderContent()}
       </main>
+
+      {/* MODAL FOR STUDENT FORM */}
+      {isApplyModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={() => setIsApplyModalOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl my-8 p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setIsApplyModalOpen(false)}
+              className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
+              aria-label="Close modal"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <StudentForm isModal={true} onSuccess={() => setIsApplyModalOpen(false)} />
+          </div>
+        </div>
+      )}
 
 
       {/* FOOTER */}
