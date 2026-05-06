@@ -49,18 +49,24 @@ const App = () => {
     useEffect(() => {
         if (isLoggedIn && currentUser) {
             const currentPath = location.pathname;
-            if (currentUser.role === 'BankExecutive') {
-                // Allowed paths for BankExecutive. Prevents redirect loop when opening lead details.
+            const role = currentUser.role;
+
+            if (role === 'BankExecutive') {
                 const isAllowedPath = currentPath === '/bank-panel' || 
                                       /^\/leads\/[a-f0-9]+\/view$/.test(currentPath) ||
                                       /^\/leads\/[a-f0-9]+\/documents$/.test(currentPath);
-
-                if (!isAllowedPath) {
-                    navigate('/bank-panel');
-                }
-            } else if (currentUser.role.toLowerCase() === 'assigner') {
-                if (currentPath !== '/assigner') {
-                    navigate('/assigner');
+                if (!isAllowedPath) navigate('/bank-panel');
+            } else if (role?.toLowerCase() === 'assigner') {
+                if (currentPath !== '/assigner') navigate('/assigner');
+            } else if (role === 'Counsellor') {
+                if (!currentPath.startsWith('/counsellor')) navigate('/counsellor');
+            } else if (role === 'HR') {
+                if (currentPath !== '/hr-panel') navigate('/hr-panel');
+            } else {
+                // Default redirect for internal roles (FO, ZonalHead, RegionalHead) 
+                // if they are still on a login page
+                if (['/login', '/bank-login', '/assigner-login'].includes(currentPath)) {
+                    navigate('/');
                 }
             }
         }
