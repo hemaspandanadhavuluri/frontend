@@ -29,7 +29,7 @@ import { CheckCircle, UploadFile, Visibility } from '@mui/icons-material';
 
 
 // --- NEW: API Key for Currency Conversion ---
-const EXCHANGE_RATE_API_KEY = process.env.REACT_APP_EXCHANGE_RATE_API_KEY; 
+const EXCHANGE_RATE_API_KEY = '96f3c67b0e061f1c0ed660c0'; 
 // IMPORTANT: Your API key should be in a .env file as REACT_APP_EXCHANGE_RATE_API_KEY. Get a free key from https://www.exchangerate-api.com.
 
 // Custom Accordion component using custom CSS classes

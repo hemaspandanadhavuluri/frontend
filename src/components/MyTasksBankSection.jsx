@@ -4,21 +4,82 @@ import { Paper, Typography, Box, Chip, Divider, Button } from '@mui/material';
 import { API_URL } from '../constants';
 import moment from 'moment';
 
-const MyTasksBankSection = ({ tasks, leadId, onTaskUpdate }) => {
+const MyTasksBankSection = ({ tasks, lead, leadId, onTaskUpdate, setLead }) => {
     const [loading, setLoading] = useState(false);
 
-    // Filter tasks - show only tasks with no targetBank (general tasks) or tasks for this specific bank
+    const logTaskActionToLead = async (subject, action) => {
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        if (!currentUser) return;
+
+        const updatePayload = {
+            externalCallNote: {
+                notes: `[Task Update] Task "${subject}" marked as ${action}.`,
+                loggedByName: `${currentUser.fullName} (${currentUser.bank})`,
+                callStatus: 'Log',
+                targetBank: currentUser.bank
+            }
+        };
+
+        try {
+            const response = await axios.put(`${API_URL}/${leadId}`, updatePayload, {
+                headers: { Authorization: `Bearer ${currentUser.token}` }
+            });
+            if (setLead) {
+                setLead(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to log task action to lead history:', error);
+        }
+    };
+
     // The parent component (BankLeadForm) already filters by bank, so we just display what we receive
 
-    const handleMarkDone = async (taskId) => {
+    const handleMarkDone = async (task) => {
         setLoading(true);
         try {
-            const response = await axios.put(`${API_URL.replace('/leads', '/tasks')}/${taskId}`, { 
-                status: 'Done' 
-            });
-            
-            if (onTaskUpdate) {
-                onTaskUpdate(response.data);
+            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+            const currentBank = currentUser?.bank;
+
+            // Check if this task corresponds to an unread notification (like 'Wrong Update')
+            const myAssignment = lead?.assignedBanks?.find(b => 
+                b.bankName?.toLowerCase().trim() === currentBank?.toLowerCase().trim()
+            );
+
+            let matchingNotif = null;
+            if (myAssignment?.notifications) {
+                matchingNotif = myAssignment.notifications.find(n => {
+                    const notifKey = `${n.type}: ${n.subType}`;
+                    return !n.isRead && task.subject === notifKey;
+                });
+            }
+
+            if (matchingNotif) {
+                // Specialized API: Marks notification read, logs history, and completes task
+                const response = await axios.put(`${API_URL}/${leadId}/notifications/${matchingNotif._id}/read`, {
+                    bankName: currentBank,
+                    fromName: currentUser.fullName
+                });
+
+                // Update the lead state in the parent with refreshed history notes
+                if (response.data.lead && setLead) {
+                    setLead(response.data.lead);
+                }
+
+                // Notify parent to remove the task from the active view
+                if (onTaskUpdate) {
+                    onTaskUpdate({ ...task, status: 'Done' });
+                }
+            } else {
+                // Standard task completion logic
+                const response = await axios.put(`${API_URL.replace('/leads', '/tasks')}/${task._id}`, { 
+                    status: 'Done' 
+                });
+                
+                await logTaskActionToLead(task.subject, 'Done');
+                
+                if (onTaskUpdate) {
+                    onTaskUpdate(response.data);
+                }
             }
         } catch (error) {
             console.error('Failed to update task:', error);
@@ -111,7 +172,7 @@ const MyTasksBankSection = ({ tasks, leadId, onTaskUpdate }) => {
                                     variant="contained" 
                                     color="success" 
                                     size="small"
-                                    onClick={() => handleMarkDone(task._id)}
+                                    onClick={() => handleMarkDone(task)}
                                     disabled={loading}
                                 >
                                     Mark Done

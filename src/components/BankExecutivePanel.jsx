@@ -102,56 +102,58 @@ const BankExecutivePanel = ({ onLogout }) => {
 
         fetchBankExecutiveDetails();
 
-        const fetchLeads = async () => {
-            if (!storedUser?.bank) {
-                setLoading(false);
-                return;
-            }
-            try {
-                // Fetch leads specifically for this bank executive's bank
-                const response = await axios.get(API_URL, {
-                    params: {
-                        role: storedUser.role,
-                        bank: storedUser.bank
-                    },
-                    headers: { Authorization: `Bearer ${storedUser.token}` }
-                });
-
-                setLeads(response.data);
-                setFilteredLeads(response.data);
-
-                // --- NEW: Process Notifications ---
-                const allNotifications = [];
-                response.data.forEach(lead => {
-                    const myAssignment = lead.assignedBanks?.find(b => 
-                        b.bankName?.toLowerCase().trim() === storedUser.bank?.toLowerCase().trim()
-                    );
-                    
-                    if (myAssignment && myAssignment.notifications) {
-                        myAssignment.notifications.forEach(notif => {
-                            if (!notif.isRead) {
-                                allNotifications.push({
-                                    ...notif,
-                                    leadId: lead._id,
-                                    leadName: lead.fullName,
-                                    leadID: lead.leadID
-                                });
-                            }
-                        });
-                    }
-                });
-                // Sort by date desc
-                allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setNotifications(allNotifications);
-            } catch (error) {
-                console.error('Failed to fetch leads:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchLeads();
+        fetchLeads(storedUser);
+        
+        // Periodically refresh leads to sync notifications and task status from other tabs
+        const interval = setInterval(() => fetchLeads(storedUser), 30000); 
+        return () => clearInterval(interval);
     }, []);
+
+    const fetchLeads = async (user) => {
+        const storedUser = user || currentUser;
+        if (!storedUser?.bank) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const response = await axios.get(API_URL, {
+                params: {
+                    role: storedUser.role,
+                    bank: storedUser.bank
+                },
+                headers: { Authorization: `Bearer ${storedUser.token}` }
+            });
+
+            setLeads(response.data);
+
+            // Process Notifications
+            const allNotifications = [];
+            response.data.forEach(lead => {
+                const myAssignment = lead.assignedBanks?.find(b => 
+                    b.bankName?.toLowerCase().trim() === storedUser.bank?.toLowerCase().trim()
+                );
+                
+                if (myAssignment && myAssignment.notifications) {
+                    myAssignment.notifications.forEach(notif => {
+                        if (!notif.isRead) {
+                            allNotifications.push({
+                                ...notif,
+                                leadId: lead._id,
+                                leadName: lead.fullName,
+                                leadID: lead.leadID
+                            });
+                        }
+                    });
+                }
+            });
+            allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setNotifications(allNotifications);
+        } catch (error) {
+            console.error('Failed to fetch leads:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // auto-open when notifications arrive
     useEffect(() => {
@@ -275,7 +277,8 @@ const BankExecutivePanel = ({ onLogout }) => {
         // Mark as read in backend
         try {
             await axios.put(`${API_URL}/${notification.leadId}/notifications/${notification._id}/read`, {
-                bankName: currentUser.bank
+                bankName: currentUser.bank,
+                fromName: currentUser.fullName
             });
             
             // Remove from local state

@@ -509,7 +509,18 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
     };
 
     const handleTaskUpdate = (updatedTask) => {
-        setLeadTasks(leadTasks.map(task => task._id === updatedTask._id ? updatedTask : task));
+        // If it's a notification-linked task (contains a colon like "Wrong Update: ..."), 
+        // mark all tasks with the same subject as Done in the local state.
+        const isNotificationTask = updatedTask.subject.includes(': ');
+        
+        if (isNotificationTask && updatedTask.status === 'Done') {
+            setLeadTasks(prev => prev.map(t => 
+                t.subject === updatedTask.subject ? { ...t, status: 'Done' } : t
+            ));
+        } else {
+            // Standard task update
+            setLeadTasks(leadTasks.map(task => task._id === updatedTask._id ? updatedTask : task));
+        }
     };
 
     // --- NEW: Centralized Submit Handler ---
@@ -727,7 +738,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         // DO NOT show tasks without targetBank - they are not bank-specific
                         const bankFilteredTasks = leadTasks.filter(task => {
                             // If task has targetBank, it must match the current user's bank exactly
-                            if (task.targetBank) {
+                            if (task.targetBank && task.status === 'Open') {
                                 return task.targetBank?.toLowerCase().trim() === currentBank;
                             }
                             // If task has NO targetBank, do NOT show it - this prevents cross-bank leakage
@@ -737,6 +748,8 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                         return (
                             <MyTasksSection
                                 tasks={bankFilteredTasks}
+                                setLead={setLead}
+                                lead={lead}
                                 leadId={lead._id}
                                 onTaskUpdate={handleTaskUpdate}
                             />
@@ -978,7 +991,7 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
 
                             </div>
                         </Accordion>
-                        {/* --- 9. NOTES & HISTORY --- */}
+                    {/* --- 9. NOTES & HISTORY --- */}
                         <Accordion title="Notes & History" icon="💬" defaultExpanded>
                             <div className="space-y-4 max-h-96 overflow-y-auto border p-4 rounded-md bg-gray-50 mb-6">
                                 {(() => {
