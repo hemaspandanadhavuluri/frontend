@@ -16,15 +16,37 @@ const RemindersSection = ({
     const usePriorityReasons = priorReasons || priorityReasons;
     const useCloseReasons = clReasons || closeReasons;
 
-    // Helper function to format date for datetime-local input
-    const formatLocalDateTime = (date) => {
+    // Helper functions to format date and time for split inputs
+    const getDatePart = (date) => {
+        if (!date) return '';
         const d = new Date(date);
+        if (isNaN(d.getTime())) return '';
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const getTimePart = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return '';
         const hours = String(d.getHours()).padStart(2, '0');
         const minutes = String(d.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+        return `${hours}:${minutes}`;
+    };
+
+    const reminderDateVal = lead.reminderCallDate ? getDatePart(lead.reminderCallDate) : '';
+    const reminderTimeVal = lead.reminderCallDate ? getTimePart(lead.reminderCallDate) : '';
+
+    const handleReminderChange = (dateVal, timeVal) => {
+        if (!dateVal) {
+            handleDateChange('reminderCallDate', null);
+            return;
+        }
+        const timePart = timeVal ? `${timeVal}:00` : '00:00:00';
+        const combinedStr = `${dateVal}T${timePart}`;
+        handleDateChange('reminderCallDate', new Date(combinedStr));
     };
 
     return (
@@ -49,23 +71,41 @@ const RemindersSection = ({
                         className="form-input"
                     />
                 </div>
-                <div className="date-field sm:w-1/2 md:w-1/4">
-                    <label className="date-label">Set New Reminder Date & Time</label>
-                    <input
-                        type="datetime-local"
-                        value={lead.reminderCallDate ? formatLocalDateTime(lead.reminderCallDate) : ''}
-                        onChange={(e) => handleDateChange('reminderCallDate', e.target.value ? new Date(e.target.value + ':00') : null)}
-                        className="form-input"
-                    />
-                    <button
-                        type="button"
-                        onClick={handleSetReminder}
-                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                        style={{ background: '#512967' }}
-                    >
-                        Set Reminder
-                    </button>
-                </div>
+                {lead.leadStatus === 'Close' ? (
+                    <div className="date-field sm:w-1/2 md:w-1/4" style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '6px', padding: '10px 14px', fontSize: '13px', color: '#92400e', lineHeight: '1.4' }}>
+                            ℹ️ Status is <strong>Close</strong>. No reminder is needed. Go to <strong>Call Notes</strong> to write a note and click <strong>SUBMIT LEAD DATA</strong>.
+                        </div>
+                    </div>
+                ) : (
+                    <div className="date-field sm:w-1/2 md:w-1/4">
+                        <label className="date-label">Set New Reminder Date & Time</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                type="date"
+                                value={reminderDateVal}
+                                onChange={(e) => handleReminderChange(e.target.value, reminderTimeVal)}
+                                className="form-input"
+                                style={{ flex: 3 }}
+                            />
+                            <input
+                                type="time"
+                                value={reminderTimeVal}
+                                onChange={(e) => handleReminderChange(reminderDateVal, e.target.value)}
+                                className="form-input"
+                                style={{ flex: 2 }}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleSetReminder}
+                            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            style={{ background: '#512967' }}
+                        >
+                            Set Reminder
+                        </button>
+                    </div>
+                )}
 
                 <div className="form-group">
                     <label className="form-label">Final Status</label>

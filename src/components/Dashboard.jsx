@@ -17,6 +17,7 @@ const getStatusClass = (status) => {
     case "New":
       return "status-info";
     case "Close":
+    case "Closed":
       return "status-error";
     default:
       return "";
@@ -104,7 +105,7 @@ const Dashboard = ({ leads, setLeads }) => {
   useEffect(() => {
     setNewLeads(leads.filter(lead => !lead.callHistory || lead.callHistory.length === 0));
     const allReminders = leads.filter(lead =>
-      lead.reminderCallDate || (lead.reminders && lead.reminders.some(reminder => !reminder.done))
+      lead.leadStatus !== 'Close' && lead.leadStatus !== 'Closed' && (lead.reminderCallDate || (lead.reminders && lead.reminders.some(reminder => !reminder.done)))
     ).sort((a, b) => {
       const dateA = a.reminderCallDate || (a.reminders && a.reminders.find(reminder => !reminder.done)?.date);
       const dateB = b.reminderCallDate || (b.reminders && b.reminders.find(reminder => !reminder.done)?.date);
@@ -223,7 +224,7 @@ const Dashboard = ({ leads, setLeads }) => {
                     const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
                     const isMissed = reminderDate && moment(reminderDate).isBefore(moment(), 'day');
                     const reminder = lead.reminders && lead.reminders.find(r => !r.done);
-                    const statusToShow = reminder ? reminder.status : lead.leadStatus;
+                    const statusToShow = lead.leadStatus || (reminder ? reminder.status : 'No status');
                     return (
                       <tr key={lead._id} className={`row-hover-fo ${isMissed ? 'row-missed-fo' : ''}`}>
                         <td><strong>{lead.leadID}</strong></td>
@@ -241,7 +242,7 @@ const Dashboard = ({ leads, setLeads }) => {
                   {activeView === 'reminders' && reminderLeads.map(lead => {
                     const reminderDate = lead.reminderCallDate || (lead.reminders && lead.reminders.find(reminder => !reminder.done)?.date);
                     const reminder = lead.reminders && lead.reminders.find(r => !r.done);
-                    const statusToShow = reminder ? reminder.status : lead.leadStatus;
+                    const statusToShow = lead.leadStatus || (reminder ? reminder.status : 'No status');
                     return (
                       <tr key={lead._id} className="row-hover-fo">
                         <td><strong>{lead.leadID}</strong></td>
@@ -313,7 +314,7 @@ const Dashboard = ({ leads, setLeads }) => {
                   (() => {
                     const reminderDate = upcomingReminders[0].reminderCallDate || (upcomingReminders[0].reminders && upcomingReminders[0].reminders.find(reminder => !reminder.done)?.date);
                     const reminder = upcomingReminders[0].reminders && upcomingReminders[0].reminders.find(r => !r.done);
-                    const statusToShow = reminder ? reminder.status : upcomingReminders[0].leadStatus;
+                    const statusToShow = upcomingReminders[0].leadStatus || (reminder ? reminder.status : 'No status');
                     const isToday = reminderDate && moment(reminderDate).isSame(moment(), 'day');
                     return (
                       <div className={`reminder-item ${isToday ? 'blinking-reminder' : ''}`}>

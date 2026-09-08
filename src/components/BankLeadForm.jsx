@@ -686,7 +686,6 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
             });
 
             const payload = {
-                externalCallHistory: lead.externalCallHistory || [],
                 assignedBanks: updatedAssignedBanks
             };
 
@@ -998,32 +997,54 @@ const BankLeadForm = ({ leadData, onBack, onUpdate }) => {
                                     const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
                                     const currentBank = currentUser?.bank?.toLowerCase().trim();
                                     
-                                    // STRICT FIX: Filter externalCallHistory by targetBank field for proper bank isolation
-                                    // Notes should only be visible to the specific bank they belong to
+                                    // STRICT FIX: Filter externalCallHistory for proper bank isolation
+                                    // Shows notes targeted to this bank, assignment notes mentioning this bank, or notes written by this bank officer
                                     const filteredHistory = lead.externalCallHistory
                                         ? lead.externalCallHistory.filter(log => {
-                                            // If the note has a targetBank field, only show if it matches current user's bank
+                                            if (!currentBank) return true;
+                                            // 1. If the note explicitly has targetBank set
                                             if (log.targetBank) {
-                                                return log.targetBank?.toLowerCase().trim() === currentBank;
+                                                return log.targetBank.toLowerCase().trim() === currentBank;
                                             }
-                                            // For legacy notes without targetBank, fall back to name matching
-                                            // but this is less secure - only show notes that exactly match the current user
-                                            if (!currentUser || !currentUser.fullName || !currentUser.bank) {
-                                                return false;
+                                            // 2. If the note text mentions assignment to or belongs to this bank
+                                            if (log.notes && log.notes.toLowerCase().includes(currentBank)) {
+                                                return true;
                                             }
-                                            const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
-                                            return log.loggedByName === executiveName;
+                                            // 3. If logged by this bank executive
+                                            if (currentUser) {
+                                                if (log.loggedByName === currentUser.fullName) return true;
+                                                if (currentUser.bank && log.loggedByName?.toLowerCase().includes(currentBank)) return true;
+                                                const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
+                                                if (log.loggedByName === executiveName) return true;
+                                            }
+                                            return false;
                                         })
                                         : [];
 
+                                    const getNoteTimestamp = (log) => {
+                                        if (log && log._id && typeof log._id === 'string' && /^[0-9a-fA-F]{24}$/.test(log._id)) {
+                                            return new Date(parseInt(log._id.substring(0, 8), 16) * 1000);
+                                        }
+                                        if (log && log.createdAt && !isNaN(new Date(log.createdAt).getTime())) {
+                                            return new Date(log.createdAt);
+                                        }
+                                        return new Date();
+                                    };
+
                                     if (filteredHistory.length > 0) {
-                                        return filteredHistory.slice().reverse().map((log, index) => (
+                                        return filteredHistory.slice().sort((a, b) => {
+                                            const timeA = getNoteTimestamp(a).getTime();
+                                            const timeB = getNoteTimestamp(b).getTime();
+                                            if (timeA !== timeB) return timeB - timeA;
+                                            if (a._id && b._id) return b._id.toString().localeCompare(a._id.toString());
+                                            return 0;
+                                        }).map((log, index) => (
                                             <div key={index} className={`p-3 rounded-lg border-l-4 bg-white ${log.callStatus === 'Email' ? 'border-green-400' : 'border-blue-400'} shadow-sm`}>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <p className="font-bold text-sm text-gray-800">
                                                         {log.loggedByName}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                                                    <p className="text-xs text-gray-500">{moment(getNoteTimestamp(log)).format('DD MMM YYYY, h:mm a')}</p>
                                                 </div>
                                                 <p className="text-gray-700 text-sm">{log.notes}</p>
                                             </div>

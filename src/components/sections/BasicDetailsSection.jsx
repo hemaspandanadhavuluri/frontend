@@ -89,41 +89,40 @@ const BasicDetailsSection = ({
             <div className="form-row">
                 {renderTextField("fullName", "Full Name *", lead.fullName, handleChange, "field-container", "", isFieldDisabled("fullName", lead.fullName))}
                 
-                {/* Email field: if empty, enable with blinking effect and show mobile-based placeholder */}
+                {/* Email field: if empty or temporary mobile@gmail.com, enable with blinking effect */}
                 {(() => {
-                    const isEmailEmpty = !lead.email || lead.email.trim() === '';
-                    
                     // Get first mobile number and extract digits after country code
                     let mobileNumber = '';
-                    
                     if (lead.mobileNumbers && lead.mobileNumbers.length > 0) {
                         const firstMobile = lead.mobileNumbers[0];
                         if (firstMobile) {
-                            // Handle different formats: "+91-9876543210" or "+91-9876543210 " or just "9876543210"
                             const mobileParts = firstMobile.split('-');
                             if (mobileParts.length > 1) {
-                                // Format is "+91-number" - get the number part after the dash
-                                mobileNumber = mobileParts[1]?.replace(/\s/g, '') || '';
+                                mobileNumber = (mobileParts[1] || '').replace(/\D/g, '');
                             } else {
-                                // Try to extract just digits from the string
-                                const digitsOnly = firstMobile.replace(/\D/g, '');
-                                if (digitsOnly.length >= 10) {
-                                    mobileNumber = digitsOnly.slice(-10); // Get last 10 digits
-                                }
+                                mobileNumber = firstMobile.replace(/\D/g, '');
                             }
                         }
                     }
                     
-                    // Create email placeholder from student's mobile number (use last 10 digits if longer)
                     const displayMobile = mobileNumber.length > 10 ? mobileNumber.slice(-10) : mobileNumber;
-                    const emailPlaceholder = displayMobile ? `${displayMobile}@gmail.com` : 'Enter email id';
+                    const tempPlaceholderEmail = displayMobile ? `${displayMobile}@gmail.com` : '';
                     
-                    // If email is empty, field is enabled with blinking class
-                    // If email exists, use normal disabled state
-                    const isEmailDisabled = isEmailEmpty ? false : isFieldDisabled("email", lead.email);
-                    const emailContainerClass = isEmailEmpty ? "field-container blinking-field" : "field-container";
+                    const currentEmail = (lead.email || '').trim().toLowerCase();
+                    const isEmailEmpty = !currentEmail;
+                    // Check if current email is the temporary placeholder (e.g. 9876543210@gmail.com or matches student's phone)
+                    const isTemporaryEmail = isEmailEmpty || 
+                        (tempPlaceholderEmail && currentEmail === tempPlaceholderEmail.toLowerCase()) || 
+                        /^\d{10}@gmail\.com$/i.test(currentEmail);
                     
-                    return renderTextField("email", "Email id *", lead.email, handleChange, emailContainerClass, emailPlaceholder, isEmailDisabled);
+                    // If email is empty or temporary placeholder, field is enabled with blinking class
+                    // If real email exists, use normal disabled/enabled state
+                    const isEmailDisabled = isTemporaryEmail ? false : isFieldDisabled("email", lead.email);
+                    const emailContainerClass = isTemporaryEmail ? "field-container blinking-field" : "field-container";
+                    const emailLabel = isTemporaryEmail ? "Email id * (Update Required)" : "Email id *";
+                    const emailPlaceholder = tempPlaceholderEmail || 'Enter student email id';
+                    
+                    return renderTextField("email", emailLabel, lead.email, handleChange, emailContainerClass, emailPlaceholder, isEmailDisabled);
                 })()}
 
                 {!lead._id && (

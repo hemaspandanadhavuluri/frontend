@@ -618,7 +618,7 @@ const FurtherEducationSection = ({
         Enter a university and click the button below to check the prime university list.
       </div>
 
-      <button className="prime-btn" onClick={handleShowPrimeBanks}>
+      <button type="button" className="prime-btn" onClick={handleShowPrimeBanks}>
         PRIME UNIVERSITY LIST
       </button>
 
@@ -648,7 +648,7 @@ const FurtherEducationSection = ({
       {showModal && modalContent && (
         <div className="modal-overlay_ed" onClick={handleCloseModal}>
           <div className="modal-content_ed" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn_ed" onClick={handleCloseModal}>
+            <button type="button" className="modal-close-btn_ed" onClick={handleCloseModal}>
               ✕
             </button>
 
@@ -678,7 +678,7 @@ const FurtherEducationSection = ({
               </div>
             </div>
 
-            <button className="modal-close-action-btn_ed" onClick={handleCloseModal}>
+            <button type="button" className="modal-close-action-btn_ed" onClick={handleCloseModal}>
               Close
             </button>
           </div>

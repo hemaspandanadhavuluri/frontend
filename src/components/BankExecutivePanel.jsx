@@ -397,17 +397,18 @@ const BankExecutivePanel = ({ onLogout }) => {
                 return assignment;
             });
 
-            // Add note to externalCallHistory instead of main callHistory
+            // Add note to externalCallHistory atomically
             const newExternalNote = {
                 notes: newNote || 'Reminder set for next call',
                 callStatus: 'Connected',
-                loggedByName: storedUser?.fullName || 'Bank Executive',
+                targetBank: storedUser?.bank,
+                loggedByName: storedUser?.fullName ? `${storedUser.fullName} (${storedUser.bank || 'Bank'})` : 'Bank Executive',
                 createdAt: new Date().toISOString()
             };
 
             const payload = {
                 assignedBanks: updatedAssignedBanks,
-                externalCallHistory: [...(selectedLead.externalCallHistory || []), newExternalNote]
+                externalCallNote: newExternalNote
             };
 
             await axios.put(`${API_URL}/${selectedLead._id}`, payload, {
@@ -759,29 +760,62 @@ const BankExecutivePanel = ({ onLogout }) => {
                                         History & Notes
                                     </Typography>
                                     <Box sx={{ maxHeight: 200, overflowY: 'auto', mt: 1, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                        {((selectedLead.callHistory || []).concat(selectedLead.externalCallHistory || [])).length > 0 ? (
-                                            [...(selectedLead.callHistory || []), ...(selectedLead.externalCallHistory || [])]
-                                            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                                            .slice(0, 10)
-                                            .map((call, index) => (
-                                                <Box key={index} sx={{ mb: 2, p: 1, borderLeft: '3px solid #4f2b68', bgcolor: 'white', borderRadius: 1 }}>
-                                                    <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                                                        {moment(call.createdAt).format('DD MMM YYYY, h:mm A')}
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        <strong>Status:</strong> {call.callStatus || 'N/A'}
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        <strong>By:</strong> {call.loggedByName || 'Bank'}
-                                                    </Typography>
-                                                    <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>
-                                                        "{call.notes}"
-                                                    </Typography>
-                                                </Box>
-                                            ))
-                                        ) : (
-                                            <Typography variant="body2" color="text.secondary">No call history available.</Typography>
-                                        )}
+                                        {(() => {
+                                            const currentBank = currentUser?.bank?.toLowerCase().trim();
+                                            const filteredExternalHistory = (selectedLead.externalCallHistory || []).filter(log => {
+                                                if (!currentBank) return true;
+                                                // 1. If targetBank matches
+                                                if (log.targetBank) {
+                                                    return log.targetBank.toLowerCase().trim() === currentBank;
+                                                }
+                                                // 2. If note mentions this bank
+                                                if (log.notes && log.notes.toLowerCase().includes(currentBank)) {
+                                                    return true;
+                                                }
+                                                // 3. If logged by this bank executive
+                                                if (currentUser) {
+                                                    if (log.loggedByName === currentUser.fullName) return true;
+                                                    if (currentUser.bank && log.loggedByName?.toLowerCase().includes(currentBank)) return true;
+                                                    const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
+                                                    if (log.loggedByName === executiveName) return true;
+                                                }
+                                                return false;
+                                            });
+                                            const getNoteTimestamp = (log) => {
+                                                if (log && log._id && typeof log._id === 'string' && /^[0-9a-fA-F]{24}$/.test(log._id)) {
+                                                    return new Date(parseInt(log._id.substring(0, 8), 16) * 1000);
+                                                }
+                                                if (log && log.createdAt && !isNaN(new Date(log.createdAt).getTime())) {
+                                                    return new Date(log.createdAt);
+                                                }
+                                                return new Date();
+                                            };
+
+                                            const combinedNotes = [...(selectedLead.callHistory || []), ...filteredExternalHistory]
+                                                .sort((a, b) => getNoteTimestamp(b).getTime() - getNoteTimestamp(a).getTime())
+                                                .slice(0, 10);
+                                            
+                                            return combinedNotes.length > 0 ? (
+                                                combinedNotes.map((call, index) => (
+                                                    <Box key={index} sx={{ mb: 2, p: 1, borderLeft: '3px solid #4f2b68', bgcolor: 'white', borderRadius: 1 }}>
+                                                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                                                            {moment(getNoteTimestamp(call)).format('DD MMM YYYY, h:mm A')}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            <strong>Status:</strong> {call.callStatus || 'N/A'}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            <strong>By:</strong> {call.loggedByName || 'Bank'}
+                                                        </Typography>
+                                                        <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                                                            "{call.notes}"
+                                                        </Typography>
+                                                    </Box>
+                                                ))
+                                            ) : (
+                                                <Typography variant="body2" color="text.secondary">No call history available.</Typography>
+                                            );
+                                        })()}
                                     </Box>
                                 </Grid>
                             </Grid>

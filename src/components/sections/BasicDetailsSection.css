@@ -162,32 +162,38 @@ select:disabled,
   background-color: #e5e7eb;
 }
 
-/* Blinking animation for empty email field - Bright effect */
+/* Blinking animation for empty / temporary email field - Attention-grabbing effect */
 @keyframes blink {
   0%, 100% {
-    border-color: #9c27b0;
-    box-shadow: 0 0 0 0 rgba(156, 39, 176, 0);
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
   }
   50% {
-    border-color: #e040fb;
-    box-shadow: 0 0 0 4px rgba(224, 64, 251, 0.6), 0 0 10px rgba(156, 39, 176, 0.4);
-    background-color: #fce4ff;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 0 12px rgba(245, 158, 11, 0.5);
+    background-color: #fffbeb;
   }
 }
 
 .blinking-field .field-input {
-  animation: blink 1s ease-in-out infinite;
-  border: 2px solid #9c27b0;
+  animation: blink 1.2s ease-in-out infinite;
+  border: 2px solid #f59e0b !important;
+  font-weight: 500;
+}
+
+.blinking-field .field-label {
+  color: #d97706;
+  font-weight: 700;
 }
 
 .blinking-field .field-input::placeholder {
-  color: #7b1fa2;
+  color: #b45309;
   font-weight: 500;
 }
 
 .blinking-field .field-input:focus {
   animation: none;
-  border-color: #9c27b0;
-  box-shadow: 0 0 0 1px #9c27b0;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
   background-color: white;
 }

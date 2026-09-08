@@ -34,7 +34,7 @@ const CreateNewLeadPage = () => {
                 region: user.region || '',
                 assignedFOId: user._id || '',
                 assignedFO: user.fullName || '',
-                assignedFOPhone: user.mobileNumber || '',
+                assignedFOPhone: user.phoneNumber || '',
             }));
         }
     }, []);
@@ -48,14 +48,33 @@ const CreateNewLeadPage = () => {
     };
 
     const handleSave = async () => {
-        if (!lead.fullName || !lead.email || !lead.source) {
-            alert('Please fill in all required fields: Full Name, Email, and Source.');
+        if (!lead.fullName || !lead.source) {
+            alert('Please fill in all required fields: Full Name and Source.');
             return;
         }
 
+        // Generate temporary email from mobile number if email is not entered
+        let emailToSave = lead.email ? lead.email.trim() : '';
+        if (!emailToSave) {
+            let mobileDigits = '';
+            if (lead.mobileNumbers && lead.mobileNumbers.length > 0) {
+                const firstMobile = lead.mobileNumbers[0] || '';
+                const parts = firstMobile.split('-');
+                const num = parts.length > 1 ? parts[1] : firstMobile;
+                mobileDigits = (num || '').replace(/\D/g, '');
+                if (mobileDigits.length > 10) mobileDigits = mobileDigits.slice(-10);
+            }
+            emailToSave = mobileDigits ? `${mobileDigits}@gmail.com` : '';
+        }
+
+        const leadPayload = {
+            ...lead,
+            email: emailToSave
+        };
+
         setLoading(true);
         try {
-            const response = await axios.post(API_URL, lead);
+            const response = await axios.post(API_URL, leadPayload);
             alert('Lead created successfully!');
             // Instead of just going back to dashboard, open the newly created lead
             // so that when the user re-opens the form they will see the saved data.

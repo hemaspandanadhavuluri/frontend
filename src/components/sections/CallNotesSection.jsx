@@ -57,41 +57,46 @@ const CallNotesSection = ({
         }
     };
 
+    // Helper to extract immutable timestamp from note ObjectId or createdAt
+    const getNoteTimestamp = (log) => {
+        if (log && log._id && typeof log._id === 'string' && /^[0-9a-fA-F]{24}$/.test(log._id)) {
+            return new Date(parseInt(log._id.substring(0, 8), 16) * 1000);
+        }
+        if (log && log.createdAt && !isNaN(new Date(log.createdAt).getTime())) {
+            return new Date(log.createdAt);
+        }
+        return new Date();
+    };
+
     // Render main notes content
     const renderMainNotesContent = (isFullscreenView = false) => {
-        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
-        const currentBank = currentUser?.bank?.toLowerCase().trim();
-        const isCurrentUserBankExecutive = currentUser?.role === 'BankExecutive';
+        const foHistory = lead.callHistory
+            ? lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note')
+            : [];
 
-        const combinedHistory = [
-            ...(lead.callHistory ? lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note') : []),
-            ...(lead.externalCallHistory ? lead.externalCallHistory : [])
-        ];
-        
-        // CRITICAL FIX: Filter by targetBank for bank executives to ensure bank-specific note isolation
-        const bankFilteredHistory = isCurrentUserBankExecutive
-            ? combinedHistory.filter(log => {
-                // For bank executives, only show notes with targetBank matching their bank
-                if (log.targetBank) {
-                    return log.targetBank?.toLowerCase().trim() === currentBank;
-                }
-                // For legacy notes without targetBank, fall back to name matching
-                if (!currentUser || !currentUser.fullName || !currentUser.bank) {
+        // Include Bank Executive notes from externalCallHistory, filtering out duplicate automated assignment logs
+        const bankNotes = lead.externalCallHistory
+            ? lead.externalCallHistory.filter(log => {
+                if (!log || !log.notes) return false;
+                const noteText = log.notes.trim();
+                if (noteText.startsWith('📋 Lead') || noteText.startsWith('Lead assigned to')) {
                     return false;
                 }
-                const executiveName = `${currentUser.fullName} (${currentUser.bank})`;
-                return log.loggedByName === executiveName;
-              })
-            : combinedHistory;
+                return true;
+            })
+            : [];
 
-        const filteredHistory = bankFilteredHistory
+        const baseHistory = [...foHistory, ...bankNotes];
+
+        const filteredHistory = baseHistory
             .filter(log => {
                 if (!searchMain) return true;
                 const searchTerm = searchMain.toLowerCase().trim();
                 const logNotes = (log.notes || '').toLowerCase();
                 const loggedByName = (log.loggedByName || '').toLowerCase();
+                const targetBank = (log.targetBank || '').toLowerCase();
 
-                if (logNotes.includes(searchTerm) || loggedByName.includes(searchTerm)) {
+                if (logNotes.includes(searchTerm) || loggedByName.includes(searchTerm) || targetBank.includes(searchTerm)) {
                     return true;
                 }
 
@@ -111,16 +116,22 @@ const CallNotesSection = ({
 
                 return false;
             })
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            .sort((a, b) => {
+                const timeA = getNoteTimestamp(a).getTime();
+                const timeB = getNoteTimestamp(b).getTime();
+                if (timeA !== timeB) return timeB - timeA; // Recent first
+                if (a._id && b._id) return b._id.toString().localeCompare(a._id.toString());
+                return 0;
+            });
 
         return filteredHistory.length > 0 ? (
             filteredHistory.map((log, index) => (
                 <div key={index} className={`history-item ${log.callStatus === 'Log' ? 'log' : 'connected'}`}>
                     <div className="history-item-header">
                         <p className="history-item-author">
-                            Note by {log.loggedByName}
+                            Note by {log.loggedByName || 'Bank Executive'}
                         </p>
-                        <p className="history-item-time">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                        <p className="history-item-time">{moment(getNoteTimestamp(log)).format('DD MMM YYYY, h:mm a')}</p>
                     </div>
                     <p className="history-item-notes">{log.notes}</p>
                     {log.callStatus && <span style={{fontSize: '12px'}} className={`call-status-chip ${log.callStatus === 'Log' ? 'call-status-log' : 'call-status-connected'}`}>{log.callStatus}</span>}
@@ -143,7 +154,13 @@ const CallNotesSection = ({
                     if (log.loggedByName && log.loggedByName.toLowerCase().trim().includes(searchTerm)) return true;
                     return false;
                 })
-                .reverse()
+                .sort((a, b) => {
+                    const timeA = getNoteTimestamp(a).getTime();
+                    const timeB = getNoteTimestamp(b).getTime();
+                    if (timeA !== timeB) return timeB - timeA; // Recent first
+                    if (a._id && b._id) return b._id.toString().localeCompare(a._id.toString());
+                    return 0;
+                })
             : [];
         return filteredCounsellorHistory.map((log, index) => (
             <div key={index} className="counsellor-history-item">
@@ -151,7 +168,7 @@ const CallNotesSection = ({
                     <p className="counsellor-history-author">
                         Note by {log.loggedByName}
                     </p>
-                    <p className="counsellor-history-time">{moment(log.createdAt).format('DD MMM YYYY, h:mm a')}</p>
+                    <p className="counsellor-history-time">{moment(getNoteTimestamp(log)).format('DD MMM YYYY, h:mm a')}</p>
                 </div>
                 <p className="counsellor-history-notes">{log.notes}</p>
             </div>
@@ -165,7 +182,7 @@ const CallNotesSection = ({
                 <div className="fullscreen-notes-container">
                     <div className="fullscreen-header">
                         <h2>All Notes History</h2>
-                        <button className="fullscreen-close-btn" onClick={closeFullscreen}>
+                        <button type="button" className="fullscreen-close-btn" onClick={closeFullscreen}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -230,7 +247,7 @@ const CallNotesSection = ({
                 <div className="fullscreen-notes-container">
                     <div className="fullscreen-header">
                         <h2>Counsellor Notes History</h2>
-                        <button className="fullscreen-close-btn" onClick={closeFullscreen}>
+                        <button type="button" className="fullscreen-close-btn" onClick={closeFullscreen}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -298,8 +315,9 @@ const CallNotesSection = ({
                     <div className="history-title-wrapper">
                         <h4 className="history-title">History</h4>
                         <button 
+                            type="button"
                             className="fullscreen-btn" 
-                            onClick={() => openFullscreen('main')}
+                            onClick={(e) => { e.preventDefault(); openFullscreen('main'); }}
                             title="View all notes in fullscreen"
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -363,8 +381,9 @@ const CallNotesSection = ({
                             <div className="counsellor-history-title-wrapper">
                                 <h5 className="counsellor-history-title">Counsellor Notes History</h5>
                                 <button 
+                                    type="button"
                                     className="fullscreen-btn" 
-                                    onClick={() => openFullscreen('counsellor')}
+                                    onClick={(e) => { e.preventDefault(); openFullscreen('counsellor'); }}
                                     title="View all counsellor notes in fullscreen"
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

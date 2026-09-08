@@ -64,6 +64,7 @@ export const EMPTY_LEAD_STATE = {
     },
     callHistory: [],
     externalCallHistory: [],
+    isSubmitted: false,
 };
 
 export const EMAIL_TEMPLATE_CONTENT = {
@@ -561,7 +562,7 @@ export const assetOwnerRelationships = ['Father', 'Mother', 'Uncle', 'Aunt', 'Fi
 export const relationTypes = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Uncle', 'Aunt', 'First Cousin', 'Guardian'];
 
 // Relation types for Own House Guarantor
-export const ohgRelationTypes = ['Father', 'Mother', 'Spouse', 'Brother', 'Uncle', 'Aunt', 'First Cousin'];
+export const ohgRelationTypes = ['Father', 'Mother', 'Spouse', 'Brother', 'Sister', 'Uncle', 'Aunt', 'Grandfather', 'Grandmother', 'Father-in-law', 'Mother-in-law', 'Cousin', 'Friend', 'Other'];
 
 export const countryPhoneCodes = [
     { code: '+91', name: 'India' },
@@ -926,7 +927,7 @@ export const propertyAuthorities = ['Gram Panchayat', 'Municipality'];
 export const licPolicyTypes = ['Term', 'Life'];
 
 // --- NEW: Reasons for Lead Statuses ---
-export const leadStatusOptions = ['No status', 'On Priority', 'Sanctioned', 'Application Incomplete', 'Close'];
+export const leadStatusOptions = ['No status', 'In Progress', 'On Priority', 'Sanctioned', 'Application Incomplete', 'Close'];
 
 export const priorityReasons = ['Admit received', 'University Shortlisted', 'Nearest Intake'];
 

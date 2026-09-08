@@ -115,6 +115,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     const [assignmentState, setAssignmentState] = useState('');
     const [assignmentRM, setAssignmentRM] = useState('');
     const [assignmentError, setAssignmentError] = useState('');
+    // Pending bank assignment — stored locally, sent to DB only on Submit Lead
+    const [pendingBankAssignment, setPendingBankAssignment] = useState(null);
     const [quickNote, setQuickNote] = useState('');
     const [showRemindersDropdown, setShowRemindersDropdown] = useState(false);
     const [autocompleteStates, setAutocompleteStates] = useState({});
@@ -307,10 +309,17 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             if (!dataToSet.zone && currentUser?.zone) dataToSet.zone = currentUser.zone;
             if (!dataToSet.region && currentUser?.region) dataToSet.region = currentUser.region;
             if (!dataToSet.regionalHead && currentUser?.regionalHead) dataToSet.regionalHead = currentUser.regionalHead;
+            // FIX: Populate assignedFOPhone from current user if not already set (fixes empty phone for existing leads)
+            if (!dataToSet.assignedFOPhone && currentUser?.phoneNumber) dataToSet.assignedFOPhone = currentUser.phoneNumber;
 
             // Only add defaults for truly missing fields (undefined), not empty ones
             if (!dataToSet.mobileNumbers || dataToSet.mobileNumbers.length === 0) { dataToSet.mobileNumbers = ["+91-"]; }
-            if (!dataToSet.relations || dataToSet.relations.length === 0) { dataToSet.relations = [{ relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }]; }
+            if (!dataToSet.relations || dataToSet.relations.length === 0) {
+                dataToSet.relations = [
+                    { relationshipType: 'Father', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] },
+                    { relationshipType: 'Mother', name: '', employmentType: 'Salaried', annualIncome: '', phoneNumber: '', currentObligations: '', cibilScore: '', hasCibilIssues: false, cibilIssues: '', isCoApplicant: false, documents: [] }
+                ];
+            }
             if (!dataToSet.references || dataToSet.references.length < 2) {
                 const existingRefs = dataToSet.references || [];
                 dataToSet.references = [...existingRefs, ...Array(2 - existingRefs.length).fill({ relationship: '', name: '', address: '', phoneNumber: '' })].slice(0, 2);
@@ -566,17 +575,6 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             ...prev,
             [name]: newValue ? new Date(newValue).toISOString() : null
         }));
-
-        // Add notes to call history for reminder date, including last call if set
-        if (newValue && name === 'reminderCallDate') {
-            const formattedDate = new Date(newValue).toLocaleString();
-            let noteText = `Next call reminder set for ${formattedDate}`;
-            if (lead.lastCallDate) {
-                const lastFormatted = new Date(lead.lastCallDate).toLocaleString();
-                noteText = `Last call date set to ${lastFormatted} and Next call reminder set for ${formattedDate}`;
-            }
-            logActionAsNote(noteText);
-        }
     };
 
     // Simplified handler for nested state (like coApplicant/references) - *Kept from your original code*
@@ -958,7 +956,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                     notes: newNote.notes,
                     callStatus: newNote.callStatus,
                     loggedById: currentUser._id,
-                    loggedByName: currentUser.fullName
+                    loggedByName: currentUser.fullName,
+                    createdAt: new Date().toISOString()
                 }
             };
 
@@ -995,7 +994,8 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                     notes: counsellorNote.notes,
                     callStatus: 'Counsellor Note',
                     loggedById: currentUser._id,
-                    loggedByName: currentUser.fullName
+                    loggedByName: currentUser.fullName,
+                    createdAt: new Date().toISOString()
                 }
             };
 
@@ -1053,9 +1053,10 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         const payload = {
             newNote: {
                 notes: noteText,
-                callStatus: 'Log', // A new status for automated logs
+                callStatus: 'Log',
                 loggedById: currentUser._id,
-                loggedByName: currentUser.fullName
+                loggedByName: currentUser.fullName,
+                createdAt: new Date().toISOString()
             }
         };
 
@@ -1180,38 +1181,38 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         setDocumentChecklistData([]);
     };
 
-    const handleAssignToBank = async () => {
-        if (!lead._id) {
-            alert('Please save the lead before assigning it to a bank.');
-            return;
-        }
+    const handleAssignToBank = () => {
         if (!assignmentRM) {
             setAssignmentError('Please select a Relationship Manager.');
             return;
         }
 
         const rmDetails = JSON.parse(assignmentRM);
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
 
-    try {
-            const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
-            
-            const response = await axios.post(`${API_URL}/${lead._id}/assign-bank`, {
-                bankId: selectedBankForAssignment._id,
-                bankName: selectedBankForAssignment.name,
-                assignedRMName: rmDetails.name,
-                assignedRMEmail: rmDetails.email,
-                state: assignmentState,
-                assignedByName: currentUser?.fullName,
-                assignedById: currentUser?._id
-            });
-            // Update the local lead state instead of calling onUpdate to stay on the same page
-            setLead(prev => ({ ...prev, ...response.data.lead }));
-            alert(response.data.message); // Show the specific success message from the backend
-            handleCloseAssignModal();
-        } catch (error) {
-            console.error('Failed to assign lead to bank:', error);
-            setAssignmentError(error.response?.data?.message || 'An error occurred during assignment.');
-        }
+        // Store pending assignment locally — NO API call here.
+        // The actual assign-bank API is called only when the FO submits the lead.
+        setPendingBankAssignment({
+            bankId: selectedBankForAssignment._id,
+            bankName: selectedBankForAssignment.name,
+            assignedRMName: rmDetails.name,
+            assignedRMEmail: rmDetails.email,
+            state: assignmentState,
+            assignedByName: currentUser?.fullName,
+            assignedById: currentUser?._id
+        });
+
+        // Update local lead display so the FO can see the selection
+        setLead(prev => ({
+            ...prev,
+            assignedBank: selectedBankForAssignment.name,
+            assignedRMName: rmDetails.name,
+            assignedRMEmail: rmDetails.email,
+        }));
+
+        setIsAssignModalOpen(false);
+        setSelectedBankForAssignment(null);
+        alert(`Bank "${selectedBankForAssignment.name}" selected. It will be assigned when you Submit the lead.`);
     };
 
     const handleSetReminder = async () => {
@@ -1224,6 +1225,9 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             return;
         }
 
+        const currentUser = JSON.parse(localStorage.getItem('employeeUser'));
+        const reminderTimeFormatted = new Date(lead.reminderCallDate).toLocaleString();
+
         try {
             const newReminder = {
                 date: lead.reminderCallDate,
@@ -1233,16 +1237,24 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             };
             const updatePayload = {
                 reminders: [...(lead.reminders || []), newReminder],
-                reminderCallDate: null // Clear the current reminder date after setting
+                reminderCallDate: null, // Clear the current reminder date after setting
+                newNote: {
+                    notes: `Reminder set for ${reminderTimeFormatted}`,
+                    callStatus: 'Scheduled',
+                    loggedById: currentUser?._id,
+                    loggedByName: currentUser?.fullName || 'User',
+                    createdAt: new Date().toISOString()
+                }
             };
             const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
             // merge reminder data to avoid clobbering other edits
             setLead(prev => ({
                 ...prev,
                 reminders: response.data.reminders,
-                reminderCallDate: response.data.reminderCallDate
+                reminderCallDate: response.data.reminderCallDate,
+                callHistory: response.data.callHistory || prev.callHistory
             }));
-            alert(`Reminder set for ${new Date(lead.reminderCallDate).toLocaleString()}`);
+            alert(`Reminder set for ${reminderTimeFormatted}`);
         } catch (error) {
             console.error('Failed to set reminder:', error);
             alert('Failed to set reminder. Please try again.');
@@ -1307,10 +1319,11 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
 
         const payload = {
             newNote: {
-                notes: quickNote,
+                notes: quickNote.trim(),
                 callStatus: 'Quick Note',
                 loggedById: currentUser._id,
-                loggedByName: currentUser.fullName
+                loggedByName: currentUser.fullName,
+                createdAt: new Date().toISOString()
             }
         };
 
@@ -1337,41 +1350,42 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
         }
 
         try {
-            // incorporate any unsaved note into the lead's callHistory
-            let leadToSave = { ...lead };
-            if (newNote.notes.trim()) {
-                const noteEntry = {
-                    notes: newNote.notes,
-                    callStatus: newNote.callStatus,
-                    loggedById: currentUser._id,
-                    loggedByName: currentUser.fullName,
-                    createdAt: new Date().toISOString()
-                };
-                leadToSave.callHistory = Array.isArray(leadToSave.callHistory)
-                    ? [...leadToSave.callHistory, noteEntry]
-                    : [noteEntry];
-            }
-
-            if (!leadToSave._id) {
-                // create new lead
-                const response = await axios.post(API_URL, leadToSave);
+            if (!lead._id) {
+                let createPayload = { ...lead };
+                if (newNote.notes.trim()) {
+                    createPayload.callHistory = [{
+                        notes: newNote.notes.trim(),
+                        callStatus: newNote.callStatus || 'Connected',
+                        loggedById: currentUser._id,
+                        loggedByName: currentUser.fullName,
+                        createdAt: new Date().toISOString()
+                    }];
+                }
+                const response = await axios.post(API_URL, createPayload);
                 console.log('create lead response', response.data);
                 setLead(response.data);
                 alert('Lead created successfully!');
                 const newId = response.data._id || response.data.leadID;
                 if (newId) {
-                    // navigate to the freshly created lead so that further edits load from server
                     navigate(`/leads/${newId}`);
                 } else {
                     navigate('/');
                 }
             } else {
-                // update existing lead
-                const response = await axios.put(`${API_URL}/${leadToSave._id}`, leadToSave);
+                const updatePayload = { ...lead };
+                if (newNote.notes.trim()) {
+                    updatePayload.newNote = {
+                        notes: newNote.notes.trim(),
+                        callStatus: newNote.callStatus || 'Connected',
+                        loggedById: currentUser._id,
+                        loggedByName: currentUser.fullName,
+                        createdAt: new Date().toISOString()
+                    };
+                }
+                const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
                 console.log('update lead response', response.data);
                 setLead(response.data);
                 alert('Lead updated successfully!');
-                // force a reload of the route to ensure the component refetches data
                 navigate(`/leads/${response.data._id}`);
             }
             setNewNote({ notes: '', callStatus: 'Connected' });
@@ -1382,16 +1396,19 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
-        handleFullLeadSave();
+        if (e && e.preventDefault) e.preventDefault();
     };
 
     const handleSubmitLeadData = async () => {
-        if (!lead.callHistory || lead.callHistory.length === 0) {
+        const hasExistingNote = lead.callHistory && lead.callHistory.some(log => log.callStatus !== 'Counsellor Note');
+        const hasTypedNote = !!newNote.notes.trim();
+        if (!hasExistingNote && !hasTypedNote) {
             alert('Please add at least one note before submitting the lead data.');
             return;
         }
-        if (!lead.reminderCallDate && (!lead.reminders || lead.reminders.length === 0)) {
+        
+        const isClosed = lead.leadStatus === 'Close' || lead.leadStatus === 'Closed';
+        if (!isClosed && (!lead.reminders || lead.reminders.length === 0)) {
             alert('Please set a reminder before submitting the lead data.');
             return;
         }
@@ -1403,33 +1420,46 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
                 return;
             }
 
-            let leadToSave = { ...lead };
-            if (newNote.notes.trim()) {
-                const noteEntry = {
-                    notes: newNote.notes,
-                    callStatus: newNote.callStatus,
-                    loggedById: currentUser._id,
-                    loggedByName: currentUser.fullName,
-                    createdAt: new Date().toISOString()
-                };
-                leadToSave.callHistory = Array.isArray(leadToSave.callHistory)
-                    ? [...leadToSave.callHistory, noteEntry]
-                    : [noteEntry];
+            let savedLeadId;
+            if (!lead._id) {
+                let createPayload = { ...lead, isSubmitted: true };
+                if (newNote.notes.trim()) {
+                    createPayload.callHistory = [{
+                        notes: newNote.notes.trim(),
+                        callStatus: newNote.callStatus || 'Connected',
+                        loggedById: currentUser._id,
+                        loggedByName: currentUser.fullName,
+                        createdAt: new Date().toISOString()
+                    }];
+                }
+                const response = await axios.post(API_URL, createPayload);
+                savedLeadId = response.data._id;
+                setLead(response.data);
+            } else {
+                let updatePayload = { ...lead, isSubmitted: true };
+                if (newNote.notes.trim()) {
+                    updatePayload.newNote = {
+                        notes: newNote.notes.trim(),
+                        callStatus: newNote.callStatus || 'Connected',
+                        loggedById: currentUser._id,
+                        loggedByName: currentUser.fullName,
+                        createdAt: new Date().toISOString()
+                    };
+                }
+                const response = await axios.put(`${API_URL}/${lead._id}`, updatePayload);
+                savedLeadId = lead._id;
+                setLead(response.data);
             }
 
-            if (!leadToSave._id) {
-                const response = await axios.post(API_URL, leadToSave);
-                setLead(response.data);
-                setNewNote({ notes: '', callStatus: 'Connected' });
-                alert('Lead submitted successfully!');
-                navigate('/');
-            } else {
-                const response = await axios.put(`${API_URL}/${leadToSave._id}`, leadToSave);
-                setLead(response.data);
-                setNewNote({ notes: '', callStatus: 'Connected' });
-                alert('Lead submitted successfully!');
-                navigate('/');
+            // Now send the pending bank assignment (if any) AFTER the lead is saved
+            if (pendingBankAssignment && savedLeadId) {
+                await axios.post(`${API_URL}/${savedLeadId}/assign-bank`, pendingBankAssignment);
+                setPendingBankAssignment(null);
             }
+
+            setNewNote({ notes: '', callStatus: 'Connected' });
+            alert('Lead submitted successfully!');
+            navigate('/');
         } catch (error) {
             console.error('Failed to submit lead data:', error);
             alert('Failed to submit lead data. Check console for details.');
@@ -1676,11 +1706,12 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
     // Calculate total expenses (Unchanged)
     const totalFee = (parseFloat(lead.fee) || 0) + (parseFloat(lead.living) || 0) + (parseFloat(lead.otherExpenses) || 0);
 
-    // Determine whether the lead has at least one non-counsellor note and a reminder set
-    const hasReminder = !!(lead.reminderCallDate || (lead.reminders && lead.reminders.length > 0));
+    // Determine whether the lead has at least one non-counsellor note and a reminder set (reminder not required if status is Close)
+    const isClosed = lead.leadStatus === 'Close' || lead.leadStatus === 'Closed';
+    const hasReminder = isClosed || !!(lead.reminders && lead.reminders.length > 0);
     const hasNote = !!(
         (lead.callHistory && lead.callHistory.filter(log => log.callStatus !== 'Counsellor Note').length > 0) ||
-        (newNote.notes && newNote.notes.trim().length > 0)
+        newNote.notes.trim()
     );
 
     return (
@@ -1756,7 +1787,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             </div>
         )}
         
-        <form onSubmit={handleSubmit}>
+        <div className="lead-form-body-wrapper">
             <div className="flex flex-col lg:flex-row gap-6">
                 {/* Left Column: Lead Details */}
                 <div className="flex-1 min-w-0 space-y-4">
@@ -2045,7 +2076,7 @@ const LeadForm = ({ leadData, onBack, onUpdate, initialTab, isReadOnly = false }
             
             </div>
             </div>
-        </form>
+        </div>
 
         {/* --- NEW: Email Template Modal --- */}
         {isEmailModalOpen && (
